@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: docker.io/library/postgres:16-alpine
+    container_name: smetoplan-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: smetoplan
+      POSTGRES_PASSWORD: smetoplan_dev
+      POSTGRES_DB: smetoplan
+    ports:
+      - "5433:5432"
+    volumes:
+      - smetoplan_pgdata:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U smetoplan -d smetoplan"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  smetoplan_pgdata:

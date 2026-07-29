@@ -1,0 +1,34 @@
+{
+  "name": "smetoplan",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "db:up": "podman compose -f db/podman-compose.yml up -d",
+    "db:down": "podman compose -f db/podman-compose.yml down",
+    "db:generate-pseo": "node --env-file=.env.local scripts/generate-pseo-routes.mjs",
+    "cron:drip": "curl -s -H \"Authorization: Bearer %CRON_SECRET%\" http://localhost:3000/api/cron/drip-feed"
+  },
+  "dependencies": {
+    "lucide-react": "^1.27.0",
+    "next": "15.5.22",
+    "pg": "^8.22.0",
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/pg": "^8.20.0",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "15.5.22",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
