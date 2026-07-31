@@ -1,11 +1,12 @@
 import type { MetadataRoute } from 'next';
 import { listPublishedSlugs } from '@/lib/pseo';
+import { allHubSlugs } from '@/lib/pseo-hubs';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 /**
- * Sitemap rebuilds dynamically from published pseo_routes only.
+ * Sitemap: static + hubs + published pseo_routes only.
  * Cron drip-feed flips is_published → URLs appear here within the same day.
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -18,6 +19,48 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'daily',
       priority: 1,
     },
+    {
+      url: `${site}/kalkulyator`,
+      lastModified: new Date(),
+      changeFrequency: 'daily',
+      priority: 0.95,
+    },
+    {
+      url: `${site}/ceny`,
+      lastModified: new Date(),
+      changeFrequency: 'daily',
+      priority: 0.9,
+    },
+    ...[
+      'moskva',
+      'sankt-peterburg',
+      'krasnodar',
+      'ekaterinburg',
+      'novosibirsk',
+    ].map((slug) => ({
+      url: `${site}/ceny/${slug}`,
+      lastModified: new Date(),
+      changeFrequency: 'daily' as const,
+      priority: 0.85,
+    })),
+    ...[
+      '/o-nas',
+      '/metodika',
+      '/disclaimer',
+      '/privacy',
+      '/kontakty',
+    ].map((path) => ({
+      url: `${site}${path}`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.55,
+    })),
+    ...allHubSlugs().map((slug) => ({
+      url: `${site}/kalkulyator/${slug}`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly' as const,
+      priority: 0.85,
+    })),
   ];
 
   try {

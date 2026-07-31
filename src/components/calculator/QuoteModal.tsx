@@ -1,13 +1,19 @@
+'use client';
+
 import React, { useState } from 'react';
-import { X, CheckCircle, Send, ShieldCheck, Building2 } from 'lucide-react';
+import { X, CheckCircle, Download, Building2, Info } from 'lucide-react';
 import { Currency, MaterialCalculationResult } from '@/lib/types';
 import { formatCurrency } from '@/lib/calculator';
+import type { ExtendedCalculationResult } from '@/lib/calculator';
+import { buildRbuSpecText, downloadTextFile } from '@/lib/rbu-spec';
 
 interface QuoteModalProps {
   isOpen: boolean;
   onClose: () => void;
-  calculation: MaterialCalculationResult;
+  calculation: MaterialCalculationResult | ExtendedCalculationResult;
   currency: Currency;
+  regionLabel?: string;
+  concreteGrade?: string;
 }
 
 export const QuoteModal: React.FC<QuoteModalProps> = ({
@@ -15,6 +21,8 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({
   onClose,
   calculation,
   currency,
+  regionLabel = 'регион',
+  concreteGrade = 'M300',
 }) => {
   const [submitted, setSubmitted] = useState<boolean>(false);
   const [formData, setFormData] = useState({
@@ -27,166 +35,177 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const downloadSpec = () => {
+    const ext = calculation as ExtendedCalculationResult;
+    downloadTextFile(
+      `smetoplan-zayavka-rbu-${Date.now()}.txt`,
+      buildRbuSpecText({
+        regionLabel,
+        concreteGrade,
+        concreteVolumeM3: calculation.concreteVolumeM3,
+        rebarWeightKg: calculation.rebarWeightKg,
+        formworkAreaM2: calculation.formworkAreaM2,
+        totalLabel: formatCurrency(calculation.itemizedCosts.total, currency),
+        rebarLines: (ext.rebarPieces || []).map(
+          (p) =>
+            `${p.mark}; ${p.role}; Ø${p.diameterMm}; L=${p.lengthMm}мм; N=${p.count}; m=${Math.round(p.weightKg * 10) / 10}кг`
+        ),
+        contact: formData,
+      })
+    );
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      await fetch('/api/quote', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          totalCost: calculation.itemizedCosts.total,
-          concreteVolumeM3: calculation.concreteVolumeM3,
-        }),
-      });
-    } catch {
-      // UI still confirms — lead captured client-side as fallback UX
-    }
+    downloadSpec();
     setSubmitted(true);
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-fade-in">
-      <div className="bg-white rounded-2xl max-w-lg w-full border border-slate-200 shadow-2xl overflow-hidden relative">
-        {/* Header */}
-        <div className="bg-[#0F172A] text-white p-5 flex items-center justify-between border-b border-slate-800">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 p-4 backdrop-blur-sm">
+      <div className="relative w-full max-w-lg overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+        <div className="flex items-center justify-between border-b border-slate-800 bg-[#0F172A] p-5 text-white">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-[#1F5A8E] rounded-lg text-white">
-              <Building2 className="w-5 h-5" />
+            <div className="rounded-lg bg-[#1F5A8E] p-2 text-white">
+              <Building2 className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="font-extrabold text-base uppercase tracking-wide">
-                Запрос Цен Бетонных Заводов (РБУ)
+              <h3 className="text-base font-extrabold uppercase tracking-wide">
+                Спецификация для РБУ
               </h3>
-              <p className="text-xs text-slate-400 font-mono">
-                ПРЯМОЙ ОПТОВЫЙ КУПОН СКИДКИ НА БЕТОН И АРМАТУРУ
+              <p className="font-mono text-xs text-slate-400">
+                Скачается .txt — отправьте на завод сами
               </p>
             </div>
           </div>
-
           <button
+            type="button"
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition cursor-pointer"
+            className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-800 hover:text-white"
           >
-            <X className="w-5 h-5" />
+            <X className="h-5 w-5" />
           </button>
         </div>
 
-        {/* Content Body */}
         <div className="p-6">
           {submitted ? (
-            <div className="text-center py-6 space-y-3">
-              <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-2">
-                <CheckCircle className="w-10 h-10" />
+            <div className="space-y-3 py-4 text-center">
+              <div className="mx-auto mb-2 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+                <CheckCircle className="h-10 w-10" />
               </div>
-
-              <h4 className="text-xl font-black text-[#0F172A]">
-                Спецификация Заявки Отправлена!
-              </h4>
-              <p className="text-xs text-slate-600 max-w-sm mx-auto">
-                4 региональных завода РБУ получили вашу спецификацию на{' '}
+              <h4 className="text-xl font-black text-[#0F172A]">Спецификация скачана</h4>
+              <p className="mx-auto max-w-sm text-xs text-slate-600">
+                Файл .txt с объёмами и раскроем. Отправьте его на РБУ региона «{regionLabel}»:
+                {' '}
                 <strong className="text-slate-900">{calculation.concreteVolumeM3} м³</strong> бетона и{' '}
-                <strong className="text-slate-900">{calculation.rebarWeightKg} кг</strong> стальной арматуры.
+                <strong className="text-slate-900">{calculation.rebarWeightKg} кг</strong> арматуры.
               </p>
-
-              <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-xs font-mono text-slate-700 text-left space-y-1 my-4">
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Номер Оптового Купона:</span>
-                  <span className="font-bold text-[#1F5A8E]">#CTX-9842-СКИДКА</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Ориентировочно со скидкой:</span>
-                  <span className="font-bold text-emerald-700">
-                    {formatCurrency(calculation.itemizedCosts.total * 0.88, currency)} (Экономия -12%)
+              <div className="my-4 space-y-1 rounded-xl border border-slate-200 bg-slate-50 p-3.5 text-left font-mono text-xs text-slate-700">
+                <div className="flex justify-between gap-2">
+                  <span className="text-slate-500">Ориентир сметы материалов</span>
+                  <span className="font-bold text-[#0F172A]">
+                    {formatCurrency(calculation.itemizedCosts.total, currency)}
                   </span>
                 </div>
+                <p className="pt-1 font-sans text-[11px] text-slate-500">
+                  Без фиктивных купонов и «скидок от завода» — только ваш расчёт.
+                </p>
               </div>
-
               <button
+                type="button"
                 onClick={onClose}
-                className="w-full bg-[#0F172A] text-white font-bold text-xs py-3 rounded-xl hover:bg-slate-800 transition cursor-pointer"
+                className="w-full rounded-xl bg-[#0F172A] py-3 text-xs font-bold text-white transition hover:bg-slate-800"
               >
-                Закрыть и Вернуться к Калькулятору
+                Вернуться к калькулятору
               </button>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-              <div className="bg-teal-50 border border-teal-200 rounded-xl p-3 text-teal-950 space-y-1">
-                <span className="font-extrabold text-xs flex items-center gap-1">
-                  <ShieldCheck className="w-4 h-4 text-[#1F5A8E]" /> Сводка Расчета Конструкции:
+              <div className="space-y-1 rounded-xl border border-sky-200 bg-sky-50 p-3 text-sky-950">
+                <span className="flex items-center gap-1 text-xs font-extrabold">
+                  <Info className="h-4 w-4 text-[#1F5A8E]" /> Сводка из расчёта
                 </span>
-                <p className="text-[11px] text-teal-900 font-mono">
-                  Бетон: {calculation.concreteVolumeM3} м³ | Арматура: {calculation.rebarWeightKg} кг | Вес конструкции: {calculation.totalWeightTons} Тонн
+                <p className="font-mono text-[11px] text-sky-900">
+                  {concreteGrade} · {calculation.concreteVolumeM3} м³ · арматура{' '}
+                  {calculation.rebarWeightKg} кг · {regionLabel}
                 </p>
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">ФИО / Название Организации</label>
+                <label className="mb-1 block font-semibold text-slate-700">
+                  ФИО / организация
+                </label>
                 <input
                   type="text"
                   required
-                  placeholder="например, Иванов И.И. / ООО 'СтройМонолит'"
+                  placeholder="Иванов И.И. / ООО «…»"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full bg-[#F4F4F5] border border-slate-300 rounded-lg p-2.5 font-medium text-slate-900 focus:ring-2 focus:ring-[#1F5A8E] focus:outline-none"
+                  className="w-full rounded-lg border border-slate-300 bg-[#F4F4F5] p-2.5 font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1F5A8E]"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Номер Телефона</label>
+                  <label className="mb-1 block font-semibold text-slate-700">Телефон</label>
                   <input
                     type="tel"
                     required
-                    placeholder="+7 (999) 000-00-00"
+                    placeholder="+7 …"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full bg-[#F4F4F5] border border-slate-300 rounded-lg p-2.5 font-medium text-slate-900 focus:ring-2 focus:ring-[#1F5A8E] focus:outline-none"
+                    className="w-full rounded-lg border border-slate-300 bg-[#F4F4F5] p-2.5 font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1F5A8E]"
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Электронная Почта</label>
+                  <label className="mb-1 block font-semibold text-slate-700">Email</label>
                   <input
                     type="email"
                     required
-                    placeholder="info@stroy.ru"
+                    placeholder="mail@…"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full bg-[#F4F4F5] border border-slate-300 rounded-lg p-2.5 font-medium text-slate-900 focus:ring-2 focus:ring-[#1F5A8E] focus:outline-none"
+                    className="w-full rounded-lg border border-slate-300 bg-[#F4F4F5] p-2.5 font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1F5A8E]"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Город / Район Застройки</label>
+                  <label className="mb-1 block font-semibold text-slate-700">
+                    Адрес объекта
+                  </label>
                   <input
                     type="text"
                     required
-                    placeholder="например, г. Москва, Раменское"
+                    placeholder="Город / район"
                     value={formData.location}
                     onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                    className="w-full bg-[#F4F4F5] border border-slate-300 rounded-lg p-2.5 font-medium text-slate-900 focus:ring-2 focus:ring-[#1F5A8E] focus:outline-none"
+                    className="w-full rounded-lg border border-slate-300 bg-[#F4F4F5] p-2.5 font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1F5A8E]"
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Планируемая Дата Заливки</label>
+                  <label className="mb-1 block font-semibold text-slate-700">
+                    Дата заливки
+                  </label>
                   <input
                     type="date"
                     required
                     value={formData.deliveryDate}
-                    onChange={(e) => setFormData({ ...formData, deliveryDate: e.target.value })}
-                    className="w-full bg-[#F4F4F5] border border-slate-300 rounded-lg p-2.5 font-medium text-slate-900 focus:ring-2 focus:ring-[#1F5A8E] focus:outline-none"
+                    onChange={(e) =>
+                      setFormData({ ...formData, deliveryDate: e.target.value })
+                    }
+                    className="w-full rounded-lg border border-slate-300 bg-[#F4F4F5] p-2.5 font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1F5A8E]"
                   />
                 </div>
               </div>
 
               <button
                 type="submit"
-                className="w-full bg-[#1F5A8E] hover:bg-[#174771] text-white font-extrabold text-xs py-3.5 rounded-xl transition shadow-lg flex items-center justify-center gap-2 uppercase tracking-wide mt-2 cursor-pointer"
+                className="mt-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#1F5A8E] py-3.5 text-xs font-extrabold uppercase tracking-wide text-white shadow-lg transition hover:bg-[#174771]"
               >
-                <Send className="w-4 h-4" />
-                Отправить Спецификацию Заводам РБУ
+                <Download className="h-4 w-4" />
+                Скачать спецификацию .txt
               </button>
             </form>
           )}

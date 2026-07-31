@@ -2,12 +2,11 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #0f172a;
-  --brand-navy: #0f172a;
-  --brand-steel: #1f5a8e;
-  --brand-teal: #2dd4bf;
-  --surface-muted: #f4f4f5;
-  --cad-navy: #0b132b;
+  --foreground: #0e1624;
+  --brand-navy: #0e1624;
+  --brand-steel: #3d6494;
+  --brand-steel-soft: #6b93c4;
+  --surface-muted: #f4f7fa;
 }
 
 @theme inline {
@@ -23,6 +22,56 @@ body {
   font-family: var(--font-sans);
 }
 
+.blueprint-grid-steel {
+  background-image:
+    linear-gradient(rgba(61, 100, 148, 0.28) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(61, 100, 148, 0.28) 1px, transparent 1px);
+  background-size: 42px 42px;
+  animation: blueprintDrift 32s linear infinite;
+}
+
+.blueprint-grid-violet {
+  background-image:
+    linear-gradient(rgba(122, 168, 214, 0.32) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(122, 168, 214, 0.32) 1px, transparent 1px);
+  background-size: 42px 42px;
+  animation: blueprintDrift 32s linear infinite;
+}
+
+@keyframes blueprintDrift {
+  0% { background-position: 0 0; }
+  100% { background-position: 42px 42px; }
+}
+
+/* Серый бетон: зерно + пятна */
+.concrete-panel {
+  background-color: #4a4e52;
+  background-image:
+    radial-gradient(ellipse 80% 60% at 20% 30%, rgba(255, 255, 255, 0.07), transparent 55%),
+    radial-gradient(ellipse 70% 50% at 85% 75%, rgba(0, 0, 0, 0.22), transparent 50%),
+    radial-gradient(circle at 40% 60%, rgba(120, 118, 112, 0.35) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 70% 25%, rgba(90, 88, 84, 0.4) 0 1px, transparent 1.5px),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E"),
+    linear-gradient(160deg, #5c6064 0%, #3e4246 45%, #2f3337 100%);
+  background-blend-mode: soft-light, multiply, normal, normal, overlay, normal;
+  background-size: auto, auto, 6px 6px, 8px 8px, 180px 180px, auto;
+}
+
+@keyframes heroRise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero-rise {
+  animation: heroRise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
 @keyframes laserScan {
   0% { transform: translateY(-100%); opacity: 0.3; }
   50% { opacity: 0.8; }
@@ -34,11 +83,6 @@ body {
   50% { opacity: 0.95; }
 }
 
-@keyframes blueprintGrid {
-  0% { background-position: 0 0; }
-  100% { background-position: 24px 24px; }
-}
-
 .animate-laser-scan {
   animation: laserScan 4s ease-in-out infinite alternate;
 }
@@ -47,12 +91,329 @@ body {
   animation: laserBeamPulse 2s ease-in-out infinite;
 }
 
-.animate-blueprint-grid {
-  animation: blueprintGrid 20s linear infinite;
+.build-line {
+  stroke-dasharray: 1200;
+  stroke-dashoffset: 1200;
+  animation: buildDraw 4.5s ease-in-out infinite;
+}
+
+.build-line--1 { animation-delay: 0s; }
+.build-line--2 { animation-delay: 0.35s; }
+.build-line--3 { animation-delay: 0.7s; }
+.build-line--4 { animation-delay: 1.05s; }
+.build-line--5 { animation-delay: 1.4s; }
+.build-line--6 { animation-delay: 1.85s; }
+.build-line--7 { animation-delay: 2.25s; }
+.build-line--8 { animation-delay: 2.7s; }
+
+.build-label {
+  opacity: 0;
+  animation: buildLabel 4.5s ease-in-out infinite;
+}
+
+.build-laser {
+  animation: buildLaser 4.5s ease-in-out infinite;
+}
+
+.house-stroke {
+  stroke-dasharray: 900;
+  stroke-dashoffset: 900;
+  animation: houseDraw 8.5s ease-in-out infinite;
+}
+
+.house-d1 { animation-delay: 0s; }
+.house-d2 { animation-delay: 0.7s; }
+.house-d3 { animation-delay: 1.5s; }
+.house-d4 { animation-delay: 2.3s; }
+.house-d5 { animation-delay: 3.1s; }
+.house-d6 { animation-delay: 3.9s; }
+.house-d7 { animation-delay: 4.7s; }
+
+@keyframes houseDraw {
+  0% {
+    stroke-dashoffset: 900;
+    opacity: 0.2;
+  }
+  10% {
+    opacity: 1;
+  }
+  48%,
+  78% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0.35;
+  }
+}
+
+/* —— Smetoplan foundation calc animation —— */
+.fx-fade {
+  opacity: 0;
+  animation: fxFade 14s ease-in-out infinite;
+}
+
+.fx-fade-early {
+  animation-name: fxFadeEarly;
+}
+
+.fx-stroke {
+  stroke-dasharray: 700;
+  stroke-dashoffset: 700;
+  animation: fxDraw 14s ease-in-out infinite;
+}
+
+.fx-fill {
+  opacity: 0;
+  animation: fxFill 14s ease-in-out infinite;
+}
+
+.fx-pulse {
+  opacity: 0;
+  animation: fxPulse 14s ease-in-out infinite;
+}
+
+.fx-d0 { animation-delay: 0s; }
+.fx-d1 { animation-delay: 0.15s; }
+.fx-d2 { animation-delay: 0.45s; }
+.fx-d3 { animation-delay: 0.75s; }
+.fx-d4 { animation-delay: 1.05s; }
+.fx-d5 { animation-delay: 1.3s; }
+.fx-d6 { animation-delay: 1.7s; }
+.fx-d7 { animation-delay: 2.1s; }
+.fx-d8 { animation-delay: 2.5s; }
+.fx-d9 { animation-delay: 2.9s; }
+.fx-d10 { animation-delay: 3.2s; }
+.fx-d11 { animation-delay: 3.7s; }
+.fx-d12 { animation-delay: 4.1s; }
+.fx-d13 { animation-delay: 4.5s; }
+.fx-d14 { animation-delay: 4.85s; }
+.fx-d15 { animation-delay: 5.4s; }
+.fx-d16 { animation-delay: 5.8s; }
+.fx-d17 { animation-delay: 6.2s; }
+.fx-d18 { animation-delay: 6.6s; }
+.fx-d19 { animation-delay: 7s; }
+.fx-d20 { animation-delay: 7.4s; }
+.fx-d21 { animation-delay: 7.8s; }
+.fx-d22 { animation-delay: 8.2s; }
+
+@keyframes fxFade {
+  0% { opacity: 0; }
+  4% { opacity: 1; }
+  62% { opacity: 1; }
+  78% { opacity: 0.25; }
+  90%, 100% { opacity: 0; }
+}
+
+@keyframes fxFadeEarly {
+  0% { opacity: 0; }
+  4% { opacity: 1; }
+  38% { opacity: 1; }
+  48% { opacity: 0; }
+  100% { opacity: 0; }
+}
+
+@keyframes fxDraw {
+  0% {
+    stroke-dashoffset: 700;
+    opacity: 0.15;
+  }
+  6% { opacity: 1; }
+  18%, 62% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  78% {
+    stroke-dashoffset: 0;
+    opacity: 0.35;
+  }
+  92%, 100% {
+    stroke-dashoffset: 700;
+    opacity: 0;
+  }
+}
+
+@keyframes fxFill {
+  0%, 8% { opacity: 0; }
+  16%, 62% { opacity: 1; }
+  78% { opacity: 0.3; }
+  92%, 100% { opacity: 0; }
+}
+
+@keyframes fxPulse {
+  0%, 5% { opacity: 0; }
+  10%, 18% { opacity: 1; }
+  28% { opacity: 0.35; }
+  40%, 100% { opacity: 0; }
+}
+
+@keyframes buildDraw {
+  0% {
+    stroke-dashoffset: 1200;
+    opacity: 0.35;
+  }
+  18% {
+    opacity: 1;
+  }
+  45%,
+  72% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0.25;
+  }
+}
+
+@keyframes buildLabel {
+  0%,
+  55% {
+    opacity: 0;
+  }
+  65%,
+  85% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.4;
+  }
+}
+
+@keyframes buildLaser {
+  0% {
+    transform: translateY(60px);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.9;
+  }
+  70% {
+    transform: translateY(400px);
+    opacity: 0.7;
+  }
+  100% {
+    transform: translateY(440px);
+    opacity: 0;
+  }
+}
+
+.brick-band {
+  background-image: repeating-linear-gradient(
+    90deg,
+    #3d6494 0 46px,
+    #1e334d 46px 50px,
+    #5479a8 50px 96px,
+    #1e334d 96px 100px
+  );
+  background-size: 100px 100%;
+  mask-image: linear-gradient(to top, black, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .blueprint-grid-violet,
+  .blueprint-grid-steel,
+  .hero-rise,
+  .build-line,
+  .build-label,
+  .build-laser,
+  .house-stroke,
+  .fx-fade,
+  .fx-fade-early,
+  .fx-stroke,
+  .fx-fill,
+  .fx-pulse {
+    animation: none;
+  }
+
+  .build-line,
+  .house-stroke,
+  .fx-stroke {
+    stroke-dashoffset: 0;
+    opacity: 0.9;
+  }
+
+  .build-label,
+  .fx-fade,
+  .fx-fade-early,
+  .fx-fill,
+  .fx-pulse {
+    opacity: 1;
+  }
 }
 
 @media print {
-  header, footer, aside[data-ad-safe], button {
+  header, footer, aside[data-ad-safe], button, .tools-rail, .live-kpi {
     display: none !important;
+  }
+}
+
+/* —— Calculator tool panels —— */
+@keyframes toolPanelIn {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tool-panel {
+  animation: toolPanelIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.metric-tile {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.tool-btn {
+  transition: transform 0.15s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.tools-rail {
+  box-shadow: 0 8px 24px -20px rgba(15, 23, 42, 0.45);
+}
+
+.live-kpi {
+  animation: toolPanelIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.strip-plan-canvas {
+  background-image:
+    linear-gradient(rgba(56, 189, 248, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(56, 189, 248, 0.06) 1px, transparent 1px),
+    radial-gradient(ellipse at 30% 20%, rgba(56, 189, 248, 0.12), transparent 50%),
+    linear-gradient(160deg, #0B132B 0%, #111827 100%);
+  background-size: 24px 24px, 24px 24px, auto, auto;
+}
+
+.pour-gauge {
+  background: conic-gradient(var(--gauge-color) var(--gauge-pct), rgba(148, 163, 184, 0.25) 0);
+}
+
+.risk-bar {
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.2);
+}
+
+.risk-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.assistant-fab {
+  animation: toolPanelIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 0.4s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .assistant-fab {
+    animation: none;
   }
 }

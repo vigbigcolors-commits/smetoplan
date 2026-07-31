@@ -1,12 +1,72 @@
-import type {
-  ConcreteSpec,
+import { buildGeometry, type StripLayoutMode, type StripPlan } from '@/domain/geometry';
+import { computeConcreteQuantities } from '@/domain/concrete';
+import { computeRebar, type RebarPiece } from '@/domain/rebar';
+import { computeLoads, type SnowRegionId } from '@/domain/loads';
+import { computeSoilPressure } from '@/domain/geotechnics';
+import { runEngineeringChecks, type EngineeringCheck } from '@/domain/checks';
+import {
+  COVER_DEFAULT_MM,
+  DEFAULT_SOIL_RESISTANCE_KPA,
+  type SoilTypeId,
+} from '@/domain/norms/tables';
+import {
   DimensionState,
-  MaterialCalculationResult,
-  MaterialPrices,
+  ConcreteSpec,
   RebarSpec,
+  MaterialPrices,
+  MaterialCalculationResult,
   StructureType,
   UnitSystem,
-} from './types';
+} from '@/lib/types';
+
+export type { StripLayoutMode, StripPlan, SnowRegionId, EngineeringCheck, RebarPiece, SoilTypeId };
+
+export type CalcMode = 'estimate' | 'checks';
+
+export interface ExtendedCalcOptions {
+  safetyFactor?: number;
+  stripLayout?: StripLayoutMode;
+  stripInnerLong?: number;
+  stripInnerCross?: number;
+  pierSpacingM?: number;
+  coverMm?: number;
+  stockLengthM?: number;
+  buildingDeadLoadKpa?: number;
+  liveLoadKpa?: number;
+  snowRegion?: SnowRegionId;
+  applySnow?: boolean;
+  soilResistanceKpa?: number;
+  soilTypeId?: SoilTypeId | string;
+  stripPlan?: StripPlan | null;
+}
+
+export interface ExtendedCalculationResult extends MaterialCalculationResult {
+  concreteClassB: string;
+  mixNote: string;
+  lapMm: number;
+  coverMm: number;
+  stripLengthM: number;
+  pierCount: number;
+  stripInnerLong: number;
+  stripInnerCross: number;
+  junctionCount: number;
+  soilResistanceKpa: number;
+  soilUtilizationPct: number;
+  soilStatus: 'ok' | 'warning' | 'critical';
+  soilTypeId?: string;
+  totalForceKn: number;
+  planAreaM2: number;
+  contactAreaM2: number;
+  geometryNotes: string[];
+  rebarNotes: string[];
+  loadNotes: string[];
+  checks: EngineeringCheck[];
+  rebarPieces: RebarPiece[];
+  rebarWastePct: number;
+  rebarWasteM: number;
+  rebarStockBarsApprox: number;
+  rebarStockLengthM: number;
+}
 
 export function calculateMaterials(
   structureType: StructureType,
@@ -15,12 +75,12 @@ export function calculateMaterials(
   rebarSpec: RebarSpec,
   prices: MaterialPrices,
   unitSystem: UnitSystem,
-  safetyFactor: number = 1.15
-): MaterialCalculationResult {
+  safetyFactor: number = 1.15,
+  options: ExtendedCalcOptions = {}
+): ExtendedCalculationResult {
   const mFactor = unitSystem === 'imperial' ? 0.3048 : 1.0;
-
   const L = Math.max(0.5, dimensions.length * mFactor);
-  const W = Math.max(0.5, dimensions.width * mFactor);
+  const W = Math.max(0.05, dimensions.width * mFactor);
   const H = Math.max(0.05, dimensions.depth * mFactor);
   const pW = dimensions.perimeterThickeningWidth
     ? dimensions.perimeterThickeningWidth * mFactor
@@ -29,158 +89,77 @@ export function calculateMaterials(
     ? dimensions.perimeterThickeningDepth * mFactor
     : 0;
 
-  let concreteVol = 0;
-  let formworkArea = 0;
-  let contactAreaM2 = 0;
-  let rebarLenMeters = 0;
-  const hasRebar = rebarSpec.layers > 0 && rebarSpec.diameterMm > 0;
+  const stripLayout: StripLayoutMode =
+    options.stripLayout ?? 'perimeter_plus_one';
+  const coverMm = options.coverMm ?? COVER_DEFAULT_MM;
+  const stockLengthM = options.stockLengthM ?? 11.7;
+  const geometry = buildGeometry(structureType, {
+    lengthM: L,
+    widthM: W,
+    depthM: H,
+    auxWidthM: pW,
+    auxDepthM: pH,
+    stripLayout,
+    stripInnerLong: options.stripInnerLong,
+    stripInnerCross: options.stripInnerCross,
+    pierSpacingM: options.pierSpacingM,
+    stripPlan: options.stripPlan,
+  });
 
-  switch (structureType) {
-    case 'slab': {
-      const mainVol = L * W * H;
-      const perimeter = 2 * (L + W);
-      const ribVol = pW > 0 && pH > 0 ? perimeter * pW * pH : 0;
-      concreteVol = (mainVol + ribVol) * safetyFactor;
-      formworkArea = 2 * (L + W) * (H + (pH > 0 ? pH : 0));
-      contactAreaM2 = L * W;
+  const planAreaM2 =
+    geometry.planAreaM2 && geometry.planAreaM2 > 0
+      ? geometry.planAreaM2
+      : structureType === 'wall' || structureType === 'beam'
+        ? L * W
+        : L * W;
 
-      if (hasRebar) {
-        const spacingM = Math.max(0.05, rebarSpec.spacingMm / 1000);
-        const numLongitudinal = Math.ceil(W / spacingM) + 1;
-        const numTransverse = Math.ceil(L / spacingM) + 1;
-        const lapCoeff = 1.12;
-        const singleLayerLen =
-          (numLongitudinal * (L + 0.3) + numTransverse * (W + 0.3)) * lapCoeff;
-        rebarLenMeters = singleLayerLen * rebarSpec.layers;
-      }
-      break;
-    }
-    case 'strip': {
-      const ribbonWidth = pW > 0 ? pW : Math.min(0.5, Math.max(0.3, W > 2 ? 0.4 : W));
-      const totalStripLen = 2 * (L + W) + L;
-      concreteVol = totalStripLen * ribbonWidth * H * safetyFactor;
-      formworkArea = 2 * totalStripLen * H;
-      contactAreaM2 = totalStripLen * ribbonWidth;
+  const concrete = computeConcreteQuantities(
+    geometry.concreteVolumeRawM3,
+    safetyFactor,
+    concreteSpec
+  );
 
-      if (hasRebar) {
-        const mainBarCount = rebarSpec.layers >= 2 ? 6 : 4;
-        const longitudinalTotal = mainBarCount * totalStripLen * 1.15;
-        const stirrupPerimeter = 2 * (ribbonWidth + H - 0.1);
-        const stirrupsCount = Math.ceil(totalStripLen / 0.3);
-        const stirrupTotal = stirrupsCount * Math.max(0.6, stirrupPerimeter);
-        rebarLenMeters = longitudinalTotal + stirrupTotal;
-      }
-      break;
-    }
-    case 'beam': {
-      concreteVol = L * W * H * safetyFactor;
-      formworkArea = (2 * H + W) * L;
-      contactAreaM2 = L * W;
+  const rebar = computeRebar(structureType, rebarSpec, {
+    lengthM: L,
+    widthM: W,
+    depthM: H,
+    auxWidthM: pW,
+    stripLengthM: geometry.stripLengthM,
+    pierCount: geometry.pierCount,
+    coverMm,
+    stockLengthM,
+  });
 
-      if (hasRebar) {
-        const mainBarCount = Math.max(2, rebarSpec.layers * 2);
-        const longitudinalTotal = mainBarCount * L * 1.12;
-        const stirrupPerimeter = 2 * (W + H - 0.08);
-        const stirrupsCount = Math.ceil(L / 0.2);
-        const stirrupTotal = stirrupsCount * Math.max(0.5, stirrupPerimeter);
-        rebarLenMeters = longitudinalTotal + stirrupTotal;
-      }
-      break;
-    }
-    case 'pier': {
-      const pierSize = pW > 0 ? pW : 0.4;
-      const pierCount = Math.max(4, Math.ceil((L / 2.5) * (W / 2.5)));
-      const pierVol = pierCount * (pierSize * pierSize * H);
-      const grillageVol = pH > 0 ? 2 * (L + W) * pierSize * pH : 0;
-      concreteVol = (pierVol + grillageVol) * safetyFactor;
+  const foundationForceKn =
+    ((concrete.weightKg + rebar.weightKg) * 9.81) / 1000;
 
-      const pierFormwork = pierCount * (4 * pierSize * H);
-      const grillageFormwork = pH > 0 ? 2 * (L + W) * (2 * pH + pierSize) : 0;
-      formworkArea = pierFormwork + grillageFormwork;
-      contactAreaM2 =
-        pierCount * (pierSize * pierSize) + (pH > 0 ? 2 * (L + W) * pierSize : 0);
+  const loads = computeLoads({
+    planAreaM2,
+    contactAreaM2: geometry.contactAreaM2,
+    buildingDeadLoadKpa: options.buildingDeadLoadKpa ?? 0,
+    liveLoadKpa: options.liveLoadKpa ?? 0,
+    snowRegion: options.snowRegion ?? 'III',
+    applySnow: options.applySnow ?? false,
+    foundationForceKn,
+  });
 
-      if (hasRebar) {
-        const barPerPier = 4 * (H + 0.5) * 1.1;
-        const pierStirrups = Math.ceil(H / 0.25) * (4 * pierSize);
-        rebarLenMeters =
-          pierCount * (barPerPier + pierStirrups) * Math.max(1, rebarSpec.layers);
-      }
-      break;
-    }
-    case 'wall': {
-      const wallThickness = W > 1.5 ? (pW > 0 ? pW : 0.3) : W;
-      concreteVol = L * wallThickness * H * safetyFactor;
-      formworkArea = 2 * L * H;
-      contactAreaM2 = L * wallThickness;
+  const geotech = computeSoilPressure({
+    totalForceKn: loads.totalForceKn,
+    contactAreaM2: geometry.contactAreaM2,
+    soilResistanceKpa: options.soilResistanceKpa ?? DEFAULT_SOIL_RESISTANCE_KPA,
+  });
 
-      if (hasRebar) {
-        const verticalBars = Math.ceil(L / 0.2) + 1;
-        const horizontalBars = Math.ceil(H / 0.2) + 1;
-        const singleMeshLen =
-          (verticalBars * (H + 0.3) + horizontalBars * (L + 0.3)) * 1.12;
-        rebarLenMeters = singleMeshLen * Math.max(1, rebarSpec.layers);
-      }
-      break;
-    }
-  }
-
-  const totalWeightKg = concreteVol * 2450;
-  const totalWeightTons = totalWeightKg / 1000;
-
-  let cementKgPerM3 = 350;
-  let sandKgPerM3 = 620;
-  let gravelKgPerM3 = 1200;
-
-  switch (concreteSpec.grade) {
-    case 'M150':
-      cementKgPerM3 = 260;
-      sandKgPerM3 = 730;
-      gravelKgPerM3 = 1180;
-      break;
-    case 'M200':
-      cementKgPerM3 = 310;
-      sandKgPerM3 = 690;
-      gravelKgPerM3 = 1160;
-      break;
-    case 'M250':
-      cementKgPerM3 = 350;
-      sandKgPerM3 = 650;
-      gravelKgPerM3 = 1150;
-      break;
-    case 'M300':
-      cementKgPerM3 = 380;
-      sandKgPerM3 = 610;
-      gravelKgPerM3 = 1140;
-      break;
-    case 'M350':
-      cementKgPerM3 = 420;
-      sandKgPerM3 = 570;
-      gravelKgPerM3 = 1120;
-      break;
-    case 'M400':
-      cementKgPerM3 = 460;
-      sandKgPerM3 = 530;
-      gravelKgPerM3 = 1100;
-      break;
-  }
-
-  const totalCementKg = concreteVol * cementKgPerM3;
-  const cementBags = Math.ceil(totalCementKg / concreteSpec.cementBagKg);
-  const sandTons = (concreteVol * sandKgPerM3) / 1000;
-  const gravelTons = (concreteVol * gravelKgPerM3) / 1000;
-  const waterLiters = concreteVol * (cementKgPerM3 * 0.52);
-
-  const d = hasRebar ? rebarSpec.diameterMm : 0;
-  const linearDensityKgM = d > 0 ? d * d * 0.006165 : 0;
-  const rebarWeightKg = rebarLenMeters * linearDensityKgM;
-  const bindingWireKg = hasRebar ? Math.max(1.5, rebarWeightKg * 0.012) : 0;
-  const timberVolumeM3 = formworkArea * 0.025 * 1.15;
-
-  const safeAreaM2 = Math.max(0.2, contactAreaM2);
-  const totalMassWithRebar = totalWeightKg + rebarWeightKg;
-  const forceKn = (totalMassWithRebar * 9.81) / 1000;
-  const soilPressureKpa = forceKn / safeAreaM2;
+  const checks = runEngineeringChecks({
+    structureType,
+    depthM: H,
+    coverMm,
+    diameterMm: rebarSpec.diameterMm,
+    asProvidedMm2PerM: rebar.asProvidedMm2PerM,
+    asMinMm2PerM: rebar.asMinMm2PerM,
+    soilUtilizationPct: geotech.utilizationPct,
+    soilStatus: geotech.status,
+    lapMm: rebar.lapMm,
+  });
 
   const concretePrice =
     concreteSpec.customPricePerM3 > 0
@@ -191,28 +170,31 @@ export function calculateMaterials(
       ? rebarSpec.customPricePerTon
       : prices.rebarPerTon;
 
-  const concreteCost = concreteVol * concretePrice;
-  const rebarCost = (rebarWeightKg / 1000) * rebarPrice;
+  const concreteCost = concrete.volumeM3 * concretePrice;
+  const rebarCost = (rebar.weightKg / 1000) * rebarPrice;
   const sandGravelCost =
-    sandTons * prices.sandPerTon + gravelTons * prices.gravelPerTon;
-  const formworkCost = formworkArea * prices.formworkPerM2;
+    concrete.sandTons * prices.sandPerTon +
+    concrete.gravelTons * prices.gravelPerTon;
+  const formworkCost = geometry.formworkAreaM2 * prices.formworkPerM2;
   const laborEstCost = (concreteCost + rebarCost) * 0.35;
   const totalCost =
     concreteCost + rebarCost + sandGravelCost + formworkCost + laborEstCost;
 
+  const timberVolumeM3 = geometry.formworkAreaM2 * 0.025 * 1.15;
+
   return {
-    concreteVolumeM3: Math.round(concreteVol * 100) / 100,
-    totalWeightTons: Math.round(totalWeightTons * 100) / 100,
-    cementBags,
-    sandTons: Math.round(sandTons * 10) / 10,
-    gravelTons: Math.round(gravelTons * 10) / 10,
-    rebarLengthMeters: Math.round(rebarLenMeters),
-    rebarWeightKg: Math.round(rebarWeightKg),
-    bindingWireKg: Math.round(bindingWireKg * 10) / 10,
-    formworkAreaM2: Math.round(formworkArea * 10) / 10,
+    concreteVolumeM3: Math.round(concrete.volumeM3 * 100) / 100,
+    totalWeightTons: Math.round((concrete.weightKg / 1000) * 100) / 100,
+    cementBags: concrete.cementBags,
+    sandTons: Math.round(concrete.sandTons * 10) / 10,
+    gravelTons: Math.round(concrete.gravelTons * 10) / 10,
+    rebarLengthMeters: Math.round(rebar.lengthM),
+    rebarWeightKg: Math.round(rebar.weightKg),
+    bindingWireKg: Math.round(rebar.bindingWireKg * 10) / 10,
+    formworkAreaM2: Math.round(geometry.formworkAreaM2 * 10) / 10,
     timberVolumeM3: Math.round(timberVolumeM3 * 100) / 100,
-    waterLiters: Math.round(waterLiters),
-    soilPressureKpa: Math.round(soilPressureKpa * 10) / 10,
+    waterLiters: Math.round(concrete.waterLiters),
+    soilPressureKpa: geotech.soilPressureKpa,
     itemizedCosts: {
       concrete: Math.round(concreteCost),
       rebar: Math.round(rebarCost),
@@ -221,6 +203,31 @@ export function calculateMaterials(
       laborEst: Math.round(laborEstCost),
       total: Math.round(totalCost),
     },
+    concreteClassB: concrete.classB,
+    mixNote: concrete.mixNote,
+    lapMm: rebar.lapMm,
+    coverMm,
+    stripLengthM: geometry.stripLengthM,
+    pierCount: geometry.pierCount,
+    stripInnerLong: geometry.stripInnerLong,
+    stripInnerCross: geometry.stripInnerCross,
+    junctionCount: geometry.junctionCount,
+    soilResistanceKpa: geotech.soilResistanceKpa,
+    soilUtilizationPct: geotech.utilizationPct,
+    soilStatus: geotech.status,
+    soilTypeId: options.soilTypeId,
+    totalForceKn: Math.round(loads.totalForceKn * 10) / 10,
+    planAreaM2: Math.round(planAreaM2 * 100) / 100,
+    contactAreaM2: Math.round(geometry.contactAreaM2 * 100) / 100,
+    geometryNotes: geometry.notes,
+    rebarNotes: rebar.notes,
+    loadNotes: loads.notes,
+    checks,
+    rebarPieces: rebar.pieces,
+    rebarWastePct: rebar.wastePct,
+    rebarWasteM: rebar.wasteM,
+    rebarStockBarsApprox: rebar.stockBarsApprox,
+    rebarStockLengthM: rebar.stockLengthM,
   };
 }
 
@@ -232,23 +239,42 @@ export const CURRENCY_SYMBOLS: Record<string, string> = {
   AED: 'AED ',
 };
 
-export function formatCurrency(amount: number, currency: string = 'RUB'): string {
-  const symbol = CURRENCY_SYMBOLS[currency] || '₽';
-  if (currency === 'RUB') {
-    return `${amount.toLocaleString('ru-RU', {
-      maximumFractionDigits: 0,
-    })} ${symbol}`;
-  }
+export function formatCurrency(amount: number, currency: string = 'USD'): string {
+  const symbol = CURRENCY_SYMBOLS[currency] || '$';
   return `${symbol}${amount.toLocaleString('en-US', {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   })}`;
 }
 
-export const DEFAULT_PRICES: MaterialPrices = {
-  concretePerM3: 4200,
-  rebarPerTon: 62000,
-  sandPerTon: 850,
-  gravelPerTon: 1400,
-  formworkPerM2: 650,
-};
+/** Compact payload for AI — real calc numbers, not invented. */
+export function buildAiCalcContext(result: ExtendedCalculationResult) {
+  return {
+    concreteVolumeM3: result.concreteVolumeM3,
+    rebarWeightKg: result.rebarWeightKg,
+    rebarLengthM: result.rebarLengthMeters,
+    rebarWastePct: result.rebarWastePct,
+    stockBarsApprox: result.rebarStockBarsApprox,
+    lapMm: result.lapMm,
+    coverMm: result.coverMm,
+    soilPressureKpa: result.soilPressureKpa,
+    soilResistanceKpa: result.soilResistanceKpa,
+    soilUtilizationPct: result.soilUtilizationPct,
+    soilStatus: result.soilStatus,
+    totalForceKn: result.totalForceKn,
+    concreteClassB: result.concreteClassB,
+    stripLengthM: result.stripLengthM,
+    pierCount: result.pierCount,
+    geometryNotes: result.geometryNotes,
+    rebarNotes: result.rebarNotes,
+    loadNotes: result.loadNotes,
+    checks: result.checks.map((c) => ({
+      id: c.id,
+      status: c.status,
+      title: c.title,
+      detail: c.detail,
+    })),
+    rebarPieces: result.rebarPieces.slice(0, 12),
+    costsRub: result.itemizedCosts,
+  };
+}

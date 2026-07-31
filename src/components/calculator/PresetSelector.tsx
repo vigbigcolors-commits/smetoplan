@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { Layers, ShieldAlert, Columns, Grid, Square } from 'lucide-react';
 import { StructureType } from '@/lib/types';
@@ -68,7 +70,7 @@ export const PresetSelector: React.FC<PresetSelectorProps> = ({
               }`}
             >
               {isSelected && (
-                <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-teal-400 via-sky-400 to-teal-400 animate-pulse" />
+                <div className="absolute top-0 left-0 right-0 h-0.5 bg-[#1F5A8E]" />
               )}
               <div className="flex items-center justify-between mb-1">
                 <span
@@ -79,7 +81,7 @@ export const PresetSelector: React.FC<PresetSelectorProps> = ({
                   {p.icon}
                 </span>
                 {isSelected && (
-                  <span className="w-2 h-2 rounded-full bg-teal-400 animate-ping" />
+                  <span className="w-2 h-2 rounded-full bg-teal-400" />
                 )}
               </div>
               <div>

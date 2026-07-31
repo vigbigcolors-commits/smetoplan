@@ -1,10 +1,16 @@
 import type { Metadata } from 'next';
-import { Manrope, IBM_Plex_Mono } from 'next/font/google';
-import { SiteFooter, SiteHeader } from '@/components/site/SiteChrome';
+import { Manrope, Unbounded, IBM_Plex_Mono } from 'next/font/google';
 import './globals.css';
+import './constructix.css';
 
 const manrope = Manrope({
   variable: '--font-manrope',
+  subsets: ['latin', 'cyrillic'],
+  display: 'swap',
+});
+
+const unbounded = Unbounded({
+  variable: '--font-display',
   subsets: ['latin', 'cyrillic'],
   display: 'swap',
 });
@@ -19,11 +25,11 @@ const plexMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://smetoplan.ru'),
   title: {
-    default: 'Smetoplan — инженерные калькуляторы и сметы',
+    default: 'Smetoplan — калькуляторы и сметы для стройки',
     template: '%s',
   },
   description:
-    'Платформа расчёта фундаментов с SVG-чертежами, BOM и безопасным programmatic SEO.',
+    'Онлайн-калькуляторы фундамента с живыми чертежами и сметой материалов в рублях.',
   openGraph: {
     siteName: 'Smetoplan',
     locale: 'ru_RU',
@@ -39,11 +45,9 @@ export default function RootLayout({
   return (
     <html lang="ru">
       <body
-        className={`${manrope.variable} ${plexMono.variable} min-h-screen bg-white text-slate-900 antialiased selection:bg-[#1F5A8E] selection:text-white`}
+        className={`${manrope.variable} ${unbounded.variable} ${plexMono.variable} min-h-screen bg-white text-slate-900 antialiased selection:bg-[#3D6494] selection:text-white`}
       >
-        <SiteHeader />
         {children}
-        <SiteFooter />
       </body>
     </html>
   );

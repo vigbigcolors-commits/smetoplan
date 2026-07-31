@@ -81,8 +81,8 @@ export function FoundationSvgBlueprint({
   return (
     <div className="relative w-full overflow-hidden rounded-xl border border-slate-700 bg-[#0B132B] shadow-2xl">
       <div className="absolute left-3 top-3 z-10 flex items-center gap-2 rounded-lg border border-slate-700/60 bg-slate-900/90 px-3 py-1.5 font-mono text-[11px] text-sky-300 backdrop-blur-md">
-        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-orange-400" />
-        SVG-ЧЕРТЁЖ · {structureType.toUpperCase()} · H={dimensions.depth}м
+        <span className="h-1.5 w-1.5 rounded-full bg-sky-400" />
+        Чертёж · {structureType.toUpperCase()} · H={dimensions.depth}м
         {soilPressureKpa > 0 ? ` · ${soilPressureKpa} кПа` : ''}
       </div>
 

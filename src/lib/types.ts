@@ -1,6 +1,9 @@
 export type StructureType = 'slab' | 'strip' | 'beam' | 'pier' | 'wall';
+
 export type UnitSystem = 'metric' | 'imperial';
+
 export type Currency = 'USD' | 'EUR' | 'GBP' | 'RUB' | 'AED';
+
 export type IntentCluster = 'kalkulyator' | 'raschet' | 'smeta' | 'online';
 
 export interface DimensionState {
@@ -20,7 +23,7 @@ export interface ConcreteSpec {
 export interface RebarSpec {
   diameterMm: number;
   spacingMm: number;
-  layers: 0 | 1 | 2 | 3;
+  layers: 1 | 2 | 3;
   customPricePerTon: number;
 }
 
@@ -70,12 +73,12 @@ export interface ContractorOffer {
 
 export interface AiStructuralAnalysis {
   feasibilityScore: number;
-  bearingStatus: 'PASS' | 'WARNING' | 'CRITICAL';
+  bearingStatus: string;
   bearingPressureRatio: string;
   structuralSummary: string;
   keyRecommendations: Array<{
     title: string;
-    impact: 'HIGH' | 'MEDIUM' | 'COST_SAVING';
+    impact: string;
     description: string;
   }>;
   curingScheduleDays: {
@@ -123,11 +126,16 @@ export interface PseoRoute {
   publish_date: string | null;
 }
 
-export interface LayoutFlags {
-  showRebar: boolean;
-  showBom: boolean;
-  showCad: boolean;
-  showAi: boolean;
-  showContractors: boolean;
-  layoutVariant: 1 | 2 | 3 | 4 | 5;
+export interface ConstructixInitialState {
+  structureType: StructureType;
+  dimensions: DimensionState;
+  concreteSpec: ConcreteSpec;
+  rebarSpec: RebarSpec;
+  prices?: MaterialPrices;
+  priceRegionId?: string;
+  safetyFactor?: number;
+  h1?: string;
+  description?: string;
+  /** PSEO landing: defer 3D + disable sticky CAD for LCP */
+  deferHeavyUi?: boolean;
 }

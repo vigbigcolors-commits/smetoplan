@@ -34,6 +34,8 @@ export async function GET(request: Request) {
     return NextResponse.json({
       ok: true,
       published: result.published,
+      rejected: result.rejected,
+      rejectReasons: result.rejectReasons,
       range: [min, max],
       slugsSample: result.slugs.slice(0, 20),
       sitemapHint: 'Dynamic /sitemap.xml rebuilt on next crawl via DB query',

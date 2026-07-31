@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState } from 'react';
 import {
   Sliders,
@@ -18,6 +20,17 @@ import {
   UnitSystem,
   StructureType,
 } from '@/lib/types';
+import type { CalcMode, SnowRegionId, StripLayoutMode } from '@/lib/calculator';
+import type { StripPlan } from '@/domain/geometry';
+import { StripPlanEditor } from '@/components/calculator/StripPlanEditor';
+import {
+  SNOW_REGIONS,
+  SOIL_TYPES,
+  PRICE_REGIONS,
+  getSoilType,
+  type SoilTypeId,
+  type PriceRegionId,
+} from '@/domain/norms/tables';
 
 interface InputWorkspaceProps {
   structureType: StructureType;
@@ -32,6 +45,35 @@ interface InputWorkspaceProps {
   unitSystem: UnitSystem;
   safetyFactor: number;
   onSafetyFactorChange: (sf: number) => void;
+  calcMode: CalcMode;
+  onCalcModeChange: (mode: CalcMode) => void;
+  stripLayout: StripLayoutMode;
+  onStripLayoutChange: (mode: StripLayoutMode) => void;
+  stripInnerLong: number;
+  onStripInnerLongChange: (v: number) => void;
+  stripInnerCross: number;
+  onStripInnerCrossChange: (v: number) => void;
+  stripPlan: StripPlan;
+  stripPlanCustom: boolean;
+  onStripPlanChange: (plan: StripPlan, custom: boolean) => void;
+  pierSpacingM: number;
+  onPierSpacingMChange: (v: number) => void;
+  coverMm: number;
+  onCoverMmChange: (v: number) => void;
+  buildingDeadLoadKpa: number;
+  onBuildingDeadLoadKpaChange: (v: number) => void;
+  liveLoadKpa: number;
+  onLiveLoadKpaChange: (v: number) => void;
+  snowRegion: SnowRegionId;
+  onSnowRegionChange: (v: SnowRegionId) => void;
+  applySnow: boolean;
+  onApplySnowChange: (v: boolean) => void;
+  soilResistanceKpa: number;
+  onSoilResistanceKpaChange: (v: number) => void;
+  soilTypeId: SoilTypeId;
+  onSoilTypeIdChange: (v: SoilTypeId) => void;
+  priceRegionId: PriceRegionId;
+  onPriceRegionIdChange: (v: PriceRegionId) => void;
 }
 
 export const InputWorkspace: React.FC<InputWorkspaceProps> = ({
@@ -47,6 +89,35 @@ export const InputWorkspace: React.FC<InputWorkspaceProps> = ({
   unitSystem,
   safetyFactor,
   onSafetyFactorChange,
+  calcMode,
+  onCalcModeChange,
+  stripLayout,
+  onStripLayoutChange,
+  stripInnerLong,
+  onStripInnerLongChange,
+  stripInnerCross,
+  onStripInnerCrossChange,
+  stripPlan,
+  stripPlanCustom,
+  onStripPlanChange,
+  pierSpacingM,
+  onPierSpacingMChange,
+  coverMm,
+  onCoverMmChange,
+  buildingDeadLoadKpa,
+  onBuildingDeadLoadKpaChange,
+  liveLoadKpa,
+  onLiveLoadKpaChange,
+  snowRegion,
+  onSnowRegionChange,
+  applySnow,
+  onApplySnowChange,
+  soilResistanceKpa,
+  onSoilResistanceKpaChange,
+  soilTypeId,
+  onSoilTypeIdChange,
+  priceRegionId,
+  onPriceRegionIdChange,
 }) => {
   const [showPriceSettings, setShowPriceSettings] = useState<boolean>(false);
 
@@ -75,7 +146,7 @@ export const InputWorkspace: React.FC<InputWorkspaceProps> = ({
               Панель Параметров Конструкции
             </h3>
             <p className="text-[11px] text-slate-500 font-mono">
-              РАСЧЕТ ГЕОМЕТРИИ И ХАРАКТЕРИСТИК МАТЕРИАЛОВ
+              СМЕТА МАТЕРИАЛОВ + ОРИЕНТИРОВОЧНЫЕ ПРОВЕРКИ
             </p>
           </div>
         </div>
@@ -93,6 +164,37 @@ export const InputWorkspace: React.FC<InputWorkspaceProps> = ({
           className="text-[11px] text-slate-500 hover:text-[#1F5A8E] flex items-center gap-1 transition font-mono font-medium cursor-pointer"
         >
           <RotateCcw className="w-3 h-3" /> Сбросить
+        </button>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          onClick={() => onCalcModeChange('estimate')}
+          className={`rounded-lg border px-3 py-2 text-left text-xs font-bold transition cursor-pointer ${
+            calcMode === 'estimate'
+              ? 'border-[#1F5A8E] bg-[#1F5A8E] text-white'
+              : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300'
+          }`}
+        >
+          Режим: смета
+          <span className="mt-0.5 block text-[10px] font-medium opacity-80">
+            Материалы и стоимость
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => onCalcModeChange('checks')}
+          className={`rounded-lg border px-3 py-2 text-left text-xs font-bold transition cursor-pointer ${
+            calcMode === 'checks'
+              ? 'border-[#1F5A8E] bg-[#1F5A8E] text-white'
+              : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300'
+          }`}
+        >
+          Режим: проверки
+          <span className="mt-0.5 block text-[10px] font-medium opacity-80">
+            Покрытие, As,min, грунт
+          </span>
         </button>
       </div>
 
@@ -220,6 +322,244 @@ export const InputWorkspace: React.FC<InputWorkspaceProps> = ({
             </div>
           </div>
         )}
+
+        {structureType === 'strip' && (
+          <div className="space-y-2 rounded-lg border border-sky-200 bg-sky-50/70 p-3 text-xs">
+            <p className="font-semibold text-sky-950">Редактор плана ленты</p>
+            <select
+              value={stripLayout === 'custom' ? 'custom' : stripLayout}
+              onChange={(e) => {
+                const mode = e.target.value as StripLayoutMode;
+                onStripLayoutChange(mode);
+                if (mode === 'perimeter') {
+                  onStripInnerLongChange(0);
+                  onStripInnerCrossChange(0);
+                } else if (mode === 'perimeter_plus_one') {
+                  onStripInnerLongChange(1);
+                  onStripInnerCrossChange(0);
+                } else if (mode === 'perimeter_plus_cross') {
+                  onStripInnerLongChange(1);
+                  onStripInnerCrossChange(1);
+                }
+              }}
+              className="w-full rounded-lg border border-sky-300 bg-white p-2 font-mono text-xs font-semibold"
+            >
+              <option value="perimeter">Только контур</option>
+              <option value="perimeter_plus_one">Контур + 1 продольная</option>
+              <option value="perimeter_plus_cross">Контур + крест</option>
+              <option value="custom">Свои оси</option>
+            </select>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="mb-0.5 block text-[11px] text-slate-600">
+                  Внутр. продольные
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  max={6}
+                  step={1}
+                  value={stripInnerLong}
+                  onChange={(e) => {
+                    onStripLayoutChange('custom');
+                    onStripInnerLongChange(Number(e.target.value) || 0);
+                  }}
+                  className="w-full rounded-lg border border-sky-300 bg-white px-2 py-1.5 font-mono text-xs font-bold"
+                />
+              </div>
+              <div>
+                <label className="mb-0.5 block text-[11px] text-slate-600">
+                  Внутр. поперечные
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  max={6}
+                  step={1}
+                  value={stripInnerCross}
+                  onChange={(e) => {
+                    onStripLayoutChange('custom');
+                    onStripInnerCrossChange(Number(e.target.value) || 0);
+                  }}
+                  className="w-full rounded-lg border border-sky-300 bg-white px-2 py-1.5 font-mono text-xs font-bold"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="mb-0.5 block text-[11px] text-slate-600">Ширина ленты, м</label>
+              <input
+                type="number"
+                min={0.2}
+                max={1.2}
+                step={0.05}
+                value={dimensions.perimeterThickeningWidth || 0.4}
+                onChange={(e) =>
+                  updateDimension(
+                    'perimeterThickeningWidth',
+                    parseFloat(e.target.value) || 0.4
+                  )
+                }
+                className="w-full rounded-lg border border-sky-300 bg-white px-2 py-1.5 font-mono text-xs font-bold"
+              />
+            </div>
+            <p className="text-[11px] text-sky-900/80">
+              Объём: осевая длина × ширина − стыки (без двойного бетона на пересечениях)
+            </p>
+            <StripPlanEditor
+              lengthM={dimensions.length}
+              widthM={dimensions.width}
+              depthM={dimensions.depth}
+              ribbonWidthM={dimensions.perimeterThickeningWidth || 0.4}
+              innerLong={stripInnerLong}
+              innerCross={stripInnerCross}
+              plan={stripPlan}
+              custom={stripPlanCustom}
+              onPlanChange={onStripPlanChange}
+            />
+          </div>
+        )}
+
+        {structureType === 'pier' && (
+          <div className="space-y-2 rounded-lg border border-violet-200 bg-violet-50/70 p-3 text-xs">
+            <label className="font-semibold text-violet-950">Шаг свай, м</label>
+            <input
+              type="number"
+              min={1.5}
+              max={4}
+              step={0.1}
+              value={pierSpacingM}
+              onChange={(e) => onPierSpacingMChange(Number(e.target.value) || 2.5)}
+              className="w-full rounded-lg border border-violet-300 bg-white px-2 py-1.5 font-mono text-xs font-bold"
+            />
+          </div>
+        )}
+
+        <div className="space-y-2 rounded-lg border border-slate-200 bg-[#F4F4F5] p-3 text-xs">
+          <label className="font-semibold text-slate-700">Защитный слой a, мм</label>
+          <input
+            type="number"
+            min={20}
+            max={80}
+            step={5}
+            value={coverMm}
+            onChange={(e) => onCoverMmChange(Number(e.target.value) || 40)}
+            className="w-full rounded-lg border border-slate-300 bg-white px-2 py-1.5 font-mono font-bold"
+          />
+          <p className="text-[11px] text-slate-500">Ориентир для фундаментов ≥ 40 мм (СП 63)</p>
+        </div>
+      </div>
+
+      {/* Loads & soil */}
+      <div className="space-y-3 border-t border-slate-200 pt-4">
+        <div className="flex items-center gap-1.5 text-xs font-mono font-bold uppercase text-slate-800">
+          <Shield className="h-3.5 w-3.5 text-[#1F5A8E]" />
+          Регион, нагрузки и основание
+        </div>
+        <div>
+          <label className="mb-1 block text-[11px] font-medium text-slate-600">
+            Регион цен / РБУ
+          </label>
+          <select
+            value={priceRegionId}
+            onChange={(e) => onPriceRegionIdChange(e.target.value as PriceRegionId)}
+            className="w-full rounded-lg border border-slate-300 bg-white p-2 font-mono text-xs font-bold"
+          >
+            {(Object.keys(PRICE_REGIONS) as PriceRegionId[]).map((id) => (
+              <option key={id} value={id}>
+                {PRICE_REGIONS[id].label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="mb-1 block text-[11px] font-medium text-slate-600">
+              Постоянная от здания, кПа
+            </label>
+            <input
+              type="number"
+              min={0}
+              step={0.5}
+              value={buildingDeadLoadKpa}
+              onChange={(e) => onBuildingDeadLoadKpaChange(Number(e.target.value) || 0)}
+              className="w-full rounded-lg border border-slate-300 bg-white px-2 py-1.5 font-mono text-xs font-bold"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-[11px] font-medium text-slate-600">
+              Полезная, кПа
+            </label>
+            <input
+              type="number"
+              min={0}
+              step={0.5}
+              value={liveLoadKpa}
+              onChange={(e) => onLiveLoadKpaChange(Number(e.target.value) || 0)}
+              className="w-full rounded-lg border border-slate-300 bg-white px-2 py-1.5 font-mono text-xs font-bold"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-[11px] font-medium text-slate-600">
+              Снег (СП 20)
+            </label>
+            <select
+              value={snowRegion}
+              onChange={(e) => onSnowRegionChange(e.target.value as SnowRegionId)}
+              className="w-full rounded-lg border border-slate-300 bg-white p-2 font-mono text-xs font-bold"
+            >
+              {Object.entries(SNOW_REGIONS).map(([id, meta]) => (
+                <option key={id} value={id}>
+                  {id}: {meta.label} ({meta.sgKpa} кПа)
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-[11px] font-medium text-slate-600">
+              Тип грунта (справочно)
+            </label>
+            <select
+              value={soilTypeId}
+              onChange={(e) => {
+                const id = e.target.value as SoilTypeId;
+                onSoilTypeIdChange(id);
+                onSoilResistanceKpaChange(getSoilType(id).rKpa);
+              }}
+              className="w-full rounded-lg border border-slate-300 bg-white p-2 font-mono text-xs font-bold"
+            >
+              {SOIL_TYPES.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.label} · R≈{s.rKpa}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="col-span-2">
+            <label className="mb-1 block text-[11px] font-medium text-slate-600">
+              R грунта, кПа (можно уточнить по ИГИ)
+            </label>
+            <input
+              type="number"
+              min={50}
+              step={10}
+              value={soilResistanceKpa}
+              onChange={(e) => onSoilResistanceKpaChange(Number(e.target.value) || 200)}
+              className="w-full rounded-lg border border-slate-300 bg-white px-2 py-1.5 font-mono text-xs font-bold"
+            />
+            <p className="mt-1 text-[10px] text-slate-500">
+              {getSoilType(soilTypeId).note}. Не замена инженерно-геологических изысканий.
+            </p>
+          </div>
+        </div>
+        <label className="flex items-center gap-2 text-xs font-medium text-slate-700">
+          <input
+            type="checkbox"
+            checked={applySnow}
+            onChange={(e) => onApplySnowChange(e.target.checked)}
+            className="accent-[#1F5A8E]"
+          />
+          Учитывать снег на пятне фундамента
+        </label>
       </div>
 
       {/* 2. Structural Concrete Mix */}
@@ -270,87 +610,81 @@ export const InputWorkspace: React.FC<InputWorkspaceProps> = ({
         </div>
       </div>
 
-      {/* 3. Rebar — hidden when route/query has no reinforcement (DOM variance) */}
-      {rebarSpec.layers > 0 && rebarSpec.diameterMm > 0 ? (
-        <div className="space-y-3 border-t border-slate-200 pt-4">
-          <div className="text-xs font-mono font-bold text-slate-800 flex items-center justify-between uppercase">
-            <span className="flex items-center gap-1.5">
-              <Wrench className="w-3.5 h-3.5 text-[#1F5A8E]" />
-              3. Арматурный Каркас и Сетка
-            </span>
-            <span className="text-[11px] text-[#1F5A8E] font-bold">
-              Ø{rebarSpec.diameterMm}мм с шагом {rebarSpec.spacingMm}мм
-            </span>
-          </div>
+      {/* 3. Rebar Reinforcement Matrix (Арматурный каркас) */}
+      <div className="space-y-3 border-t border-slate-200 pt-4">
+        <div className="text-xs font-mono font-bold text-slate-800 flex items-center justify-between uppercase">
+          <span className="flex items-center gap-1.5">
+            <Wrench className="w-3.5 h-3.5 text-[#1F5A8E]" />
+            3. Арматурный Каркас и Сетка
+          </span>
+          <span className="text-[11px] text-[#1F5A8E] font-bold">
+            Ø{rebarSpec.diameterMm}мм с шагом {rebarSpec.spacingMm}мм
+          </span>
+        </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-medium text-slate-700 block mb-1">Диаметр Арматуры</label>
-              <select
-                value={rebarSpec.diameterMm}
-                onChange={(e) =>
-                  onRebarSpecChange({
-                    ...rebarSpec,
-                    diameterMm: Number(e.target.value),
-                  })
-                }
-                className="w-full bg-[#F4F4F5] border border-slate-300 rounded-lg font-mono font-bold text-xs p-2 text-slate-900 focus:ring-1 focus:ring-[#1F5A8E]"
-              >
-                <option value={8}>8 мм (А400 Легкая)</option>
-                <option value={10}>10 мм (А500С Стандарт)</option>
-                <option value={12}>12 мм (А500С Усиленная)</option>
-                <option value={14}>14 мм (Высокая прочность)</option>
-                <option value={16}>16 мм (Монолитные балки)</option>
-                <option value={20}>20 мм (Тяжелые нагрузки)</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="text-xs font-medium text-slate-700 block mb-1">Слои Армирования</label>
-              <select
-                value={rebarSpec.layers}
-                onChange={(e) =>
-                  onRebarSpecChange({
-                    ...rebarSpec,
-                    layers: Number(e.target.value) as 1 | 2 | 3,
-                  })
-                }
-                className="w-full bg-[#F4F4F5] border border-slate-300 rounded-lg font-mono font-bold text-xs p-2 text-slate-900 focus:ring-1 focus:ring-[#1F5A8E]"
-              >
-                <option value={1}>1 Слой (Нижняя сетка)</option>
-                <option value={2}>2 Слоя (Верх + Низ)</option>
-                <option value={3}>3D Пространственный каркас</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="bg-[#F4F4F5] p-3 rounded-lg border border-slate-200 space-y-1.5">
-            <div className="flex justify-between items-center text-xs">
-              <span className="font-semibold text-slate-700">Шаг Сетки (Ячейка)</span>
-              <span className="font-mono font-bold text-[#0F172A]">{rebarSpec.spacingMm} мм</span>
-            </div>
-            <input
-              type="range"
-              min={100}
-              max={350}
-              step={25}
-              value={rebarSpec.spacingMm}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs font-medium text-slate-700 block mb-1">Диаметр Арматуры</label>
+            <select
+              value={rebarSpec.diameterMm}
               onChange={(e) =>
                 onRebarSpecChange({
                   ...rebarSpec,
-                  spacingMm: Number(e.target.value),
+                  diameterMm: Number(e.target.value),
                 })
               }
-              className="w-full accent-[#1F5A8E] cursor-pointer"
-            />
+              className="w-full bg-[#F4F4F5] border border-slate-300 rounded-lg font-mono font-bold text-xs p-2 text-slate-900 focus:ring-1 focus:ring-[#1F5A8E]"
+            >
+              <option value={8}>8 мм (А400 Легкая)</option>
+              <option value={10}>10 мм (А500С Стандарт)</option>
+              <option value={12}>12 мм (А500С Усиленная)</option>
+              <option value={14}>14 мм (Высокая прочность)</option>
+              <option value={16}>16 мм (Монолитные балки)</option>
+              <option value={20}>20 мм (Тяжелые нагрузки)</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-slate-700 block mb-1">Слои Армирования</label>
+            <select
+              value={rebarSpec.layers}
+              onChange={(e) =>
+                onRebarSpecChange({
+                  ...rebarSpec,
+                  layers: Number(e.target.value) as 1 | 2 | 3,
+                })
+              }
+              className="w-full bg-[#F4F4F5] border border-slate-300 rounded-lg font-mono font-bold text-xs p-2 text-slate-900 focus:ring-1 focus:ring-[#1F5A8E]"
+            >
+              <option value={1}>1 Слой (Нижняя сетка)</option>
+              <option value={2}>2 Слоя (Верх + Низ)</option>
+              <option value={3}>3D Пространственный пространственный каркас</option>
+            </select>
           </div>
         </div>
-      ) : (
-        <div className="border-t border-slate-200 pt-4 text-xs text-slate-600 bg-amber-50/80 border border-amber-200 rounded-lg p-3">
-          Схема армирования не входит в этот расчёт (подбетонка / запрос без арматуры).
-          Блок скрыт для вариативности DOM и соответствия интенту.
+
+        {/* Mesh Pitch Slider */}
+        <div className="bg-[#F4F4F5] p-3 rounded-lg border border-slate-200 space-y-1.5">
+          <div className="flex justify-between items-center text-xs">
+            <span className="font-semibold text-slate-700">Шаг Сетки (Ячейка)</span>
+            <span className="font-mono font-bold text-[#0F172A]">{rebarSpec.spacingMm} мм</span>
+          </div>
+          <input
+            type="range"
+            min={100}
+            max={350}
+            step={25}
+            value={rebarSpec.spacingMm}
+            onChange={(e) =>
+              onRebarSpecChange({
+                ...rebarSpec,
+                spacingMm: Number(e.target.value),
+              })
+            }
+            className="w-full accent-[#1F5A8E] cursor-pointer"
+          />
         </div>
-      )}
+      </div>
 
       {/* Safety Factor Margin */}
       <div className="border-t border-slate-200 pt-4">

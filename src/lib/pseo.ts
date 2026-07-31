@@ -1,5 +1,13 @@
 import { query } from './db';
-import type { PseoRoute, PseoRouteParams, StructureType, IntentCluster } from './types';
+import type { PseoRoute, StructureType, IntentCluster } from './types';
+import { isReservedHubSlug } from './pseo-hubs';
+import {
+  evaluatePseoIndexability,
+  normalizeTitle,
+  paramsFingerprint,
+  routeToGateInput,
+  type PseoGateReason,
+} from './pseo-quality';
 
 type PseoRow = {
   id: number;
@@ -9,7 +17,7 @@ type PseoRow = {
   title_template: string;
   h1_template: string;
   description: string;
-  params: PseoRouteParams;
+  params: PseoRoute['params'];
   layout_variant: number;
   show_rebar: boolean;
   show_bom: boolean;
@@ -21,6 +29,7 @@ type PseoRow = {
   formula_code: string | null;
   is_published: boolean;
   publish_date: Date | string | null;
+  quality_status?: string | null;
 };
 
 function mapRow(row: PseoRow): PseoRoute {
@@ -49,17 +58,24 @@ function mapRow(row: PseoRow): PseoRoute {
   };
 }
 
-/** Published & due routes only — unpublished must 404 for crawlers. */
+const INDEXABLE_SQL = `
+  is_published = TRUE
+  AND publish_date IS NOT NULL
+  AND publish_date <= NOW()
+  AND quality_status = 'ok'
+`;
+
+/** Crawlable leaf only: published + quality_status=ok. Hub slugs never from DB. */
 export async function getPublishedRouteBySlug(
   slug: string
 ): Promise<PseoRoute | null> {
+  if (isReservedHubSlug(slug)) return null;
+
   const { rows } = await query<PseoRow>(
     `SELECT *
      FROM pseo_routes
      WHERE slug = $1
-       AND is_published = TRUE
-       AND publish_date IS NOT NULL
-       AND publish_date <= NOW()
+       AND ${INDEXABLE_SQL.replace(/\n/g, ' ')}
      LIMIT 1`,
     [slug]
   );
@@ -76,9 +92,7 @@ export async function listPublishedSlugs(limit = 50_000): Promise<
   }>(
     `SELECT slug, publish_date, priority
      FROM pseo_routes
-     WHERE is_published = TRUE
-       AND publish_date IS NOT NULL
-       AND publish_date <= NOW()
+     WHERE ${INDEXABLE_SQL.replace(/\n/g, ' ')}
      ORDER BY priority DESC, publish_date DESC
      LIMIT $1`,
     [limit]
@@ -90,53 +104,257 @@ export async function listPublishedSlugs(limit = 50_000): Promise<
   }));
 }
 
+export async function listPublishedByStructure(
+  structureType: StructureType,
+  limit = 24
+): Promise<Array<{ slug: string; h1: string; dims: string }>> {
+  const { rows } = await query<{
+    slug: string;
+    h1_template: string;
+    params: PseoRoute['params'];
+  }>(
+    `SELECT slug, h1_template, params
+     FROM pseo_routes
+     WHERE ${INDEXABLE_SQL.replace(/\n/g, ' ')}
+       AND structure_type = $1
+     ORDER BY priority DESC, publish_date DESC
+     LIMIT $2`,
+    [structureType, limit]
+  );
+  return rows.map((r) => ({
+    slug: r.slug,
+    h1: r.h1_template,
+    dims: `${r.params.length}×${r.params.width}×${r.params.depth} м · ${r.params.grade}`,
+  }));
+}
+
+export async function listPublishedByRegion(
+  regionSlug: string,
+  limit = 24
+): Promise<Array<{ slug: string; h1: string; dims: string }>> {
+  const { rows } = await query<{
+    slug: string;
+    h1_template: string;
+    params: PseoRoute['params'];
+  }>(
+    `SELECT slug, h1_template, params
+     FROM pseo_routes
+     WHERE ${INDEXABLE_SQL.replace(/\n/g, ' ')}
+       AND region_slug = $1
+     ORDER BY priority DESC, publish_date DESC
+     LIMIT $2`,
+    [regionSlug, limit]
+  );
+  return rows.map((r) => ({
+    slug: r.slug,
+    h1: r.h1_template,
+    dims: `${r.params.length}×${r.params.width} м · ${r.params.grade}`,
+  }));
+}
+
+export async function listRelatedPublished(
+  route: PseoRoute,
+  limit = 6
+): Promise<Array<{ slug: string; label: string }>> {
+  const { rows } = await query<{ slug: string; h1_template: string }>(
+    `SELECT slug, h1_template
+     FROM pseo_routes
+     WHERE ${INDEXABLE_SQL.replace(/\n/g, ' ')}
+       AND structure_type = $1
+       AND slug <> $2
+     ORDER BY
+       CASE WHEN region_slug IS NOT DISTINCT FROM $3 THEN 0 ELSE 1 END,
+       priority DESC,
+       publish_date DESC
+     LIMIT $4`,
+    [route.structure_type, route.slug, route.region_slug, limit]
+  );
+  return rows.map((r) => ({ slug: r.slug, label: r.h1_template }));
+}
+
 /**
- * Drip-feed: activate 200–300 unpublished routes per day.
- * Random batch size in [min, max] prevents predictable crawl patterns.
+ * Drip-feed — ALWAYS through evaluatePseoIndexability.
+ * No publish without unique fingerprint + safe calc/FAQ snapshot.
  */
 export async function dripFeedPublish(
   minCount: number,
   maxCount: number
-): Promise<{ published: number; slugs: string[] }> {
+): Promise<{
+  published: number;
+  rejected: number;
+  slugs: string[];
+  rejectReasons: Record<string, number>;
+}> {
   const lo = Math.max(1, Math.min(minCount, maxCount));
   const hi = Math.max(lo, Math.max(minCount, maxCount));
   const batchSize = lo + Math.floor(Math.random() * (hi - lo + 1));
+  const oversample = Math.min(batchSize * 12, 4000);
 
-  const { rows } = await query<{ id: number; slug: string }>(
-    `WITH picked AS (
-       SELECT id, slug
-       FROM pseo_routes
-       WHERE is_published = FALSE
-       ORDER BY priority DESC, id ASC
-       LIMIT $1
-       FOR UPDATE SKIP LOCKED
-     )
-     UPDATE pseo_routes r
-     SET is_published = TRUE,
-         publish_date = NOW(),
-         last_sitemap_at = NOW()
-     FROM picked
-     WHERE r.id = picked.id
-     RETURNING r.id, r.slug`,
-    [batchSize]
+  const { rows: publishedRows } = await query<PseoRow>(
+    `SELECT structure_type, params, region_slug, title_template, h1_template
+     FROM pseo_routes
+     WHERE quality_status = 'ok'
+       AND is_published = TRUE
+       AND publish_date IS NOT NULL
+       AND publish_date <= NOW()`
   );
+
+  const publishedFingerprints = new Set(
+    publishedRows.map((r) => paramsFingerprint(r))
+  );
+  const publishedTitles = new Set(
+    publishedRows.map((r) => normalizeTitle(r.title_template || r.h1_template))
+  );
+
+  const { rows: candidates } = await query<PseoRow>(
+    `SELECT *
+     FROM pseo_routes
+     WHERE is_published = FALSE
+       AND COALESCE(quality_status, 'pending') = 'pending'
+     ORDER BY
+       CASE WHEN region_slug IS NOT NULL THEN 0 ELSE 1 END,
+       CASE intent_cluster
+         WHEN 'kalkulyator' THEN 0
+         WHEN 'raschet' THEN 1
+         WHEN 'smeta' THEN 2
+         ELSE 3
+       END,
+       priority DESC,
+       id ASC
+     LIMIT $1
+     FOR UPDATE SKIP LOCKED`,
+    [oversample]
+  );
+
+  const toPublish: Array<{ id: number; fingerprint: string }> = [];
+  const toReject: Array<{ id: number; reason: string }> = [];
+  const batchFingerprints = new Set<string>();
+  const rejectReasons: Record<string, number> = {};
+
+  for (const row of candidates) {
+    if (toPublish.length >= batchSize) break;
+
+    const gate = evaluatePseoIndexability(
+      routeToGateInput(mapRow(row)),
+      publishedFingerprints,
+      publishedTitles,
+      batchFingerprints
+    );
+
+    if (!gate.ok) {
+      toReject.push({ id: row.id, reason: gate.reason });
+      rejectReasons[gate.reason] = (rejectReasons[gate.reason] || 0) + 1;
+      continue;
+    }
+
+    batchFingerprints.add(gate.fingerprint);
+    publishedFingerprints.add(gate.fingerprint);
+    publishedTitles.add(normalizeTitle(row.title_template || row.h1_template));
+    toPublish.push({ id: row.id, fingerprint: gate.fingerprint });
+  }
+
+  if (toReject.length > 0) {
+    await query(
+      `UPDATE pseo_routes
+       SET quality_status = 'rejected',
+           updated_at = NOW()
+       WHERE id = ANY($1::bigint[])`,
+      [toReject.map((r) => r.id)]
+    );
+  }
+
+  if (toPublish.length === 0) {
+    await query(
+      `INSERT INTO sitemap_builds (urls_count, batch_published, meta)
+       SELECT
+         (SELECT COUNT(*)::int FROM pseo_routes WHERE ${INDEXABLE_SQL.replace(/\n/g, ' ')}),
+         0,
+         jsonb_build_object('rejected', $1::int, 'reasons', $2::jsonb, 'gate', 'always')`,
+      [toReject.length, JSON.stringify(rejectReasons)]
+    );
+    return {
+      published: 0,
+      rejected: toReject.length,
+      slugs: [],
+      rejectReasons,
+    };
+  }
+
+  // Publish with fingerprint; DB unique index blocks race duplicates.
+  const publishedSlugs: string[] = [];
+  let raceDupes = 0;
+  for (const item of toPublish) {
+    const { rows } = await query<{ id: number; slug: string }>(
+      `UPDATE pseo_routes r
+       SET is_published = TRUE,
+           publish_date = NOW(),
+           last_sitemap_at = NOW(),
+           quality_status = 'ok',
+           content_fingerprint = $2,
+           updated_at = NOW()
+       WHERE r.id = $1
+         AND r.is_published = FALSE
+         AND NOT EXISTS (
+           SELECT 1
+           FROM pseo_routes x
+           WHERE x.content_fingerprint = $2
+             AND x.quality_status = 'ok'
+             AND x.is_published = TRUE
+             AND x.id <> $1
+         )
+       RETURNING r.id, r.slug`,
+      [item.id, item.fingerprint]
+    );
+    if (rows[0]) {
+      publishedSlugs.push(rows[0].slug);
+    } else {
+      raceDupes += 1;
+      await query(
+        `UPDATE pseo_routes
+         SET quality_status = 'rejected',
+             updated_at = NOW()
+         WHERE id = $1 AND is_published = FALSE`,
+        [item.id]
+      );
+      rejectReasons.duplicate_fingerprint =
+        (rejectReasons.duplicate_fingerprint || 0) + 1;
+    }
+  }
 
   await query(
     `INSERT INTO sitemap_builds (urls_count, batch_published, meta)
      SELECT
-       (SELECT COUNT(*)::int FROM pseo_routes
-         WHERE is_published = TRUE AND publish_date <= NOW()),
+       (SELECT COUNT(*)::int FROM pseo_routes WHERE ${INDEXABLE_SQL.replace(/\n/g, ' ')}),
        $1,
-       jsonb_build_object('slugs', $2::jsonb)`,
-    [rows.length, JSON.stringify(rows.map((r) => r.slug))]
+       jsonb_build_object(
+         'slugs', $2::jsonb,
+         'rejected', $3::int,
+         'reasons', $4::jsonb,
+         'gate', 'always',
+         'raceDupes', $5::int
+       )`,
+    [
+      publishedSlugs.length,
+      JSON.stringify(publishedSlugs),
+      toReject.length + raceDupes,
+      JSON.stringify(rejectReasons),
+      raceDupes,
+    ]
   );
 
-  return { published: rows.length, slugs: rows.map((r) => r.slug) };
+  return {
+    published: publishedSlugs.length,
+    rejected: toReject.length + raceDupes,
+    slugs: publishedSlugs,
+    rejectReasons,
+  };
 }
 
 export async function bumpViewCount(slug: string): Promise<void> {
   await query(
-    `UPDATE pseo_routes SET view_count = view_count + 1 WHERE slug = $1`,
+    `UPDATE pseo_routes SET view_count = view_count + 1 WHERE slug = $1 AND quality_status = 'ok'`,
     [slug]
   );
 }
+
+export type { PseoGateReason };

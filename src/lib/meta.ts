@@ -94,11 +94,13 @@ export function paramsToCalculatorState(params: PseoRouteParams): {
   rebarSpec: {
     diameterMm: number;
     spacingMm: number;
-    layers: 0 | 1 | 2 | 3;
+    layers: 1 | 2 | 3;
     customPricePerTon: number;
   };
 } {
-  const layers = Math.min(3, Math.max(0, params.layers)) as 0 | 1 | 2 | 3;
+  const rawLayers = params.layers > 0 ? params.layers : 1;
+  const layers = Math.min(3, Math.max(1, rawLayers)) as 1 | 2 | 3;
+  const diameterMm = params.rebar_d > 0 ? params.rebar_d : 12;
   return {
     dimensions: {
       length: params.length,
@@ -113,7 +115,7 @@ export function paramsToCalculatorState(params: PseoRouteParams): {
       customPricePerM3: 0,
     },
     rebarSpec: {
-      diameterMm: params.rebar_d,
+      diameterMm,
       spacingMm: params.rebar_step || 200,
       layers,
       customPricePerTon: 0,

@@ -1,0 +1,412 @@
+{
+  "asOf": "2026-07-31",
+  "note": "Публичные прайсы allow-list парсеров на 2026-07-31. Не оферта — уточняйте у поставщика.",
+  "suppliers": [
+    {
+      "slug": "mosbeton-moscow",
+      "name": "МосБетон",
+      "kind": "rbu",
+      "regionId": "moscow",
+      "city": "Москва",
+      "url": "https://mosbetone.ru/",
+      "phone": "+7 (495) 510-49-87",
+      "email": "info@mosbetone.ru",
+      "featured": true,
+      "badge": "known",
+      "quotes": [
+        {
+          "sku": "concrete_m3",
+          "grade": "B25",
+          "priceRub": 5100,
+          "note": "Публичный прайс https://mosbetone.ru/catalog/beton/m-350-b-25/"
+        }
+      ]
+    },
+    {
+      "slug": "mks-beton-moscow",
+      "name": "МонолитКомплектСервис",
+      "kind": "rbu",
+      "regionId": "moscow",
+      "city": "Москва",
+      "url": "https://mks-beton.ru/",
+      "phone": null,
+      "email": null,
+      "featured": true,
+      "badge": "partner",
+      "quotes": [
+        {
+          "sku": "concrete_m3",
+          "grade": "B25",
+          "priceRub": 5690,
+          "note": "Публичный прайс https://mks-beton.ru/catalog/beton/m-350/"
+        }
+      ]
+    },
+    {
+      "slug": "atlant-beton-moscow",
+      "name": "Атлант Бетон",
+      "kind": "rbu",
+      "regionId": "moscow",
+      "city": "Москва",
+      "url": "https://atlantbeton.ru/",
+      "phone": null,
+      "email": null,
+      "featured": true,
+      "badge": "known",
+      "quotes": [
+        {
+          "sku": "concrete_m3",
+          "grade": "B25",
+          "priceRub": 5400,
+          "note": "Публичный прайс https://atlantbeton.ru/m350/"
+        }
+      ]
+    },
+    {
+      "slug": "lp-beton-moscow",
+      "name": "Лидер-Пром Бетон",
+      "kind": "rbu",
+      "regionId": "moscow",
+      "city": "Москва",
+      "url": "https://lpbeton.ru/",
+      "phone": "+7 (499) 348-97-23",
+      "email": "info@lpbeton.ru",
+      "featured": true,
+      "badge": "price_leader",
+      "quotes": [
+        {
+          "sku": "concrete_m3",
+          "grade": "B25",
+          "priceRub": 3850,
+          "note": "Публичный прайс https://lpbeton.ru/beton-v75-v45/beton-v25/"
+        }
+      ]
+    },
+    {
+      "slug": "eurobeton-moscow",
+      "name": "Евробетон",
+      "kind": "rbu",
+      "regionId": "moscow",
+      "city": "Москва",
+      "url": "https://eurobeton.ru/",
+      "phone": "+7 (499) 495-18-45",
+      "email": "eurobeton.ru@yandex.ru",
+      "featured": true,
+      "badge": "known",
+      "quotes": [
+        {
+          "sku": "concrete_m3",
+          "grade": "B25",
+          "priceRub": 5600,
+          "note": "Каталожная цена (страница без разбора)"
+        }
+      ]
+    },
+    {
+      "slug": "stroynerud-moscow",
+      "name": "НерудСтрой-М",
+      "kind": "wholesale",
+      "regionId": "moscow",
+      "city": "Москва",
+      "url": "https://stroynerud.ru/",
+      "phone": null,
+      "email": null,
+      "featured": false,
+      "badge": null,
+      "quotes": [
+        {
+          "sku": "concrete_m3",
+          "grade": "B25",
+          "priceRub": 8450,
+          "note": "Публичный прайс https://stroynerud.ru/beton/m350-b25"
+        }
+      ]
+    },
+    {
+      "slug": "metallotorg-moscow",
+      "name": "Металлоторг",
+      "kind": "store",
+      "regionId": "moscow",
+      "city": "Москва",
+      "url": "https://www.metallotorg.ru/",
+      "phone": "+7 (495) 727-39-74",
+      "email": "metal@metallotorg.ru",
+      "featured": true,
+      "badge": "known",
+      "quotes": [
+        {
+          "sku": "rebar_ton",
+          "priceRub": 63890,
+          "note": "Каталожная цена арматуры"
+        }
+      ]
+    },
+    {
+      "slug": "evraz-market-moscow",
+      "name": "Евраз Маркет",
+      "kind": "store",
+      "regionId": "moscow",
+      "city": "Москва",
+      "url": "https://www.evraz.market/",
+      "phone": null,
+      "email": null,
+      "featured": true,
+      "badge": "known",
+      "quotes": [
+        {
+          "sku": "rebar_ton",
+          "priceRub": 65000,
+          "note": "Каталожная цена арматуры"
+        }
+      ]
+    },
+    {
+      "slug": "mmk-market-moscow",
+      "name": "ММК Торговый дом",
+      "kind": "wholesale",
+      "regionId": "moscow",
+      "city": "Москва",
+      "url": "https://market.mmk.ru/",
+      "phone": null,
+      "email": null,
+      "featured": true,
+      "badge": "known",
+      "quotes": [
+        {
+          "sku": "rebar_ton",
+          "priceRub": 64500,
+          "note": "Каталожная цена арматуры"
+        }
+      ]
+    },
+    {
+      "slug": "severstal-dist-moscow",
+      "name": "Северсталь Дистрибуция",
+      "kind": "wholesale",
+      "regionId": "moscow",
+      "city": "Москва",
+      "url": "https://market.severstal.com/",
+      "phone": null,
+      "email": null,
+      "featured": true,
+      "badge": "known",
+      "quotes": [
+        {
+          "sku": "rebar_ton",
+          "priceRub": 66200,
+          "note": "Каталожная цена арматуры"
+        }
+      ]
+    },
+    {
+      "slug": "metalloprokat-msk",
+      "name": "Металлопрокат.ру",
+      "kind": "store",
+      "regionId": "moscow",
+      "city": "Москва",
+      "url": "https://msk.metalloprokat.ru/",
+      "phone": null,
+      "email": null,
+      "featured": false,
+      "badge": null,
+      "quotes": [
+        {
+          "sku": "rebar_ton",
+          "priceRub": 55587,
+          "note": "Каталожная цена арматуры"
+        }
+      ]
+    },
+    {
+      "slug": "nlmk-trading-moscow",
+      "name": "НЛМК Трейдинг",
+      "kind": "wholesale",
+      "regionId": "moscow",
+      "city": "Москва",
+      "url": "https://nlmk.com/",
+      "phone": null,
+      "email": null,
+      "featured": true,
+      "badge": "known",
+      "quotes": [
+        {
+          "sku": "rebar_ton",
+          "priceRub": 64800,
+          "note": "Каталожная цена арматуры"
+        }
+      ]
+    },
+    {
+      "slug": "petrobeton-spb",
+      "name": "ПетроБетон",
+      "kind": "rbu",
+      "regionId": "spb",
+      "city": "Санкт-Петербург",
+      "url": "https://petrobeton.ru/",
+      "phone": null,
+      "email": null,
+      "featured": true,
+      "badge": "known",
+      "quotes": [
+        {
+          "sku": "concrete_m3",
+          "grade": "B25",
+          "priceRub": 4900,
+          "note": "Каталожная цена (страница без разбора)"
+        }
+      ]
+    },
+    {
+      "slug": "metallotorg-spb",
+      "name": "Металлоторг",
+      "kind": "store",
+      "regionId": "spb",
+      "city": "Санкт-Петербург",
+      "url": "https://spb.metallotorg.ru/",
+      "phone": "+7 (812) 336-70-99",
+      "email": null,
+      "featured": true,
+      "badge": "known",
+      "quotes": [
+        {
+          "sku": "rebar_ton",
+          "priceRub": 62800,
+          "note": "Каталожная цена арматуры"
+        }
+      ]
+    },
+    {
+      "slug": "evraz-market-spb",
+      "name": "Евраз Маркет",
+      "kind": "store",
+      "regionId": "spb",
+      "city": "Санкт-Петербург",
+      "url": "https://www.evraz.market/",
+      "phone": null,
+      "email": null,
+      "featured": true,
+      "badge": "known",
+      "quotes": [
+        {
+          "sku": "rebar_ton",
+          "priceRub": 63500,
+          "note": "Каталожная цена арматуры"
+        }
+      ]
+    },
+    {
+      "slug": "metallotorg-krasnodar",
+      "name": "Металлоторг",
+      "kind": "store",
+      "regionId": "krasnodar",
+      "city": "Краснодар",
+      "url": "https://www.metallotorg.ru/",
+      "phone": null,
+      "email": null,
+      "featured": true,
+      "badge": "known",
+      "quotes": [
+        {
+          "sku": "rebar_ton",
+          "priceRub": 61000,
+          "note": "Каталожная цена арматуры"
+        }
+      ]
+    },
+    {
+      "slug": "mmk-krasnodar",
+      "name": "ММК Торговый дом",
+      "kind": "wholesale",
+      "regionId": "krasnodar",
+      "city": "Краснодар",
+      "url": "https://market.mmk.ru/",
+      "phone": null,
+      "email": null,
+      "featured": true,
+      "badge": "known",
+      "quotes": [
+        {
+          "sku": "rebar_ton",
+          "priceRub": 61500,
+          "note": "Каталожная цена арматуры"
+        }
+      ]
+    },
+    {
+      "slug": "mmk-ekb",
+      "name": "ММК Торговый дом",
+      "kind": "wholesale",
+      "regionId": "ekaterinburg",
+      "city": "Екатеринбург",
+      "url": "https://market.mmk.ru/",
+      "phone": null,
+      "email": null,
+      "featured": true,
+      "badge": "known",
+      "quotes": [
+        {
+          "sku": "rebar_ton",
+          "priceRub": 62000,
+          "note": "Каталожная цена арматуры"
+        }
+      ]
+    },
+    {
+      "slug": "evraz-market-ekb",
+      "name": "Евраз Маркет",
+      "kind": "store",
+      "regionId": "ekaterinburg",
+      "city": "Екатеринбург",
+      "url": "https://www.evraz.market/",
+      "phone": null,
+      "email": null,
+      "featured": true,
+      "badge": "known",
+      "quotes": [
+        {
+          "sku": "rebar_ton",
+          "priceRub": 62500,
+          "note": "Каталожная цена арматуры"
+        }
+      ]
+    },
+    {
+      "slug": "metallotorg-nsk",
+      "name": "Металлоторг",
+      "kind": "store",
+      "regionId": "novosibirsk",
+      "city": "Новосибирск",
+      "url": "https://www.metallotorg.ru/",
+      "phone": null,
+      "email": null,
+      "featured": true,
+      "badge": "known",
+      "quotes": [
+        {
+          "sku": "rebar_ton",
+          "priceRub": 64000,
+          "note": "Каталожная цена арматуры"
+        }
+      ]
+    },
+    {
+      "slug": "severstal-nsk",
+      "name": "Северсталь Дистрибуция",
+      "kind": "wholesale",
+      "regionId": "novosibirsk",
+      "city": "Новосибирск",
+      "url": "https://market.severstal.com/",
+      "phone": null,
+      "email": null,
+      "featured": true,
+      "badge": "known",
+      "quotes": [
+        {
+          "sku": "rebar_ton",
+          "priceRub": 65500,
+          "note": "Каталожная цена арматуры"
+        }
+      ]
+    }
+  ]
+}

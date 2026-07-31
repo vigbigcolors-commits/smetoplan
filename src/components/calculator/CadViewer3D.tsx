@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useRef, useEffect, useState } from 'react';
 import {
   RotateCcw,
@@ -6,9 +8,7 @@ import {
   Box,
   Compass,
   Grid,
-  Zap,
   Move3d,
-  Crosshair,
   Hand,
   Maximize2,
   Minimize2,
@@ -34,21 +34,19 @@ export const CadViewer3D: React.FC<CadViewer3DProps> = ({
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const [viewMode, setViewMode] = useState<'isometric' | 'top_wireframe' | 'cross_section' | 'stress_heatmap'>('isometric');
+  const [viewMode, setViewMode] = useState<'isometric' | 'top_wireframe' | 'cross_section'>('isometric');
   const [interactionMode, setInteractionMode] = useState<'orbit' | 'pan'>('orbit');
-  const [rotationX, setRotationX] = useState<number>(32); // degrees
-  const [rotationY, setRotationY] = useState<number>(-45); // degrees
+  const [rotationX, setRotationX] = useState<number>(35);
+  const [rotationY, setRotationY] = useState<number>(-45);
   const [zoom, setZoom] = useState<number>(1.0);
   const [pan, setPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
-  
+
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [dragType, setDragType] = useState<'orbit' | 'pan' | null>(null);
   const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [showDimensions, setShowDimensions] = useState<boolean>(true);
   const [showRebars, setShowRebars] = useState<boolean>(true);
-  const [showLaser, setShowLaser] = useState<boolean>(true);
-  const [autoRotate, setAutoRotate] = useState<boolean>(false);
 
   const unitLabel = unitSystem === 'imperial' ? 'фут' : 'м';
 
@@ -141,7 +139,7 @@ export const CadViewer3D: React.FC<CadViewer3DProps> = ({
   };
 
   const handleResetView = () => {
-    setRotationX(32);
+    setRotationX(35);
     setRotationY(-45);
     setZoom(1.0);
     setPan({ x: 0, y: 0 });
@@ -154,7 +152,7 @@ export const CadViewer3D: React.FC<CadViewer3DProps> = ({
     setZoom(1.0);
     if (preset === 'iso') {
       setViewMode('isometric');
-      setRotationX(32);
+      setRotationX(35);
       setRotationY(-45);
     } else if (preset === 'top') {
       setViewMode('top_wireframe');
@@ -162,11 +160,11 @@ export const CadViewer3D: React.FC<CadViewer3DProps> = ({
       setRotationY(0);
     } else if (preset === 'front') {
       setViewMode('isometric');
-      setRotationX(10);
+      setRotationX(12);
       setRotationY(0);
     } else if (preset === 'side') {
       setViewMode('isometric');
-      setRotationX(10);
+      setRotationX(12);
       setRotationY(-90);
     }
   };
@@ -225,15 +223,6 @@ export const CadViewer3D: React.FC<CadViewer3DProps> = ({
     link.click();
   };
 
-  // Auto rotation effect
-  useEffect(() => {
-    if (!autoRotate) return;
-    const interval = setInterval(() => {
-      setRotationY((prev) => (prev + 0.6) % 360);
-    }, 30);
-    return () => clearInterval(interval);
-  }, [autoRotate]);
-
   // Main Canvas Rendering Loop
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -279,11 +268,14 @@ export const CadViewer3D: React.FC<CadViewer3DProps> = ({
     const centerX = width / 2 + pan.x;
     const centerY = height / 2 + pan.y;
 
-    // Dimensions normalized for viewport
-    const scale = Math.min(width, height) / (Math.max(dimensions.length, dimensions.width) * 1.8) * zoom;
+    // Dimensions normalized for viewport (uniform XY scale — no shear)
+    const scale =
+      (Math.min(width, height) / (Math.max(dimensions.length, dimensions.width) * 1.8)) *
+      zoom;
     const L = dimensions.length * scale;
     const W = dimensions.width * scale;
-    const H = Math.max(20, dimensions.depth * scale * 2.5); // exaggerate thickness slightly for visibility
+    // Keep thickness readable so the slab reads as a 3D box, not a flat skewed plate
+    const H = Math.max(32, dimensions.depth * scale * 4);
 
     const halfL = L / 2;
     const halfW = W / 2;
@@ -293,20 +285,29 @@ export const CadViewer3D: React.FC<CadViewer3DProps> = ({
     const radX = (rotationX * Math.PI) / 180;
     const radY = (rotationY * Math.PI) / 180;
 
-    // 3D Projection Helper centered around (0,0,0)
+    /**
+     * Rigid body orbit (Y then X) + orthographic projection.
+     * Opposite edges of a rectangle stay parallel — a parallelogram on screen
+     * is correct, not a bug. Do not apply non-uniform screen scale.
+     */
     const project3D = (x: number, y: number, z: number) => {
-      // Rotate around Y axis
-      const rx1 = x * Math.cos(radY) - z * Math.sin(radY);
-      const rz1 = x * Math.sin(radY) + z * Math.cos(radY);
+      const cosY = Math.cos(radY);
+      const sinY = Math.sin(radY);
+      const cosX = Math.cos(radX);
+      const sinX = Math.sin(radX);
 
-      // Rotate around X axis
-      const ry2 = y * Math.cos(radX) - rz1 * Math.sin(radX);
-      const rz2 = y * Math.sin(radX) + rz1 * Math.cos(radX);
+      // Rotate around Y (yaw)
+      const x1 = x * cosY - z * sinY;
+      const z1 = x * sinY + z * cosY;
+
+      // Rotate around X (pitch)
+      const y2 = y * cosX - z1 * sinX;
+      const z2 = y * sinX + z1 * cosX;
 
       return {
-        px: centerX + rx1,
-        py: centerY - ry2,
-        depth: rz2,
+        px: centerX + x1,
+        py: centerY - y2,
+        depth: z2,
       };
     };
 
@@ -444,7 +445,6 @@ export const CadViewer3D: React.FC<CadViewer3DProps> = ({
       { name: 'top', indices: [4, 5, 6, 7], color: 'rgba(56, 189, 248, 0.28)', avgDepth: 0 },
     ];
 
-    // Sort faces by depth for back-to-front painter's algorithm
     faces.forEach((f) => {
       f.avgDepth = f.indices.reduce((sum, idx) => sum + vertices[idx].depth, 0) / 4;
     });
@@ -521,99 +521,93 @@ export const CadViewer3D: React.FC<CadViewer3DProps> = ({
         ctx.lineTo(p.px, p.py);
       }
       ctx.closePath();
-
-      if (viewMode === 'stress_heatmap' && f.name === 'top') {
-        // Render Heatmap gradient on top surface
-        const grad = ctx.createRadialGradient(
-          (vertices[4].px + vertices[6].px) / 2,
-          (vertices[4].py + vertices[6].py) / 2,
-          10,
-          (vertices[4].px + vertices[6].px) / 2,
-          (vertices[4].py + vertices[6].py) / 2,
-          L * 0.4
-        );
-        grad.addColorStop(0, 'rgba(239, 68, 68, 0.85)'); // High stress center
-        grad.addColorStop(0.5, 'rgba(245, 158, 11, 0.6)');
-        grad.addColorStop(1, 'rgba(59, 130, 246, 0.4)');
-        ctx.fillStyle = grad;
-      } else {
-        ctx.fillStyle = f.color;
-      }
+      ctx.fillStyle = f.color;
       ctx.fill();
-
-      // Sharp architectural wireframe edges
-      ctx.strokeStyle = '#38BDF8';
-      ctx.lineWidth = f.name === 'top' || f.name === 'front' ? 1.5 : 1;
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.25)';
+      ctx.lineWidth = 1;
       ctx.stroke();
     });
 
-    // Dimension Annotations in 3D Space
-    if (showDimensions) {
-      ctx.fillStyle = '#F8FAFC';
-      ctx.font = 'bold 11px monospace';
-
-      // Length Dimension Line (along front bottom edge)
-      const pL1 = vertices[3];
-      const pL2 = vertices[2];
-      ctx.strokeStyle = '#38BDF8';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(pL1.px, pL1.py + 18);
-      ctx.lineTo(pL2.px, pL2.py + 18);
-      ctx.stroke();
-      ctx.fillText(`L = ${dimensions.length.toFixed(2)} ${unitLabel}`, (pL1.px + pL2.px) / 2, (pL1.py + pL2.py) / 2 + 32);
-
-      // Width Dimension Line (along right edge)
-      const pW1 = vertices[2];
-      const pW2 = vertices[1];
-      ctx.beginPath();
-      ctx.moveTo(pW1.px + 18, pW1.py);
-      ctx.lineTo(pW2.px + 18, pW2.py);
-      ctx.stroke();
-      ctx.fillText(`W = ${dimensions.width.toFixed(2)} ${unitLabel}`, (pW1.px + pW2.px) / 2 + 25, (pW1.py + pW2.py) / 2 - 5);
-
-      // Depth Dimension Line (along front-left vertical edge)
-      const pH1 = vertices[3];
-      const pH2 = vertices[7];
-      ctx.beginPath();
-      ctx.moveTo(pH1.px - 18, pH1.py);
-      ctx.lineTo(pH2.px - 18, pH2.py);
-      ctx.stroke();
-      ctx.fillText(`H = ${dimensions.depth.toFixed(2)} ${unitLabel}`, (pH1.px + pH2.px) / 2 - 45, (pH1.py + pH2.py) / 2 + 4);
+    // Sharp architectural wireframe — all 12 edges once (silhouette reads as a box)
+    {
+      const edges: [number, number][] = [
+        [0, 1],
+        [1, 2],
+        [2, 3],
+        [3, 0],
+        [4, 5],
+        [5, 6],
+        [6, 7],
+        [7, 4],
+        [0, 4],
+        [1, 5],
+        [2, 6],
+        [3, 7],
+      ];
+      ctx.lineJoin = 'round';
+      edges.forEach(([a, b]) => {
+        const pa = vertices[a];
+        const pb = vertices[b];
+        const midDepth = (pa.depth + pb.depth) / 2;
+        ctx.beginPath();
+        ctx.moveTo(pa.px, pa.py);
+        ctx.lineTo(pb.px, pb.py);
+        ctx.strokeStyle =
+          midDepth > 0 ? 'rgba(56, 189, 248, 0.55)' : 'rgba(125, 211, 252, 0.95)';
+        ctx.lineWidth = midDepth > 0 ? 1 : 1.75;
+        ctx.stroke();
+      });
     }
 
-    // 360 Construction Laser Level Horizon Overlay
-    if (showLaser && viewMode === 'isometric') {
-      const pTopLeft = vertices[4];
-      const pTopRight = vertices[5];
-      const laserY = (pTopLeft.py + pTopRight.py) / 2;
+    // Dimension Annotations — offset perpendicular to edge in screen space
+    if (showDimensions) {
+      const annotateEdge = (
+        a: { px: number; py: number },
+        b: { px: number; py: number },
+        label: string,
+        outwardSign: number
+      ) => {
+        const dx = b.px - a.px;
+        const dy = b.py - a.py;
+        const len = Math.hypot(dx, dy) || 1;
+        const nx = (-dy / len) * 16 * outwardSign;
+        const ny = (dx / len) * 16 * outwardSign;
+        ctx.strokeStyle = '#7DD3FC';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(a.px + nx, a.py + ny);
+        ctx.lineTo(b.px + nx, b.py + ny);
+        ctx.stroke();
+        // end ticks
+        ctx.beginPath();
+        ctx.moveTo(a.px + nx * 0.4, a.py + ny * 0.4);
+        ctx.lineTo(a.px + nx, a.py + ny);
+        ctx.moveTo(b.px + nx * 0.4, b.py + ny * 0.4);
+        ctx.lineTo(b.px + nx, b.py + ny);
+        ctx.stroke();
+        ctx.fillStyle = '#F8FAFC';
+        ctx.font = 'bold 11px monospace';
+        ctx.fillText(label, (a.px + b.px) / 2 + nx * 1.35, (a.py + b.py) / 2 + ny * 1.35);
+      };
 
-      ctx.save();
-      // Glowing horizontal laser beam line across entire viewport width
-      ctx.strokeStyle = '#EF4444'; // Red Laser Line
-      ctx.shadowColor = '#EF4444';
-      ctx.shadowBlur = 8;
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([8, 4]);
-
-      ctx.beginPath();
-      ctx.moveTo(0, laserY);
-      ctx.lineTo(width, laserY);
-      ctx.stroke();
-
-      // Laser Level Target Beacons at corners
-      ctx.setLineDash([]);
-      ctx.fillStyle = '#EF4444';
-      ctx.beginPath();
-      ctx.arc(pTopLeft.px, pTopLeft.py, 3.5, 0, Math.PI * 2);
-      ctx.arc(pTopRight.px, pTopRight.py, 3.5, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Laser Level Height Badge
-      ctx.fillStyle = '#EF4444';
-      ctx.font = 'bold 10px monospace';
-      ctx.fillText('[ ⊕ НИВЕЛИР ±0.000m ]', width - 140, laserY - 6);
-      ctx.restore();
+      annotateEdge(
+        vertices[3],
+        vertices[2],
+        `L = ${dimensions.length.toFixed(2)} ${unitLabel}`,
+        1
+      );
+      annotateEdge(
+        vertices[2],
+        vertices[1],
+        `W = ${dimensions.width.toFixed(2)} ${unitLabel}`,
+        1
+      );
+      annotateEdge(
+        vertices[3],
+        vertices[7],
+        `H = ${dimensions.depth.toFixed(2)} ${unitLabel}`,
+        -1
+      );
     }
   }, [
     dimensions,
@@ -625,7 +619,6 @@ export const CadViewer3D: React.FC<CadViewer3DProps> = ({
     viewMode,
     showDimensions,
     showRebars,
-    showLaser,
     unitSystem,
     soilPressureKpa,
     unitLabel,
@@ -643,9 +636,9 @@ export const CadViewer3D: React.FC<CadViewer3DProps> = ({
       {/* Top CAD Viewport Toolbar */}
       <div className="absolute top-3 left-3 right-3 flex flex-wrap items-center justify-between gap-2 z-10 bg-slate-900/90 backdrop-blur-md px-3 py-2 rounded-lg border border-slate-700/60 text-xs text-slate-200 shadow-lg">
         <div className="flex items-center gap-2">
-          <span className="flex items-center gap-1.5 font-mono font-semibold text-orange-400 uppercase tracking-wider">
-            <Move3d className="w-4 h-4 animate-pulse" />
-            CAD 3D Визуализатор
+          <span className="flex items-center gap-1.5 font-mono font-semibold text-sky-300 uppercase tracking-wider">
+            <Move3d className="w-4 h-4" />
+            3D / чертёж
           </span>
           <span className="hidden sm:inline-block bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-mono text-[10px]">
             {structureType.toUpperCase()}
@@ -685,43 +678,21 @@ export const CadViewer3D: React.FC<CadViewer3DProps> = ({
                 ? 'bg-[#1F5A8E] text-white shadow'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
             }`}
-            title="Поперечный срез армирования"
+            title="Поперечный разрез"
           >
             <Layers className="w-3.5 h-3.5" />
             Разрез
-          </button>
-          <button
-            onClick={() => setViewMode('stress_heatmap')}
-            className={`px-2 py-1 rounded flex items-center gap-1 text-[11px] font-medium transition cursor-pointer ${
-              viewMode === 'stress_heatmap'
-                ? 'bg-[#1F5A8E] text-white shadow'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-            }`}
-            title="Эпюра напряжений МКЭ"
-          >
-            <Zap className="w-3.5 h-3.5" />
-            МКЭ
           </button>
         </div>
 
         {/* Visibility Toggles & Export Tools */}
         <div className="flex items-center gap-1.5">
           <button
-            onClick={() => setShowLaser(!showLaser)}
-            className={`p-1.5 rounded transition cursor-pointer flex items-center gap-1 text-[11px] font-mono ${
-              showLaser ? 'bg-red-950/80 text-red-400 border border-red-800' : 'text-slate-500 hover:text-slate-300'
-            }`}
-            title="Лазерный Нивелир 360°"
-          >
-            <Crosshair className="w-3.5 h-3.5 text-red-500 animate-pulse" />
-            <span className="hidden lg:inline">Лазер</span>
-          </button>
-          <button
             onClick={() => setShowDimensions(!showDimensions)}
             className={`p-1.5 rounded transition cursor-pointer ${
               showDimensions ? 'bg-slate-800 text-sky-400' : 'text-slate-500 hover:text-slate-300'
             }`}
-            title="Переключить размеры"
+            title="Размеры"
           >
             <Compass className="w-4 h-4" />
           </button>
@@ -730,7 +701,7 @@ export const CadViewer3D: React.FC<CadViewer3DProps> = ({
             className={`p-1.5 rounded transition cursor-pointer ${
               showRebars ? 'bg-slate-800 text-orange-400' : 'text-slate-500 hover:text-slate-300'
             }`}
-            title="Переключить показ арматурного каркаса"
+            title="Арматура"
           >
             <Eye className="w-4 h-4" />
           </button>
@@ -854,22 +825,12 @@ export const CadViewer3D: React.FC<CadViewer3DProps> = ({
 
         <div className="flex items-center gap-1.5">
           <button
-            onClick={() => setAutoRotate(!autoRotate)}
-            className={`px-2 py-1 rounded text-[10px] font-semibold uppercase transition cursor-pointer ${
-              autoRotate ? 'bg-[#1F5A8E] text-white animate-pulse' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-            }`}
-            title="Автоматическое 360° вращение"
-          >
-            {autoRotate ? 'Вращение ВКЛ' : '360°'}
-          </button>
-
-          <button
             onClick={handleResetView}
-            className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded cursor-pointer flex items-center gap-1 text-[10px] font-bold"
-            title="Центрировать и сбросить масштабирование"
+            className="px-2 py-1 rounded text-[10px] font-semibold uppercase transition cursor-pointer bg-slate-800 text-slate-300 hover:bg-slate-700 flex items-center gap-1"
+            title="Сбросить вид"
           >
-            <RotateCcw className="w-3.5 h-3.5 text-teal-400" />
-            <span className="hidden sm:inline">Сброс</span>
+            <RotateCcw className="w-3 h-3" />
+            Сброс
           </button>
         </div>
       </div>

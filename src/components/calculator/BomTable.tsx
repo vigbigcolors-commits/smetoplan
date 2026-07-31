@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import {
   FileText,
@@ -31,7 +33,10 @@ export const BomTable: React.FC<BomTableProps> = ({
   const { itemizedCosts } = calculation;
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden mt-6">
+    <div
+      id="bom-estimate-total"
+      className="scroll-mt-28 bg-white rounded-2xl border border-slate-200 shadow-[0_12px_40px_-24px_rgba(15,23,42,0.35)] overflow-hidden mt-6 tool-panel"
+    >
       {/* Table Header & Metrics Banner */}
       <div className="bg-[#0F172A] text-white p-5 border-b border-slate-800">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
@@ -45,7 +50,7 @@ export const BomTable: React.FC<BomTableProps> = ({
               </h2>
             </div>
             <p className="text-xs text-slate-400 font-mono mt-0.5">
-              ИНЖЕНЕРНО-ТЕХНИЧЕСКИЙ РАСЧЕТ РАСХОДА СТРОИТЕЛЬНЫХ МАТЕРИАЛОВ ПО СНИП / СП
+              ОРИЕНТИРОВОЧНАЯ СМЕТА МАТЕРИАЛОВ (СПРАВОЧНО, НЕ ПРОЕКТ КЖ)
             </p>
           </div>
 
@@ -109,7 +114,7 @@ export const BomTable: React.FC<BomTableProps> = ({
               <th className="py-3 px-4">Расчетное Количество</th>
               <th className="py-3 px-4">Фасовка и Характеристики</th>
               <th className="py-3 px-4 text-right">Стоимость ({currency})</th>
-              <th className="py-3 px-4">Соответствие ГОСТ / СП</th>
+              <th className="py-3 px-4">Норматив (справочно)</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200 font-mono text-slate-800">
@@ -126,8 +131,8 @@ export const BomTable: React.FC<BomTableProps> = ({
                 {formatCurrency(itemizedCosts.concrete, currency)}
               </td>
               <td className="py-3 px-4">
-                <span className="inline-flex items-center gap-1 text-[11px] text-emerald-700 font-sans font-semibold">
-                  <CheckCircle2 className="w-3.5 h-3.5" /> ГОСТ 7473-2010
+                <span className="inline-flex items-center gap-1 text-[11px] text-slate-600 font-sans">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-slate-400" /> ГОСТ 7473 — смета
                 </span>
               </td>
             </tr>
@@ -187,8 +192,8 @@ export const BomTable: React.FC<BomTableProps> = ({
                 {formatCurrency(itemizedCosts.rebar, currency)}
               </td>
               <td className="py-3 px-4">
-                <span className="inline-flex items-center gap-1 text-[11px] text-emerald-700 font-sans font-semibold">
-                  <CheckCircle2 className="w-3.5 h-3.5" /> ГОСТ 52544-2006
+                <span className="inline-flex items-center gap-1 text-[11px] text-slate-600 font-sans">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-slate-400" /> ГОСТ 52544 — смета
                 </span>
               </td>
             </tr>

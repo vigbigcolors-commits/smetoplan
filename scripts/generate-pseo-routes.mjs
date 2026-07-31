@@ -76,7 +76,8 @@ const INTENTS = [
   { cluster: 'smeta', verb: 'Смета' },
   { cluster: 'online', verb: 'Онлайн-расчёт' },
 ];
-const REGIONS = [null, 'moskva', 'spb', 'kazan', 'ekaterinburg', 'novosibirsk'];
+const REGIONS = ['moskva', 'spb', 'kazan', 'ekaterinburg', 'novosibirsk'];
+// null region removed — gate ALWAYS requires resolvePseoRegion (PSEO_REQUIRE_REGION)
 
 function materialSku(grade) {
   return `BET-${grade}`;

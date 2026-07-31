@@ -40,7 +40,7 @@ INSERT INTO pseo_routes (
   'Онлайн-калькулятор свайно-ростверкового фундамента 10×8',
   'Расчёт числа свай, объёма бетона и арматурных каркасов с опциональным ростверком.',
   '{"length":10,"width":8,"depth":1.2,"grade":"M300","rebar_d":12,"rebar_step":200,"layers":1,"pier":0.4,"grillage_h":0.4}'::jsonb,
-  4, TRUE, TRUE, TRUE, TRUE, FALSE, NULL, 'BET-M300', 'pier_volume', 75, FALSE, NULL
+  4, TRUE, TRUE, TRUE, TRUE, FALSE, NULL, 'BET-M300', 'pier_volume', 75, TRUE, NOW() - INTERVAL '1 day'
 ),
 (
   'kalkulyator-podpornoj-steny-10x25-m250',
@@ -49,7 +49,7 @@ INSERT INTO pseo_routes (
   'Калькулятор подпорной стены высотой 2.5 м',
   'Расчёт монолитной подпорной стены: объём, двойная сетка Ø12, опалубка двух сторон.',
   '{"length":10,"width":0.3,"depth":2.5,"grade":"M250","rebar_d":12,"rebar_step":150,"layers":2}'::jsonb,
-  5, TRUE, TRUE, TRUE, TRUE, TRUE, NULL, 'BET-M250', 'wall_volume', 70, FALSE, NULL
+  5, TRUE, TRUE, TRUE, TRUE, TRUE, NULL, 'BET-M250', 'wall_volume', 70, TRUE, NOW() - INTERVAL '1 day'
 ),
 (
   'raschet-balki-6m-armatura-16-m350',
@@ -58,7 +58,7 @@ INSERT INTO pseo_routes (
   'Расчёт монолитной балки пролётом 6 м',
   'Объём бетона М350, продольная арматура Ø16 и хомуты с шагом 200 мм по СП 63.13330.',
   '{"length":6,"width":0.4,"depth":0.6,"grade":"M350","rebar_d":16,"rebar_step":150,"layers":3}'::jsonb,
-  1, TRUE, TRUE, TRUE, FALSE, TRUE, NULL, 'BET-M350', 'beam_volume', 65, FALSE, NULL
+  1, TRUE, TRUE, TRUE, FALSE, TRUE, NULL, 'BET-M350', 'beam_volume', 65, TRUE, NOW() - INTERVAL '1 day'
 ),
 (
   'smeta-plitnogo-fundamenta-bez-armatury-8x6',
