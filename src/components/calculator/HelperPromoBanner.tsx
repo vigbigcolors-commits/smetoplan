@@ -148,7 +148,7 @@ export function HelperPromoBanner({ onOpenHelper }: { onOpenHelper: () => void }
           <button
             type="button"
             onClick={openWithExample}
-            className="helper-promo-cta group inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#4F7F72] via-[#6B9B8A] to-sky-300 px-5 py-3.5 text-sm font-extrabold text-[#0B1220] shadow-[0_12px_28px_-12px_rgba(107,155,138,0.7)] transition hover:brightness-110 active:scale-[0.98]"
+            className="helper-promo-cta group inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#6B9B8A] px-5 py-3.5 text-sm font-extrabold text-[#0B1220] shadow-[0_12px_28px_-12px_rgba(107,155,138,0.7)] transition hover:bg-[#7AAB9A] active:scale-[0.98]"
           >
             <Wand2 className="h-4 w-4 transition group-hover:rotate-12" />
             Открыть HELPER и подставить
