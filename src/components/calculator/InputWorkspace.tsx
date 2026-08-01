@@ -616,21 +616,27 @@ export const InputWorkspace: React.FC<InputWorkspaceProps> = ({
         </div>
       </div>
 
-      {/* 3. Rebar Reinforcement Matrix (Арматурный каркас) */}
+      {/* 3. Арматурный каркас */}
       <div className="space-y-3 border-t border-slate-200 pt-4">
         <div className="text-xs font-mono font-bold text-slate-800 flex items-center justify-between uppercase">
           <span className="flex items-center gap-1.5">
             <Wrench className="w-3.5 h-3.5 text-[#1F5A8E]" />
-            3. Арматурный Каркас и Сетка
+            3. Арматурный каркас
           </span>
-          <span className="text-[11px] text-[#1F5A8E] font-bold">
-            Ø{rebarSpec.diameterMm}мм с шагом {rebarSpec.spacingMm}мм
+          <span className="text-[11px] text-[#1F5A8E] font-bold normal-case">
+            {structureType === 'strip' || structureType === 'beam'
+              ? `Ø${rebarSpec.diameterMm} · ${rebarSpec.longitudinalBars ?? (rebarSpec.layers >= 2 ? 6 : 4)} прод. · хомуты ${rebarSpec.spacingMm} мм`
+              : `Ø${rebarSpec.diameterMm} мм · шаг ${rebarSpec.spacingMm} мм`}
           </span>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-xs font-medium text-slate-700 block mb-1">Диаметр Арматуры</label>
+            <label className="text-xs font-medium text-slate-700 block mb-1">
+              {structureType === 'strip' || structureType === 'beam'
+                ? 'Диаметр продольных'
+                : 'Диаметр арматуры'}
+            </label>
             <select
               value={rebarSpec.diameterMm}
               onChange={(e) =>
@@ -641,39 +647,73 @@ export const InputWorkspace: React.FC<InputWorkspaceProps> = ({
               }
               className="w-full bg-[#F4F4F5] border border-slate-300 rounded-lg font-mono font-bold text-xs p-2 text-slate-900 focus:ring-1 focus:ring-[#1F5A8E]"
             >
-              <option value={8}>8 мм (А400 Легкая)</option>
+              <option value={8}>8 мм (А400 Лёгкая)</option>
               <option value={10}>10 мм (А500С Стандарт)</option>
               <option value={12}>12 мм (А500С Усиленная)</option>
               <option value={14}>14 мм (Высокая прочность)</option>
               <option value={16}>16 мм (Монолитные балки)</option>
-              <option value={20}>20 мм (Тяжелые нагрузки)</option>
+              <option value={20}>20 мм (Тяжёлые нагрузки)</option>
             </select>
           </div>
 
-          <div>
-            <label className="text-xs font-medium text-slate-700 block mb-1">Слои Армирования</label>
-            <select
-              value={rebarSpec.layers}
-              onChange={(e) =>
-                onRebarSpecChange({
-                  ...rebarSpec,
-                  layers: Number(e.target.value) as 1 | 2 | 3,
-                })
-              }
-              className="w-full bg-[#F4F4F5] border border-slate-300 rounded-lg font-mono font-bold text-xs p-2 text-slate-900 focus:ring-1 focus:ring-[#1F5A8E]"
-            >
-              <option value={1}>1 Слой (Нижняя сетка)</option>
-              <option value={2}>2 Слоя (Верх + Низ)</option>
-              <option value={3}>3D Пространственный пространственный каркас</option>
-            </select>
-          </div>
+          {structureType === 'strip' || structureType === 'beam' ? (
+            <div>
+              <label className="text-xs font-medium text-slate-700 block mb-1">
+                Продольных стержней
+              </label>
+              <select
+                value={
+                  rebarSpec.longitudinalBars ??
+                  (rebarSpec.layers >= 3 ? 8 : rebarSpec.layers >= 2 ? 6 : 4)
+                }
+                onChange={(e) => {
+                  const n = Number(e.target.value) as 4 | 6 | 8;
+                  onRebarSpecChange({
+                    ...rebarSpec,
+                    longitudinalBars: n,
+                    layers: n >= 8 ? 3 : n >= 6 ? 2 : 1,
+                  });
+                }}
+                className="w-full bg-[#F4F4F5] border border-slate-300 rounded-lg font-mono font-bold text-xs p-2 text-slate-900 focus:ring-1 focus:ring-[#1F5A8E]"
+              >
+                <option value={4}>4 шт (нижний пояс)</option>
+                <option value={6}>6 шт (верх + низ)</option>
+                <option value={8}>8 шт (усиленный каркас)</option>
+              </select>
+            </div>
+          ) : (
+            <div>
+              <label className="text-xs font-medium text-slate-700 block mb-1">
+                Слои армирования
+              </label>
+              <select
+                value={rebarSpec.layers}
+                onChange={(e) =>
+                  onRebarSpecChange({
+                    ...rebarSpec,
+                    layers: Number(e.target.value) as 1 | 2 | 3,
+                  })
+                }
+                className="w-full bg-[#F4F4F5] border border-slate-300 rounded-lg font-mono font-bold text-xs p-2 text-slate-900 focus:ring-1 focus:ring-[#1F5A8E]"
+              >
+                <option value={1}>1 слой (нижняя сетка)</option>
+                <option value={2}>2 слоя (верх + низ)</option>
+                <option value={3}>3 слоя (пространственная сетка)</option>
+              </select>
+            </div>
+          )}
         </div>
 
-        {/* Mesh Pitch Slider */}
         <div className="bg-[#F4F4F5] p-3 rounded-lg border border-slate-200 space-y-1.5">
           <div className="flex justify-between items-center text-xs">
-            <span className="font-semibold text-slate-700">Шаг Сетки (Ячейка)</span>
-            <span className="font-mono font-bold text-[#0F172A]">{rebarSpec.spacingMm} мм</span>
+            <span className="font-semibold text-slate-700">
+              {structureType === 'strip' || structureType === 'beam'
+                ? 'Шаг поперечных хомутов'
+                : 'Шаг сетки (ячейка)'}
+            </span>
+            <span className="font-mono font-bold text-[#0F172A]">
+              {rebarSpec.spacingMm} мм
+            </span>
           </div>
           <input
             type="range"
@@ -689,6 +729,12 @@ export const InputWorkspace: React.FC<InputWorkspaceProps> = ({
             }
             className="w-full accent-[#1F5A8E] cursor-pointer"
           />
+          {(structureType === 'strip' || structureType === 'beam') && (
+            <p className="text-[10px] leading-snug text-slate-500">
+              Хомуты — замкнутый прямоугольник по сечению с учётом защитного слоя.
+              Диаметр хомутов: min(8 мм, Ø продольных).
+            </p>
+          )}
         </div>
       </div>
 

@@ -9,6 +9,7 @@ export interface ProcurementInput {
   stockBarsApprox: number;
   stockLengthM: number;
   diameterMm: number;
+  stockByDiameter?: Array<{ diameterMm: number; bars: number; weightKg: number }>;
   coverMm: number;
   formwork: FormworkBom;
   contactAreaM2: number;
@@ -44,15 +45,27 @@ export function buildBuyTomorrowList(input: ProcurementInput): BuyTomorrowList {
     note: 'Согласовать марку/класс с РБУ и окном заливки',
   });
 
-  items.push({
-    id: 'rebar-stock',
-    category: 'Арматура',
-    name: `Хлысты Ø${input.diameterMm} L=${input.stockLengthM} м`,
-    qty: input.stockBarsApprox,
-    unit: 'шт',
-    note: `≈ ${input.rebarWeightKg} кг по раскрою`,
-  });
+  const byDia =
+    input.stockByDiameter && input.stockByDiameter.length > 0
+      ? input.stockByDiameter
+      : [
+          {
+            diameterMm: input.diameterMm,
+            bars: input.stockBarsApprox,
+            weightKg: input.rebarWeightKg,
+          },
+        ];
 
+  for (const row of byDia) {
+    items.push({
+      id: `rebar-stock-${row.diameterMm}`,
+      category: 'Арматура',
+      name: `Хлысты Ø${row.diameterMm} L=${input.stockLengthM} м`,
+      qty: row.bars,
+      unit: 'шт',
+      note: `≈ ${row.weightKg} кг (= ${row.bars} × ${input.stockLengthM} м × ρ)`,
+    });
+  }
   for (const p of input.rebarPieces.slice(0, 8)) {
     items.push({
       id: `piece-${p.mark}`,

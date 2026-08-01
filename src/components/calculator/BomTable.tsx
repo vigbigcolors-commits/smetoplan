@@ -186,9 +186,13 @@ export const BomTable: React.FC<BomTableProps> = ({
               </td>
               <td className="py-3 px-4 font-bold">{calculation.rebarWeightKg} кг</td>
               <td className="py-3 px-4 text-slate-600">
-                {calculation.rebarStockBarsApprox} хлыстов ×{' '}
-                {calculation.rebarStockLengthM.toFixed(1)} м · нетто{' '}
-                {calculation.rebarLengthMeters} м ({rebarSpec.layers} сл.)
+                {calculation.rebarStockByDiameter.length > 1
+                  ? calculation.rebarStockByDiameter
+                      .map((s) => `${s.bars}×Ø${s.diameterMm}`)
+                      .join(' + ')
+                  : `${calculation.rebarStockBarsApprox} хлыстов Ø${rebarSpec.diameterMm}`}{' '}
+                × {calculation.rebarStockLengthM.toFixed(1)} м · нетто{' '}
+                {calculation.rebarLengthMeters} м
               </td>
               <td className="py-3 px-4 text-right font-bold text-slate-900">
                 {formatCurrency(itemizedCosts.rebar, currency)}

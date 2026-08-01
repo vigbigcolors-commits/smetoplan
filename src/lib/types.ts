@@ -22,8 +22,12 @@ export interface ConcreteSpec {
 
 export interface RebarSpec {
   diameterMm: number;
+  /** Плита/стена: шаг сетки. Лента/балка: шаг хомутов. */
   spacingMm: number;
+  /** Плита/стена: число сеток. Для ленты — запасной маппинг, если нет longitudinalBars. */
   layers: 1 | 2 | 3;
+  /** Продольные стержни каркаса ленты/балки (типично 4 / 6 / 8). */
+  longitudinalBars?: 4 | 6 | 8;
   customPricePerTon: number;
 }
 

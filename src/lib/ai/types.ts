@@ -42,6 +42,7 @@ export interface AiCalcPatch {
   diameterMm?: number;
   spacingMm?: number;
   layers?: 1 | 2 | 3;
+  longitudinalBars?: 4 | 6 | 8;
   safetyFactor?: number;
   stockLengthM?: number;
   concreteGrade?: 'M150' | 'M200' | 'M250' | 'M300' | 'M350' | 'M400';

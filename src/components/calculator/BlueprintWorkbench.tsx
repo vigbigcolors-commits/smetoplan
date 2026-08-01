@@ -89,8 +89,10 @@ export function BlueprintWorkbench({
             2D Чертёж + Раскрой арматуры
           </span>
           <span className="rounded bg-slate-800 px-2 py-0.5 font-mono text-[10px] text-slate-400">
-            {structureType.toUpperCase()} · Ø{rebarSpec.diameterMm} · {rebarSpec.spacingMm}×
-            {rebarSpec.spacingMm} мм
+            {structureType.toUpperCase()} · Ø{rebarSpec.diameterMm}
+            {structureType === 'strip' || structureType === 'beam'
+              ? ` · ${rebarSpec.longitudinalBars ?? (rebarSpec.layers >= 2 ? 6 : 4)} прод. · хом. ${rebarSpec.spacingMm}`
+              : ` · ${rebarSpec.spacingMm}×${rebarSpec.spacingMm} мм`}
           </span>
         </div>
         <button
@@ -211,6 +213,13 @@ export function BlueprintWorkbench({
               </strong>{' '}
               по {calculation.rebarStockLengthM.toFixed(1)} м
             </p>
+            {calculation.rebarStockByDiameter.length > 1 && (
+              <p className="text-[10px] text-sky-200/90">
+                {calculation.rebarStockByDiameter
+                  .map((s) => `${s.bars}×Ø${s.diameterMm} (${s.weightKg} кг)`)
+                  .join(' · ')}
+              </p>
+            )}
             <p>
               Отход:{' '}
               <strong className="text-amber-300">{calculation.rebarWasteM} м</strong> (
@@ -221,8 +230,7 @@ export function BlueprintWorkbench({
               <strong className="text-white">{calculation.lapMm} мм</strong> (~40Ø)
             </p>
             <p className="mt-1.5 text-[10px] text-slate-400">
-              Те же {calculation.rebarStockBarsApprox} шт, что в ведомости раскроя и «Купить
-              завтра» · {calculation.rebarWeightKg} кг
+              Масса закупки {calculation.rebarWeightKg} кг = Σ(хлысты × L × ρ по Ø)
             </p>
           </div>
         </div>

@@ -303,6 +303,47 @@ describe('golden: calculateMaterials', () => {
     assert.equal(r.concreteVolumeM3, 10.35);
     assert.ok(Array.isArray(r.checks));
   });
+
+  it('strip cage: longitudinal + rectangular stirrups; mass by diameter', () => {
+    const r = calculateMaterials(
+      'strip',
+      {
+        length: 12,
+        width: 8,
+        depth: 1.0,
+        perimeterThickeningWidth: 0.4,
+        perimeterThickeningDepth: 0,
+      },
+      concrete,
+      {
+        diameterMm: 10,
+        spacingMm: 300,
+        layers: 2,
+        longitudinalBars: 6,
+        customPricePerTon: 62000,
+      },
+      prices,
+      'metric',
+      1.0,
+      { coverMm: 40, stockLengthM: 11.7, stripLayout: 'perimeter_plus_one' }
+    );
+    assert.equal(r.concreteVolumeM3, 20.48);
+    assert.equal(r.formworkAreaM2, 104);
+    assert.ok(r.rebarPieces.some((p) => p.mark === 'А1'));
+    assert.ok(r.rebarPieces.some((p) => p.mark === 'Х1'));
+    const stirrup = r.rebarPieces.find((p) => p.mark === 'Х1')!;
+    // 0.4×1.0, a=40 → clear 0.32×0.92 → 2×1.24 м + 2×крюка(80) = 2640 мм
+    assert.equal(stirrup.lengthMm, 2640);
+    assert.ok(stirrup.lengthMm < 4000, 'хомут не длиннее разумного контура секции');
+    assert.equal(stirrup.diameterMm, 8);
+    const fromDia = r.rebarStockByDiameter.reduce(
+      (s, row) =>
+        s + row.bars * r.rebarStockLengthM * rebarLinearDensityKgM(row.diameterMm),
+      0
+    );
+    assert.ok(Math.abs(r.rebarWeightKg - fromDia) < 1.5);
+    assert.ok(r.rebarStockByDiameter.length >= 2);
+  });
 });
 
 describe('golden: formwork pour acceptance', () => {

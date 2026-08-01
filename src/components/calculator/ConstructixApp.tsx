@@ -628,13 +628,17 @@ export default function ConstructixApp({
     if (
       patch.diameterMm != null ||
       patch.spacingMm != null ||
-      patch.layers != null
+      patch.layers != null ||
+      patch.longitudinalBars != null
     ) {
       setRebarSpec((prev) => ({
         ...prev,
         ...(patch.diameterMm != null ? { diameterMm: patch.diameterMm } : {}),
         ...(patch.spacingMm != null ? { spacingMm: patch.spacingMm } : {}),
         ...(patch.layers != null ? { layers: patch.layers } : {}),
+        ...(patch.longitudinalBars != null
+          ? { longitudinalBars: patch.longitudinalBars }
+          : {}),
       }));
     }
     if (patch.concreteGrade) {
@@ -937,6 +941,7 @@ export default function ConstructixApp({
             stockBarsApprox={calculation.rebarStockBarsApprox}
             stockLengthM={calculation.rebarStockLengthM}
             diameterMm={rebarSpec.diameterMm}
+            stockByDiameter={calculation.rebarStockByDiameter}
             coverMm={calculation.coverMm}
             formwork={formworkBom}
             contactAreaM2={calculation.contactAreaM2}

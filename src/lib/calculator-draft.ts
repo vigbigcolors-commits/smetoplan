@@ -101,11 +101,17 @@ function isConcrete(v: unknown): v is ConcreteSpec {
 function isRebar(v: unknown): v is RebarSpec {
   if (!v || typeof v !== 'object') return false;
   const r = v as RebarSpec;
+  const longOk =
+    r.longitudinalBars == null ||
+    r.longitudinalBars === 4 ||
+    r.longitudinalBars === 6 ||
+    r.longitudinalBars === 8;
   return (
     isFiniteNumber(r.diameterMm) &&
     isFiniteNumber(r.spacingMm) &&
     (r.layers === 1 || r.layers === 2 || r.layers === 3) &&
-    isFiniteNumber(r.customPricePerTon)
+    isFiniteNumber(r.customPricePerTon) &&
+    longOk
   );
 }
 

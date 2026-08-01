@@ -148,11 +148,22 @@ export function extractCalcPatchFromText(text: string): AiCalcPatch {
     if (n === 1 || n === 2 || n === 3) patch.layers = n;
   }
 
+  const longBars = firstMatch(
+    text,
+    /(\d+)\s*(?:продольн\S{0,12}|стержн\S{0,8}\s*в\s*сечени)/i
+  );
+  if (longBars) {
+    const n = Number(longBars[1]);
+    if (n === 4 || n === 6 || n === 8) patch.longitudinalBars = n;
+  }
+
   const spacing =
     firstMatch(
       text,
-      /шаг[^0-9]{0,16}(\d+(?:[.,]\d+)?)\s*[×xх]\s*(\d+(?:[.,]\d+)?)/i
-    ) || firstMatch(text, /шаг[^0-9]{0,16}(\d+(?:[.,]\d+)?)\s*мм/i);
+      /шаг[^0-9]{0,16}(?:хомут\S{0,8}[^0-9]{0,12})?(\d+(?:[.,]\d+)?)\s*[×xх]\s*(\d+(?:[.,]\d+)?)/i
+    ) ||
+    firstMatch(text, /шаг[^0-9]{0,16}(?:хомут\S{0,8}[^0-9]{0,12})?(\d+(?:[.,]\d+)?)\s*мм/i) ||
+    firstMatch(text, /хомут\S{0,12}шаг[^0-9]{0,12}(\d+(?:[.,]\d+)?)\s*мм/i);
   if (spacing) {
     const a = num(spacing[1]);
     const b = num(spacing[2]);

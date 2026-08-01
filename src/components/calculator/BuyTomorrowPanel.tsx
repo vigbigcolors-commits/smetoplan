@@ -28,6 +28,7 @@ export function BuyTomorrowPanel({
   stockBarsApprox,
   stockLengthM,
   diameterMm,
+  stockByDiameter,
   coverMm,
   formwork,
   contactAreaM2,
@@ -41,6 +42,7 @@ export function BuyTomorrowPanel({
   stockBarsApprox: number;
   stockLengthM: number;
   diameterMm: number;
+  stockByDiameter?: Array<{ diameterMm: number; bars: number; weightKg: number }>;
   coverMm: number;
   formwork: FormworkBom;
   contactAreaM2: number;
@@ -57,6 +59,7 @@ export function BuyTomorrowPanel({
         stockBarsApprox,
         stockLengthM,
         diameterMm,
+        stockByDiameter,
         coverMm,
         formwork,
         contactAreaM2,
@@ -70,6 +73,7 @@ export function BuyTomorrowPanel({
       stockBarsApprox,
       stockLengthM,
       diameterMm,
+      stockByDiameter,
       coverMm,
       formwork,
       contactAreaM2,

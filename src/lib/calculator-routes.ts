@@ -82,9 +82,10 @@ export function getStructurePreset(type: StructureType): StructurePreset {
         },
         concreteSpec: { ...DEFAULT_CONCRETE },
         rebarSpec: {
-          diameterMm: 14,
-          spacingMm: 150,
+          diameterMm: 10,
+          spacingMm: 300,
           layers: 2,
+          longitudinalBars: 6,
           customPricePerTon: 62000,
         },
       };
@@ -109,8 +110,9 @@ export function getStructurePreset(type: StructureType): StructurePreset {
         },
         rebarSpec: {
           diameterMm: 16,
-          spacingMm: 150,
-          layers: 3,
+          spacingMm: 200,
+          layers: 2,
+          longitudinalBars: 4,
           customPricePerTon: 62000,
         },
       };

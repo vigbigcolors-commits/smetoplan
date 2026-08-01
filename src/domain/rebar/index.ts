@@ -40,8 +40,31 @@ export interface RebarResult {
   stockBarsApprox: number;
   stockLengthM: number;
   wasteM: number;
+  /** Закупка по диаметрам — нельзя смешивать Ø10 и Ø8 в одной строке. */
+  stockByDiameter: Array<{ diameterMm: number; bars: number; weightKg: number }>;
   pieces: RebarPiece[];
   notes: string[];
+}
+
+function resolveLongitudinalBars(rebarSpec: RebarSpec): 4 | 6 | 8 {
+  if (rebarSpec.longitudinalBars === 4 || rebarSpec.longitudinalBars === 6 || rebarSpec.longitudinalBars === 8) {
+    return rebarSpec.longitudinalBars;
+  }
+  if (rebarSpec.layers >= 3) return 8;
+  if (rebarSpec.layers >= 2) return 6;
+  return 4;
+}
+
+function stirrupPerimeterMm(
+  sectionWidthM: number,
+  sectionHeightM: number,
+  coverM: number,
+  stirrupDiameterMm: number
+): number {
+  const clearW = Math.max(0.05, sectionWidthM - 2 * coverM);
+  const clearH = Math.max(0.05, sectionHeightM - 2 * coverM);
+  const hookMm = Math.max(75, 10 * stirrupDiameterMm);
+  return Math.max(400, Math.round(2 * (clearW + clearH) * 1000) + 2 * hookMm);
 }
 
 function pieceWeight(diameterMm: number, lengthMm: number, count: number): number {
@@ -105,41 +128,65 @@ export function computeRebar(
       const ribbonWidth =
         pW > 0 ? pW : Math.min(0.5, Math.max(0.3, W > 2 ? 0.4 : W));
       const totalStripLen = Math.max(input.stripLengthM, 2 * (L + W));
-      // Typical strip cage: 4 bars (1 layer equiv) or 6 bars (top+bottom)
-      const mainBarCount = rebarSpec.layers >= 2 ? 6 : 4;
-      // Total longitudinal steel along whole strip network
+      const longBars = resolveLongitudinalBars(rebarSpec);
+      const stirrupStepM = Math.max(0.1, rebarSpec.spacingMm / 1000);
+
+      // Продольные: линии вдоль всей сети ленты, нарезка под складской хлыст с нахлёстом.
+      const usable = Math.max(0.5, stockLengthM - lapM);
+      const segsPerLine = Math.max(1, Math.ceil(totalStripLen / usable));
       const longPieceMm = Math.max(
         500,
-        Math.round(Math.min(stockLengthM - lapM, Math.max(L, W)) * 1000)
+        Math.round(Math.min(usable, totalStripLen) * 1000)
       );
-      const totalLongM = mainBarCount * totalStripLen;
-      const longCount = Math.max(1, Math.ceil((totalLongM * 1000) / longPieceMm));
-      addPiece(pieces, 'А1', 'Продольные каркаса ленты', d, longPieceMm, longCount);
+      addPiece(
+        pieces,
+        'А1',
+        `Продольные каркаса (${longBars} шт в сечении)`,
+        d,
+        longPieceMm,
+        longBars * segsPerLine
+      );
 
+      // Хомуты: замкнутый прямоугольник по сечению ленты с учётом a и крюков.
       const stirrupD = Math.min(8, d);
-      const stirrupMm = Math.max(
-        600,
-        Math.round(2 * (ribbonWidth + H - 2 * coverM) * 1000)
+      const stirrupMm = stirrupPerimeterMm(ribbonWidth, H, coverM, stirrupD);
+      const stirrupsCount = Math.max(
+        2,
+        Math.ceil(totalStripLen / stirrupStepM) + 1
       );
-      const stirrupsCount = Math.ceil(totalStripLen / 0.3);
-      addPiece(pieces, 'Х1', 'Хомуты шаг 300 мм', stirrupD, stirrupMm, stirrupsCount);
+      addPiece(
+        pieces,
+        'Х1',
+        `Хомуты шаг ${Math.round(stirrupStepM * 1000)} мм`,
+        stirrupD,
+        stirrupMm,
+        stirrupsCount
+      );
+
       notes.push(
-        `Лента: ${mainBarCount} прод. по ${totalStripLen.toFixed(1)} м сети + хомуты Ø${stirrupD}`
+        `Лента ${ribbonWidth.toFixed(2)}×${H.toFixed(2)} м, сеть ${totalStripLen.toFixed(1)} м: ${longBars} прод. Ø${d} + хомуты Ø${stirrupD} шаг ${Math.round(stirrupStepM * 1000)} мм, a=${input.coverMm} мм`
       );
       break;
     }
     case 'beam': {
-      const mainBarCount = Math.max(4, rebarSpec.layers * 2);
-      const barMm = Math.max(500, Math.round((L + 2 * 0.15) * 1000)); // +anchorage allowance
-      addPiece(pieces, 'А1', 'Продольные', d, barMm, mainBarCount);
+      const longBars = resolveLongitudinalBars(rebarSpec);
+      const stirrupStepM = Math.max(0.1, rebarSpec.spacingMm / 1000);
+      const barMm = Math.max(500, Math.round((L + 2 * 0.15) * 1000));
+      addPiece(pieces, 'А1', `Продольные (${longBars} шт)`, d, barMm, longBars);
       const stirrupD = Math.min(8, d);
-      const stirrupMm = Math.max(
-        500,
-        Math.round(2 * (W + H - 2 * coverM) * 1000)
+      const stirrupMm = stirrupPerimeterMm(W, H, coverM, stirrupD);
+      const stirrupsCount = Math.max(2, Math.ceil(L / stirrupStepM) + 1);
+      addPiece(
+        pieces,
+        'Х1',
+        `Хомуты шаг ${Math.round(stirrupStepM * 1000)} мм`,
+        stirrupD,
+        stirrupMm,
+        stirrupsCount
       );
-      const stirrupsCount = Math.ceil(L / 0.2) + 1;
-      addPiece(pieces, 'Х1', 'Хомуты шаг 200 мм', stirrupD, stirrupMm, stirrupsCount);
-      notes.push(`Балка: ${mainBarCount} прод. + хомуты Ø${stirrupD}`);
+      notes.push(
+        `Балка ${W.toFixed(2)}×${H.toFixed(2)}×${L.toFixed(2)} м: ${longBars} прод. Ø${d} + хомуты Ø${stirrupD}`
+      );
       break;
     }
     case 'pier': {
@@ -184,16 +231,24 @@ export function computeRebar(
   let barsNeeded = 0;
   let wasteM = 0;
   let stockTotalM = 0;
-  /** Масса к закупке = Σ (хлысты × L × ρ), без «скрытого» (1+waste%). */
+  /** Масса к закупке = Σ (хлысты × L × ρ) по каждому Ø. */
   let purchaseWeightKg = 0;
+  const stockByDiameter: RebarResult['stockByDiameter'] = [];
   for (const [dia, group] of byDiameter) {
     const nest = nestPiecesToStock(group, stockLengthM, lapM);
+    const dens = rebarLinearDensityKgM(dia);
+    const groupWeight = nest.barsNeeded * stockLengthM * dens;
     barsNeeded += nest.barsNeeded;
     wasteM += nest.wasteM;
     stockTotalM += nest.stockTotalM;
-    purchaseWeightKg +=
-      nest.barsNeeded * stockLengthM * rebarLinearDensityKgM(dia);
+    purchaseWeightKg += groupWeight;
+    stockByDiameter.push({
+      diameterMm: dia,
+      bars: nest.barsNeeded,
+      weightKg: Math.round(groupWeight * 10) / 10,
+    });
   }
+  stockByDiameter.sort((a, b) => b.diameterMm - a.diameterMm);
 
   const wastePct =
     stockTotalM > 0 ? Math.round((wasteM / stockTotalM) * 1000) / 10 : 0;
@@ -203,11 +258,23 @@ export function computeRebar(
 
   const barArea = Math.PI * (d / 2) ** 2;
   const spacingM = Math.max(0.05, rebarSpec.spacingMm / 1000);
-  const asProvided = (barArea / spacingM) * rebarSpec.layers;
+  let asProvided = (barArea / spacingM) * rebarSpec.layers;
+  if (structureType === 'strip' || structureType === 'beam') {
+    const longBars = resolveLongitudinalBars(rebarSpec);
+    const sectionW =
+      structureType === 'strip'
+        ? pW > 0
+          ? pW
+          : Math.min(0.5, Math.max(0.3, W > 2 ? 0.4 : W))
+        : W;
+    asProvided = (longBars * barArea) / Math.max(0.1, sectionW);
+  }
   const asMin = MU_S_MIN * H * 1e6;
 
   notes.push(
-    `Нахлёст ${lapMm} мм (~40Ø), хлыст ${stockLengthM.toFixed(1)} м → ${barsNeeded} шт, отход ${wastePct}%`
+    `Нахлёст ${lapMm} мм (~40Ø), хлыст ${stockLengthM.toFixed(1)} м → ${barsNeeded} шт (${stockByDiameter
+      .map((s) => `${s.bars}×Ø${s.diameterMm}`)
+      .join(' + ')}), отход ${wastePct}%`
   );
 
   return {
@@ -222,6 +289,7 @@ export function computeRebar(
     stockBarsApprox: barsNeeded,
     stockLengthM,
     wasteM: Math.round(wasteM * 10) / 10,
+    stockByDiameter,
     pieces,
     notes,
   };

@@ -66,6 +66,7 @@ export interface ExtendedCalculationResult extends MaterialCalculationResult {
   rebarWasteM: number;
   rebarStockBarsApprox: number;
   rebarStockLengthM: number;
+  rebarStockByDiameter: Array<{ diameterMm: number; bars: number; weightKg: number }>;
 }
 
 export function calculateMaterials(
@@ -228,6 +229,7 @@ export function calculateMaterials(
     rebarWasteM: rebar.wasteM,
     rebarStockBarsApprox: rebar.stockBarsApprox,
     rebarStockLengthM: rebar.stockLengthM,
+    rebarStockByDiameter: rebar.stockByDiameter,
   };
 }
 
@@ -255,6 +257,7 @@ export function buildAiCalcContext(result: ExtendedCalculationResult) {
     rebarLengthM: result.rebarLengthMeters,
     rebarWastePct: result.rebarWastePct,
     stockBarsApprox: result.rebarStockBarsApprox,
+    stockByDiameter: result.rebarStockByDiameter,
     lapMm: result.lapMm,
     coverMm: result.coverMm,
     soilPressureKpa: result.soilPressureKpa,
