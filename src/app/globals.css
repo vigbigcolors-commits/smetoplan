@@ -449,10 +449,10 @@ body {
 @keyframes helperCtaPulse {
   0%,
   100% {
-    box-shadow: 0 12px 28px -12px rgba(251, 191, 36, 0.75);
+    box-shadow: 0 12px 28px -12px rgba(107, 155, 138, 0.7);
   }
   50% {
-    box-shadow: 0 14px 34px -10px rgba(125, 211, 252, 0.65);
+    box-shadow: 0 14px 34px -10px rgba(125, 211, 252, 0.55);
   }
 }
 

@@ -73,11 +73,11 @@ export function HelperPromoBanner({ onOpenHelper }: { onOpenHelper: () => void }
         aria-hidden
       />
       <div
-        className="helper-promo-glow pointer-events-none absolute -right-10 top-0 h-56 w-56 rounded-full bg-amber-400/20 blur-3xl"
+        className="helper-promo-glow pointer-events-none absolute -right-10 top-0 h-56 w-56 rounded-full bg-[#6B9B8A]/25 blur-3xl"
         aria-hidden
       />
       <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sky-300/70 to-transparent"
+        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-teal-300/60 to-transparent"
         aria-hidden
       />
 
@@ -94,11 +94,11 @@ export function HelperPromoBanner({ onOpenHelper }: { onOpenHelper: () => void }
       <div className="relative grid gap-0 lg:grid-cols-[1.35fr_0.95fr]">
         <div className="border-b border-white/10 p-5 sm:p-6 lg:border-b-0 lg:border-r lg:pr-8">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-md bg-amber-400 px-2 py-1 font-mono text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#0F172A]">
+            <span className="inline-flex items-center gap-1.5 rounded-md bg-[#6B9B8A] px-2 py-1 font-mono text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#0B1220]">
               <Sparkles className="h-3 w-3" />
               HELPER
             </span>
-            <span className="inline-flex items-center gap-1 rounded-md border border-emerald-400/30 bg-emerald-400/10 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-300">
+            <span className="inline-flex items-center gap-1 rounded-md border border-teal-400/30 bg-teal-400/10 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-teal-200">
               <Zap className="h-3 w-3" />
               сам пишет в поля
             </span>
@@ -106,7 +106,7 @@ export function HelperPromoBanner({ onOpenHelper }: { onOpenHelper: () => void }
 
           <h2 className="mt-3 max-w-xl font-[family-name:var(--font-display)] text-2xl font-bold leading-tight tracking-tight text-white sm:text-3xl">
             Экономьте своё время —{' '}
-            <span className="bg-gradient-to-r from-sky-200 to-amber-200 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-sky-200 to-[#B8D4C8] bg-clip-text text-transparent">
               цифры ставит помощник
             </span>
           </h2>
@@ -148,7 +148,7 @@ export function HelperPromoBanner({ onOpenHelper }: { onOpenHelper: () => void }
           <button
             type="button"
             onClick={openWithExample}
-            className="helper-promo-cta group inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-400 via-amber-300 to-sky-300 px-5 py-3.5 text-sm font-extrabold text-[#0F172A] shadow-[0_12px_28px_-12px_rgba(251,191,36,0.75)] transition hover:brightness-105 active:scale-[0.98]"
+            className="helper-promo-cta group inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#4F7F72] via-[#6B9B8A] to-sky-300 px-5 py-3.5 text-sm font-extrabold text-[#0B1220] shadow-[0_12px_28px_-12px_rgba(107,155,138,0.7)] transition hover:brightness-110 active:scale-[0.98]"
           >
             <Wand2 className="h-4 w-4 transition group-hover:rotate-12" />
             Открыть HELPER и подставить
