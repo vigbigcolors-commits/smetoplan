@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Manrope, Unbounded, IBM_Plex_Mono } from 'next/font/google';
+import { getSiteUrl } from '@/lib/site-url';
 import './globals.css';
 import './constructix.css';
 
@@ -23,7 +24,7 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://smetoplan.ru'),
+  metadataBase: new URL(getSiteUrl()),
   title: {
     default: 'Smetoplan — калькуляторы и сметы для стройки',
     template: '%s',

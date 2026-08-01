@@ -10,7 +10,7 @@ import {
   RebarSpec,
   MaterialPrices,
 } from '@/lib/types';
-import { calculateMaterials, formatCurrency, type CalcMode, type SnowRegionId, type StripLayoutMode } from '@/lib/calculator';
+import { calculateMaterials, type CalcMode, type SnowRegionId, type StripLayoutMode } from '@/lib/calculator';
 import { Header } from '@/components/calculator/Header';
 import { PresetSelector } from '@/components/calculator/PresetSelector';
 import { InputWorkspace } from '@/components/calculator/InputWorkspace';
@@ -62,7 +62,6 @@ import {
 
 const slabPreset = getStructurePreset('slab');
 const defaultRegion: PriceRegionId = 'moscow';
-const defaultSoil: SoilTypeId = PRICE_REGIONS[defaultRegion].soilDefaultId;
 
 const DEFAULT_STATE: ConstructixInitialState = {
   structureType: slabPreset.structureType,

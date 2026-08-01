@@ -1,6 +1,8 @@
 import type { MetadataRoute } from 'next';
 import { listPublishedSlugs } from '@/lib/pseo';
 import { allHubSlugs } from '@/lib/pseo-hubs';
+import { allCenySlugs } from '@/lib/ceny-regions';
+import { getSiteUrl } from '@/lib/site-url';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -10,7 +12,7 @@ export const revalidate = 0;
  * Cron drip-feed flips is_published → URLs appear here within the same day.
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const site = process.env.NEXT_PUBLIC_SITE_URL || 'https://smetoplan.ru';
+  const site = getSiteUrl();
 
   const staticEntries: MetadataRoute.Sitemap = [
     {
@@ -31,13 +33,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'daily',
       priority: 0.9,
     },
-    ...[
-      'moskva',
-      'sankt-peterburg',
-      'krasnodar',
-      'ekaterinburg',
-      'novosibirsk',
-    ].map((slug) => ({
+    ...allCenySlugs().map((slug) => ({
       url: `${site}/ceny/${slug}`,
       lastModified: new Date(),
       changeFrequency: 'daily' as const,

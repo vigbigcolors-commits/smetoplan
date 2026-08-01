@@ -121,7 +121,7 @@ function extractJsonBlock(text: string): {
   patch?: AiCalcPatch;
 } {
   const patch = parseApplyBlock(text);
-  let cleaned = text.replace(/<<<APPLY\s*[\s\S]*?\s*APPLY<<</, '').trim();
+  const cleaned = text.replace(/<<<APPLY\s*[\s\S]*?\s*APPLY<<</, '').trim();
   const m = cleaned.match(/<<<SUGGESTIONS\s*([\s\S]*?)\s*SUGGESTIONS<<</);
   if (!m) return { prose: cleaned.trim(), suggestions: [], patch };
   const prose = cleaned.replace(m[0], '').trim();
