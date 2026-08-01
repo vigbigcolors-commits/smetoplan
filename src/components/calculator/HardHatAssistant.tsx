@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   X,
   Send,
+  Square,
   Loader2,
   Sparkles,
   Wrench,
@@ -111,6 +112,7 @@ export function HardHatAssistant({
 
   const endRef = useRef<HTMLDivElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
   const fabMovedRef = useRef(false);
   const restoreRef = useRef<Rect | null>(null);
   const fabPosRef = useRef<Pos | null>(null);
@@ -316,6 +318,11 @@ export function HardHatAssistant({
     setRect(maxRect());
   };
 
+  const stopAsk = useCallback(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+  }, []);
+
   const ask = async (question: string) => {
     const q = question.trim();
     if (!q || loading) return;
@@ -325,16 +332,22 @@ export function HardHatAssistant({
     setMessages((m) => [...m, { role: 'user', content: q }]);
     setSuggestions([]);
 
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
+
     try {
       const res = await fetch('/api/ai/assistant', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: ac.signal,
         body: JSON.stringify({
           question: q,
           calcContext: buildAiCalcContext(calculation),
           history: historySnapshot.map(({ role, content }) => ({ role, content })),
         }),
       });
+      if (ac.signal.aborted) return;
       const json = await res.json();
       if (!json.success || !json.data) throw new Error(json.error || 'fail');
       const data = json.data as AiAssistantReply;
@@ -351,6 +364,8 @@ export function HardHatAssistant({
           autoApply = true;
         }
       }
+
+      if (ac.signal.aborted) return;
 
       setMessages((m) => [
         ...m,
@@ -370,7 +385,22 @@ export function HardHatAssistant({
           if (s.field != null && s.value != null) onApplySuggestion?.(s);
         }
       }
-    } catch {
+    } catch (err) {
+      if (
+        (err instanceof DOMException && err.name === 'AbortError') ||
+        (err instanceof Error && err.name === 'AbortError') ||
+        ac.signal.aborted
+      ) {
+        setMessages((m) => [
+          ...m,
+          {
+            role: 'assistant',
+            content: 'Запрос остановлен.',
+            meta: 'стоп',
+          },
+        ]);
+        return;
+      }
       // Offline fallback: still apply parsed numbers if user asked to set them
       if (detectApplyIntent(q)) {
         const local = extractApplyPatchFromDialog(q, historySnapshot);
@@ -385,7 +415,6 @@ export function HardHatAssistant({
               meta: 'offline · применено',
             },
           ]);
-          setLoading(false);
           return;
         }
       }
@@ -399,6 +428,7 @@ export function HardHatAssistant({
         },
       ]);
     } finally {
+      if (abortRef.current === ac) abortRef.current = null;
       setLoading(false);
     }
   };
@@ -645,6 +675,7 @@ export function HardHatAssistant({
             className="flex shrink-0 items-center gap-1.5 border-t border-slate-700 p-2"
             onSubmit={(e) => {
               e.preventDefault();
+              if (loading) return;
               ask(input);
             }}
           >
@@ -653,19 +684,29 @@ export function HardHatAssistant({
               onChange={(e) => setInput(e.target.value)}
               placeholder="Спросите по расчёту…"
               style={{ fontSize: inputPx }}
-              className="flex-1 rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-white outline-none placeholder:text-slate-500 focus:border-sky-500"
+              disabled={loading}
+              className="flex-1 rounded-sm border border-slate-700 bg-slate-900 px-3 py-2 text-white outline-none placeholder:text-slate-500 focus:border-sky-500 disabled:opacity-70"
             />
-            <button
-              type="submit"
-              disabled={loading || !input.trim()}
-              className="rounded-xl bg-sky-500 p-2 text-[#0B132B] hover:bg-sky-400 disabled:opacity-40"
-            >
-              {loading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
+            {loading ? (
+              <button
+                type="button"
+                onClick={stopAsk}
+                aria-label="Остановить запрос"
+                title="Стоп"
+                className="rounded-sm bg-rose-500 p-2 text-white transition-colors hover:bg-rose-400"
+              >
+                <Square className="h-4 w-4 fill-current" />
+              </button>
+            ) : (
+              <button
+                type="submit"
+                disabled={!input.trim()}
+                aria-label="Отправить"
+                className="rounded-sm bg-sky-500 p-2 text-[#0B132B] transition-colors hover:bg-sky-300 disabled:opacity-40"
+              >
                 <Send className="h-4 w-4" />
-              )}
-            </button>
+              </button>
+            )}
           </form>
 
           <p
