@@ -137,6 +137,9 @@ export function HardHatAssistant({
         if (j?.providers?.preferred) setProviderHint(j.providers.preferred);
       })
       .catch(() => undefined);
+    return () => {
+      abortRef.current?.abort();
+    };
   }, []);
 
   useEffect(() => {
