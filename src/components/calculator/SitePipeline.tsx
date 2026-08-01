@@ -104,12 +104,17 @@ export function SitePipeline({
     );
   };
 
+  const outlineBtn =
+    'inline-flex items-center gap-1.5 rounded-xl border border-slate-500 bg-transparent px-3 py-2 text-[11px] font-bold text-slate-100 transition-colors hover:border-sky-300 hover:bg-sky-400/30 hover:text-white';
+  const solidBtn =
+    'inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-[11px] font-bold text-[#0B132B] transition-colors';
+
   return (
     <section
       id="site-pipeline"
-      className="overflow-hidden rounded-2xl border border-slate-700/80 bg-[#0B132B] text-white shadow-xl"
+      className="rounded-2xl border border-slate-700/80 bg-[#0B132B] text-white shadow-xl"
     >
-      <div className="flex flex-wrap items-end justify-between gap-3 border-b border-slate-700/80 px-4 py-3 sm:px-5">
+      <div className="flex flex-wrap items-end justify-between gap-3 overflow-hidden rounded-t-2xl border-b border-slate-700/80 px-4 py-3 sm:px-5">
         <div>
           <h2 className="text-xs font-extrabold uppercase tracking-[0.14em] text-white">
             Конвейер объекта
@@ -123,7 +128,7 @@ export function SitePipeline({
         </p>
       </div>
 
-      <ol className="grid gap-px bg-slate-800/60 sm:grid-cols-5">
+      <ol className="grid gap-px overflow-hidden bg-slate-800/60 sm:grid-cols-5">
         {STEPS.map((step, i) => {
           const Icon = step.icon;
           return (
@@ -131,7 +136,7 @@ export function SitePipeline({
               <button
                 type="button"
                 onClick={() => jump(step.id)}
-                className="flex h-full w-full flex-col items-start gap-1 px-3 py-3 text-left transition hover:bg-slate-900/80 sm:px-4"
+                className="flex h-full w-full flex-col items-start gap-1 px-3 py-3 text-left transition-colors hover:bg-sky-500/20 sm:px-4"
               >
                 <span className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-wider text-slate-500">
                   <span className="flex h-5 w-5 items-center justify-center rounded-md bg-slate-800 font-mono text-[10px] text-sky-300">
@@ -152,7 +157,7 @@ export function SitePipeline({
         })}
       </ol>
 
-      <div className="flex flex-wrap gap-2 border-t border-slate-700/80 px-4 py-3 sm:px-5">
+      <div className="flex flex-wrap gap-2 rounded-b-2xl border-t border-slate-700/80 px-4 pb-5 pt-3 sm:px-5">
         <button
           type="button"
           onClick={() => {
@@ -160,7 +165,7 @@ export function SitePipeline({
             jump('tool-nodes');
             window.setTimeout(() => dispatchSiteEvent(PRINT_BRIGADE_A4_EVENT), 350);
           }}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-500 px-3 py-2 text-[11px] font-bold text-[#0B132B] hover:bg-emerald-400"
+          className={`${solidBtn} bg-emerald-500 hover:bg-emerald-300`}
         >
           <Printer className="h-3.5 w-3.5" />
           Пакет на объект: РБУ .txt + А4
@@ -171,7 +176,7 @@ export function SitePipeline({
             jump('bom-estimate-total');
             dispatchSiteEvent(DOWNLOAD_BOM_CSV_EVENT);
           }}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-slate-600 bg-slate-900 px-3 py-2 text-[11px] font-bold text-slate-200 hover:border-sky-500"
+          className={outlineBtn}
         >
           <Download className="h-3.5 w-3.5" />
           CSV сметы
@@ -179,7 +184,7 @@ export function SitePipeline({
         <button
           type="button"
           onClick={() => jump('tool-rebar')}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-slate-600 bg-slate-900 px-3 py-2 text-[11px] font-bold text-slate-200 hover:border-sky-500"
+          className={outlineBtn}
         >
           <Grid3x3 className="h-3.5 w-3.5" />
           К раскрою
@@ -187,7 +192,7 @@ export function SitePipeline({
         <button
           type="button"
           onClick={downloadRbu}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-sky-500 px-3 py-2 text-[11px] font-bold text-[#0B132B] hover:bg-sky-400"
+          className={`${solidBtn} bg-sky-500 hover:bg-sky-300`}
         >
           <Download className="h-3.5 w-3.5" />
           Спецификация РБУ .txt
@@ -198,7 +203,7 @@ export function SitePipeline({
             jump('tool-rbu');
             dispatchSiteEvent(OPEN_QUOTE_EVENT);
           }}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-slate-600 bg-slate-900 px-3 py-2 text-[11px] font-bold text-slate-200 hover:border-sky-500"
+          className={outlineBtn}
         >
           <MapPin className="h-3.5 w-3.5" />
           Заявка РБУ
@@ -209,7 +214,7 @@ export function SitePipeline({
             jump('tool-nodes');
             dispatchSiteEvent(PRINT_BRIGADE_A4_EVENT);
           }}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-[11px] font-bold text-amber-100 hover:bg-amber-500/20"
+          className="inline-flex items-center gap-1.5 rounded-xl border border-amber-500/50 bg-amber-500/10 px-3 py-2 text-[11px] font-bold text-amber-100 transition-colors hover:border-amber-300 hover:bg-amber-400/40 hover:text-white"
         >
           <Printer className="h-3.5 w-3.5" />
           Печать А4
