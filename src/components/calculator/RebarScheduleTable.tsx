@@ -24,6 +24,9 @@ export function RebarScheduleTable({
 }) {
   if (!pieces.length) return null;
 
+  const netWeightKg =
+    Math.round(pieces.reduce((s, p) => s + p.weightKg, 0) * 10) / 10;
+
   return (
     <ToolPanelShell
       id="tool-rebar"
@@ -38,7 +41,12 @@ export function RebarScheduleTable({
         <MetricTile label="Хлыстов" value={`${stockBarsApprox} шт`} tone="amber" />
         <MetricTile label="Отход" value={`${wasteM} м`} hint={`${wastePct}%`} />
         <MetricTile label="Нахлёст" value={`${lapMm} мм`} />
-        <MetricTile label="Масса" value={`${totalWeightKg} кг`} tone="sky" />
+        <MetricTile
+          label="К закупке"
+          value={`${totalWeightKg} кг`}
+          hint={`${stockBarsApprox}×${stockLengthM.toFixed(1)} м`}
+          tone="sky"
+        />
       </div>
 
       <div className="overflow-hidden rounded-xl border border-slate-200">
@@ -50,7 +58,7 @@ export function RebarScheduleTable({
               <th className="px-3 py-2.5">Ø</th>
               <th className="px-3 py-2.5">Длина</th>
               <th className="px-3 py-2.5">Кол-во</th>
-              <th className="px-3 py-2.5 text-right">Масса</th>
+              <th className="px-3 py-2.5 text-right">Масса нетто</th>
             </tr>
           </thead>
           <tbody>
@@ -73,9 +81,20 @@ export function RebarScheduleTable({
             ))}
           </tbody>
           <tfoot>
+            <tr className="border-t border-slate-200 bg-slate-50/80">
+              <td className="px-3 py-2.5 font-sans text-slate-600" colSpan={5}>
+                Сетка нетто (сумма стержней)
+              </td>
+              <td className="px-3 py-2.5 text-right font-mono text-slate-700">
+                {netWeightKg} кг
+              </td>
+            </tr>
             <tr className="border-t-2 border-[#1F5A8E] bg-slate-50 font-bold">
               <td className="px-3 py-3 font-sans" colSpan={5}>
-                Итого с отходами {wastePct}%
+                К закупке: {stockBarsApprox} × {stockLengthM.toFixed(1)} м × ρ(Ø)
+                <span className="ml-2 font-normal text-slate-500">
+                  отход раскроя {wastePct}%
+                </span>
               </td>
               <td className="px-3 py-3 text-right text-[#0F172A]">{totalWeightKg} кг</td>
             </tr>
