@@ -1,9 +1,9 @@
 /** Honest attribution for estimate-grade prices and norms. */
 
-export const PRICE_TABLE_AS_OF = '2026-07-31';
+export const PRICE_TABLE_AS_OF = '2026-08-01';
 
 export const PRICE_SOURCE_NOTE =
-  'Справочные ориентиры Smetoplan по регионам РФ (агрегированный прайс РБУ/металла). Не оферта завода и не коммерческое КП.';
+  'Ориентир Smetoplan: медиана публичных котировок /ceny по региону (с запасным справочником). Не оферта завода и не коммерческое КП.';
 
 export const NORM_SOURCES = [
   {

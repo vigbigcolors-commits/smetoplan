@@ -316,10 +316,10 @@ describe('golden: regional supply', () => {
       gravelTons: 1,
     });
     assert.equal(s.regionLabel, 'Москва и МО');
-    assert.equal(s.prices.concretePerM3, 5200);
-    assert.equal(s.lines.find((l) => l.id === 'concrete')!.lineTotal, 52000);
-    assert.equal(s.lines.find((l) => l.id === 'rebar')!.lineTotal, 68000);
+    assert.equal(s.prices.concretePerM3, 5450);
+    assert.equal(s.lines.find((l) => l.id === 'concrete')!.lineTotal, 54500);
+    assert.equal(s.lines.find((l) => l.id === 'rebar')!.lineTotal, 64500);
     assert.equal(s.peerRegions.length, 5);
-    assert.ok(s.disclaimer.includes('не оферта'));
+    assert.match(s.disclaimer, /не оферта/i);
   });
 });

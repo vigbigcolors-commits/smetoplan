@@ -82,18 +82,18 @@ export const SNOW_REGIONS: Record<
   V: { label: 'V (север)', sgKpa: 3.2 },
 };
 
-/** Market price regions — handbook mid-2026 orientative RUB. */
+/** Market price regions — handbook fallback when /ceny median missing (mid-2026 RUB). */
 export const PRICE_REGIONS = {
   moscow: {
     label: 'Москва и МО',
     soilDefaultId: 'clay_plastic' as SoilTypeId,
     snowDefault: 'III',
     prices: {
-      concretePerM3: 5200,
-      rebarPerTon: 68000,
-      sandPerTon: 1200,
-      gravelPerTon: 2200,
-      formworkPerM2: 850,
+      concretePerM3: 6200,
+      rebarPerTon: 72000,
+      sandPerTon: 1400,
+      gravelPerTon: 2500,
+      formworkPerM2: 950,
     },
   },
   spb: {
@@ -101,11 +101,11 @@ export const PRICE_REGIONS = {
     soilDefaultId: 'clay_plastic' as SoilTypeId,
     snowDefault: 'III',
     prices: {
-      concretePerM3: 4900,
-      rebarPerTon: 66500,
-      sandPerTon: 1100,
-      gravelPerTon: 2000,
-      formworkPerM2: 800,
+      concretePerM3: 5800,
+      rebarPerTon: 70000,
+      sandPerTon: 1300,
+      gravelPerTon: 2300,
+      formworkPerM2: 900,
     },
   },
   krasnodar: {
@@ -113,11 +113,11 @@ export const PRICE_REGIONS = {
     soilDefaultId: 'clay_hard' as SoilTypeId,
     snowDefault: 'I',
     prices: {
-      concretePerM3: 4100,
-      rebarPerTon: 62000,
-      sandPerTon: 900,
-      gravelPerTon: 1600,
-      formworkPerM2: 650,
+      concretePerM3: 4800,
+      rebarPerTon: 65000,
+      sandPerTon: 1000,
+      gravelPerTon: 1800,
+      formworkPerM2: 720,
     },
   },
   ekaterinburg: {
@@ -125,11 +125,11 @@ export const PRICE_REGIONS = {
     soilDefaultId: 'sand_medium' as SoilTypeId,
     snowDefault: 'IV',
     prices: {
-      concretePerM3: 4500,
-      rebarPerTon: 64000,
-      sandPerTon: 950,
-      gravelPerTon: 1800,
-      formworkPerM2: 700,
+      concretePerM3: 5200,
+      rebarPerTon: 68000,
+      sandPerTon: 1100,
+      gravelPerTon: 2000,
+      formworkPerM2: 780,
     },
   },
   novosibirsk: {
@@ -137,11 +137,11 @@ export const PRICE_REGIONS = {
     soilDefaultId: 'clay_plastic' as SoilTypeId,
     snowDefault: 'IV',
     prices: {
-      concretePerM3: 4700,
-      rebarPerTon: 65500,
-      sandPerTon: 1000,
-      gravelPerTon: 1900,
-      formworkPerM2: 720,
+      concretePerM3: 5400,
+      rebarPerTon: 69000,
+      sandPerTon: 1150,
+      gravelPerTon: 2100,
+      formworkPerM2: 800,
     },
   },
 } as const;

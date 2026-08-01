@@ -1,0 +1,47 @@
+{
+  "asOf": "2026-08-01",
+  "note": "Медианы публичных котировок /ceny (каталог + парсы). Не оферта РБУ. Обновлять скриптом market:fetch / cron.",
+  "bandPct": { "low": 15, "high": 25 },
+  "regions": {
+    "moscow": {
+      "concretePerM3": 5450,
+      "rebarPerTon": 64500,
+      "formworkPerM2": 900,
+      "sandPerTon": 1300,
+      "gravelPerTon": 2400,
+      "sampleN": { "concrete": 6, "rebar": 6 }
+    },
+    "spb": {
+      "concretePerM3": 5100,
+      "rebarPerTon": 63000,
+      "formworkPerM2": 850,
+      "sandPerTon": 1200,
+      "gravelPerTon": 2100,
+      "sampleN": { "concrete": 2, "rebar": 2 }
+    },
+    "krasnodar": {
+      "concretePerM3": 4500,
+      "rebarPerTon": 61200,
+      "formworkPerM2": 700,
+      "sandPerTon": 950,
+      "gravelPerTon": 1700,
+      "sampleN": { "concrete": 1, "rebar": 2 }
+    },
+    "ekaterinburg": {
+      "concretePerM3": 4800,
+      "rebarPerTon": 63500,
+      "formworkPerM2": 750,
+      "sandPerTon": 1000,
+      "gravelPerTon": 1900,
+      "sampleN": { "concrete": 1, "rebar": 2 }
+    },
+    "novosibirsk": {
+      "concretePerM3": 5000,
+      "rebarPerTon": 64800,
+      "formworkPerM2": 780,
+      "sandPerTon": 1050,
+      "gravelPerTon": 2000,
+      "sampleN": { "concrete": 1, "rebar": 2 }
+    }
+  }
+}

@@ -74,6 +74,9 @@ interface InputWorkspaceProps {
   onSoilTypeIdChange: (v: SoilTypeId) => void;
   priceRegionId: PriceRegionId;
   onPriceRegionIdChange: (v: PriceRegionId) => void;
+  onApplyCenyMedian?: () => Promise<void> | void;
+  cenyMedianBusy?: boolean;
+  cenyMedianHint?: string | null;
 }
 
 export const InputWorkspace: React.FC<InputWorkspaceProps> = ({
@@ -118,6 +121,9 @@ export const InputWorkspace: React.FC<InputWorkspaceProps> = ({
   onSoilTypeIdChange,
   priceRegionId,
   onPriceRegionIdChange,
+  onApplyCenyMedian,
+  cenyMedianBusy,
+  cenyMedianHint,
 }) => {
   const [showPriceSettings, setShowPriceSettings] = useState<boolean>(false);
 
@@ -721,7 +727,26 @@ export const InputWorkspace: React.FC<InputWorkspaceProps> = ({
         </button>
 
         {showPriceSettings && (
-          <div className="mt-3 grid grid-cols-2 gap-2 text-xs bg-slate-50 p-3 rounded-lg border border-slate-200">
+          <div className="mt-3 space-y-2 text-xs bg-slate-50 p-3 rounded-lg border border-slate-200">
+            <p className="text-[11px] leading-snug text-slate-600">
+              Цены в смете — ориентир бюджета ±15–25%, не КП завода. Можно подставить медиану
+              публичных котировок с /ceny или править вручную.
+            </p>
+            {onApplyCenyMedian ? (
+              <button
+                type="button"
+                disabled={Boolean(cenyMedianBusy)}
+                onClick={() => void onApplyCenyMedian()}
+                className="inline-flex w-full items-center justify-center gap-1.5 rounded-sm border border-[#3D6494]/40 bg-white px-3 py-2 text-[11px] font-bold uppercase tracking-wide text-[#1F5A8E] transition-colors hover:bg-[#3D6494] hover:text-white disabled:opacity-50"
+              >
+                <RotateCcw className={`h-3.5 w-3.5 ${cenyMedianBusy ? 'animate-spin' : ''}`} />
+                {cenyMedianBusy ? 'Загрузка медианы…' : 'Подставить среднюю с /ceny'}
+              </button>
+            ) : null}
+            {cenyMedianHint ? (
+              <p className="text-[10px] font-mono text-emerald-700">{cenyMedianHint}</p>
+            ) : null}
+            <div className="grid grid-cols-2 gap-2">
             <div>
               <label className="text-[11px] text-slate-600 block mb-0.5">Бетон Товарный / м³</label>
               <input
@@ -765,6 +790,7 @@ export const InputWorkspace: React.FC<InputWorkspaceProps> = ({
                 }
                 className="w-full bg-white border border-slate-300 font-mono font-bold px-2 py-1 rounded"
               />
+            </div>
             </div>
           </div>
         )}

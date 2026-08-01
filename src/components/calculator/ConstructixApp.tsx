@@ -146,6 +146,8 @@ export default function ConstructixApp({
   const [helperOpen, setHelperOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [draftReady, setDraftReady] = useState(false);
+  const [cenyMedianBusy, setCenyMedianBusy] = useState(false);
+  const [cenyMedianHint, setCenyMedianHint] = useState<string | null>(null);
   const exportCsvRef = useRef<() => void>(() => undefined);
 
   useEffect(() => {
@@ -332,6 +334,42 @@ export default function ConstructixApp({
     setSnowRegion(meta.snowDefault as SnowRegionId);
     setSoilTypeId(meta.soilDefaultId);
     setSoilResistanceKpa(getSoilType(meta.soilDefaultId).rKpa);
+    setCenyMedianHint(null);
+  };
+
+  const applyCenyMedian = async () => {
+    setCenyMedianBusy(true);
+    try {
+      const res = await fetch(
+        `/api/market/median?region=${encodeURIComponent(priceRegionId)}`
+      );
+      const json = await res.json();
+      if (!res.ok || !json?.prices) throw new Error(json?.error || 'median fail');
+      const next = {
+        concretePerM3: Number(json.prices.concretePerM3),
+        rebarPerTon: Number(json.prices.rebarPerTon),
+        formworkPerM2: Number(json.prices.formworkPerM2),
+        sandPerTon: Number(json.prices.sandPerTon),
+        gravelPerTon: Number(json.prices.gravelPerTon),
+      };
+      setPrices(next);
+      setConcreteSpec((prev) => ({
+        ...prev,
+        customPricePerM3: next.concretePerM3,
+      }));
+      setRebarSpec((prev) => ({
+        ...prev,
+        customPricePerTon: next.rebarPerTon,
+      }));
+      setCenyMedianHint(
+        `Медиана /ceny на ${json.asOf} · бетон ${next.concretePerM3} ₽/м³ · арматура ${next.rebarPerTon} ₽/т (±15–25%, не КП)`
+      );
+      showToast('Подставлена средняя цена с /ceny');
+    } catch {
+      setCenyMedianHint('Не удалось загрузить медиану — оставлены текущие цены');
+    } finally {
+      setCenyMedianBusy(false);
+    }
   };
 
   const calcOptions = useMemo(
@@ -692,6 +730,9 @@ export default function ConstructixApp({
               onRebarSpecChange={setRebarSpec}
               prices={prices}
               onPricesChange={setPrices}
+              onApplyCenyMedian={applyCenyMedian}
+              cenyMedianBusy={cenyMedianBusy}
+              cenyMedianHint={cenyMedianHint}
               unitSystem={unitSystem}
               safetyFactor={safetyFactor}
               onSafetyFactorChange={setSafetyFactor}

@@ -3,13 +3,25 @@ import {
   PRICE_REGIONS,
   type PriceRegionId,
 } from '@/domain/norms/tables';
-import { formatPriceAsOf, PRICE_SOURCE_NOTE, PRICE_TABLE_AS_OF } from '@/lib/trust-sources';
+import { formatPriceAsOf, PRICE_SOURCE_NOTE } from '@/lib/trust-sources';
+import {
+  getRegionalPricesWithMedian,
+  PRICE_BAND_DISCLAIMER,
+} from '@/lib/region-medians';
 
 export type { PriceRegionId };
 export * from './suppliers';
 
+/** Prefer /ceny feed medians when present, else handbook PRICE_REGIONS. */
 export function getRegionalPrices(regionId: PriceRegionId): MaterialPrices {
-  return { ...PRICE_REGIONS[regionId].prices };
+  const m = getRegionalPricesWithMedian(regionId);
+  return {
+    concretePerM3: m.concretePerM3,
+    rebarPerTon: m.rebarPerTon,
+    formworkPerM2: m.formworkPerM2,
+    sandPerTon: m.sandPerTon,
+    gravelPerTon: m.gravelPerTon,
+  };
 }
 
 export interface RegionalLineCost {
@@ -55,6 +67,7 @@ export function buildRegionalSupplySnapshot(
   activePrices?: MaterialPrices
 ): RegionalSupplySnapshot {
   const meta = PRICE_REGIONS[regionId];
+  const medianMeta = getRegionalPricesWithMedian(regionId);
   const prices = activePrices ? { ...activePrices } : getRegionalPrices(regionId);
 
   const lines: RegionalLineCost[] = [
@@ -109,12 +122,15 @@ export function buildRegionalSupplySnapshot(
     .filter((l) => l.id === 'concrete' || l.id === 'rebar' || l.id === 'formwork')
     .reduce((s, l) => s + l.lineTotal, 0);
 
-  const peerRegions = (Object.keys(PRICE_REGIONS) as PriceRegionId[]).map((id) => ({
-    id,
-    label: PRICE_REGIONS[id].label,
-    concretePerM3: PRICE_REGIONS[id].prices.concretePerM3,
-    rebarPerTon: PRICE_REGIONS[id].prices.rebarPerTon,
-  }));
+  const peerRegions = (Object.keys(PRICE_REGIONS) as PriceRegionId[]).map((id) => {
+    const p = getRegionalPrices(id);
+    return {
+      id,
+      label: PRICE_REGIONS[id].label,
+      concretePerM3: p.concretePerM3,
+      rebarPerTon: p.rebarPerTon,
+    };
+  });
 
   return {
     regionId,
@@ -123,6 +139,6 @@ export function buildRegionalSupplySnapshot(
     lines,
     materialsTotal,
     peerRegions,
-    disclaimer: `${PRICE_SOURCE_NOTE} Дата таблицы: ${formatPriceAsOf(PRICE_TABLE_AS_OF)} (${PRICE_TABLE_AS_OF}). Не оферта конкретного РБУ — актуальный прайс и доставку уточняйте на заводе по спецификации.`,
+    disclaimer: `${PRICE_SOURCE_NOTE} ${PRICE_BAND_DISCLAIMER} Дата ориентира: ${formatPriceAsOf(medianMeta.asOf)} (${medianMeta.asOf}, ${medianMeta.source === 'feed_median' ? 'медиана /ceny' : 'справочник'}).`,
   };
 }

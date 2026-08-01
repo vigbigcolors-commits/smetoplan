@@ -4,6 +4,7 @@ import {
   PRICE_SOURCE_NOTE,
   PRICE_TABLE_AS_OF,
 } from '@/lib/trust-sources';
+import { PRICE_BAND_DISCLAIMER } from '@/lib/region-medians';
 
 export function TrustSourcesNote({
   regionLabel,
@@ -22,7 +23,7 @@ export function TrustSourcesNote({
     >
       <p>
         <span className="font-bold text-slate-700">Источники. </span>
-        Цены: {PRICE_SOURCE_NOTE}
+        Цены: {PRICE_SOURCE_NOTE} {PRICE_BAND_DISCLAIMER}
         {regionLabel ? ` Регион отображения: «${regionLabel}».` : ''} Дата таблицы:{' '}
         <time dateTime={PRICE_TABLE_AS_OF}>{formatPriceAsOf()}</time>.
       </p>

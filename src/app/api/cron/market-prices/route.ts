@@ -20,9 +20,11 @@ async function loadFeed(): Promise<{ feed: MarketFeed; source: string }> {
 }
 
 /**
- * Daily market prices cron.
+ * Market prices cron: ingest feed + refresh region medians for calculator.
  * Auth: Authorization: Bearer $CRON_SECRET
- * Schedule example: 0 5 * * * curl -H "Authorization: Bearer ..." /api/cron/market-prices
+ * Schedule (weekly Sunday 05:00 UTC example):
+ *   0 5 * * 0 curl -H "Authorization: Bearer ..." /api/cron/market-prices
+ * Daily ingest is also fine — medians recomputed each run.
  */
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;

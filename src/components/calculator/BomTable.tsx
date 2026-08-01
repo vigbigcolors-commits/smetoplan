@@ -50,7 +50,7 @@ export const BomTable: React.FC<BomTableProps> = ({
               </h2>
             </div>
             <p className="text-xs text-slate-400 font-mono mt-0.5">
-              ОРИЕНТИРОВОЧНАЯ СМЕТА МАТЕРИАЛОВ (СПРАВОЧНО, НЕ ПРОЕКТ КЖ)
+              ОРИЕНТИР БЮДЖЕТА ±15–25% · НЕ КП / НЕ ОФЕРТА РБУ · НЕ ПРОЕКТ КЖ
             </p>
           </div>
 
@@ -250,7 +250,21 @@ export const BomTable: React.FC<BomTableProps> = ({
                 {formatCurrency(itemizedCosts.total, currency)}
               </td>
               <td className="py-4 px-4 text-slate-400 font-normal text-xs font-sans">
-                Включая НДС и региональную доставку
+                Ориентир ±15–25%, не КП
+              </td>
+            </tr>
+            <tr className="bg-slate-900 text-slate-300 text-[11px] font-sans">
+              <td className="px-4 py-3" colSpan={5}>
+                Диапазон рынка к этой смете примерно{' '}
+                <span className="font-mono font-bold text-amber-200">
+                  {formatCurrency(Math.round(itemizedCosts.total * 0.85), currency)}
+                </span>
+                {' — '}
+                <span className="font-mono font-bold text-amber-200">
+                  {formatCurrency(Math.round(itemizedCosts.total * 1.25), currency)}
+                </span>
+                . Объёмы считаются точно; цены — медиана/справочник региона. Актуальный прайс и
+                доставку подтверждайте на РБУ (слой сравнения на /ceny).
               </td>
             </tr>
           </tfoot>
