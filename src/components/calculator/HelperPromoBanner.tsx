@@ -1,12 +1,11 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
   ArrowRight,
   Keyboard,
   Sparkles,
   Wand2,
-  X,
   Zap,
 } from 'lucide-react';
 
@@ -20,30 +19,7 @@ const CHIPS = [
   { label: 'Бетон', value: 'M300' },
 ] as const;
 
-const DISMISS_KEY = 'smetoplan-helper-banner-dismissed';
-
 export function HelperPromoBanner({ onOpenHelper }: { onOpenHelper: () => void }) {
-  const [hidden, setHidden] = useState(true);
-
-  useEffect(() => {
-    try {
-      setHidden(sessionStorage.getItem(DISMISS_KEY) === '1');
-    } catch {
-      setHidden(false);
-    }
-  }, []);
-
-  if (hidden) return null;
-
-  const dismiss = () => {
-    try {
-      sessionStorage.setItem(DISMISS_KEY, '1');
-    } catch {
-      /* ignore */
-    }
-    setHidden(true);
-  };
-
   const openWithExample = () => {
     try {
       sessionStorage.setItem('smetoplan-helper-prefill', EXAMPLE);
@@ -68,16 +44,6 @@ export function HelperPromoBanner({ onOpenHelper }: { onOpenHelper: () => void }
         }}
         aria-hidden
       />
-
-      <button
-        type="button"
-        onClick={dismiss}
-        className="absolute right-3 top-3 z-20 flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-[#0B1220] text-slate-400 transition hover:border-white/25 hover:text-white"
-        aria-label="Скрыть баннер"
-        title="Скрыть"
-      >
-        <X className="h-4 w-4" />
-      </button>
 
       <div className="relative z-10 grid gap-0 lg:grid-cols-[1.35fr_0.95fr]">
         <div className="border-b border-white/10 p-5 sm:p-6 lg:border-b-0 lg:border-r lg:border-white/10 lg:pr-8">
