@@ -8,11 +8,11 @@ import {
   Save,
   CheckCircle2,
 } from 'lucide-react';
-import { MaterialCalculationResult, Currency, ConcreteSpec, RebarSpec } from '@/lib/types';
-import { formatCurrency } from '@/lib/calculator';
+import { Currency, ConcreteSpec, RebarSpec } from '@/lib/types';
+import { formatCurrency, type ExtendedCalculationResult } from '@/lib/calculator';
 
 interface BomTableProps {
-  calculation: MaterialCalculationResult;
+  calculation: ExtendedCalculationResult;
   concreteSpec: ConcreteSpec;
   rebarSpec: RebarSpec;
   currency: Currency;
@@ -186,7 +186,9 @@ export const BomTable: React.FC<BomTableProps> = ({
               </td>
               <td className="py-3 px-4 font-bold">{calculation.rebarWeightKg} кг</td>
               <td className="py-3 px-4 text-slate-600">
-                {calculation.rebarLengthMeters}м Общая Длина ({rebarSpec.layers} Слой Сетки)
+                {calculation.rebarStockBarsApprox} хлыстов ×{' '}
+                {calculation.rebarStockLengthM.toFixed(1)} м · нетто{' '}
+                {calculation.rebarLengthMeters} м ({rebarSpec.layers} сл.)
               </td>
               <td className="py-3 px-4 text-right font-bold text-slate-900">
                 {formatCurrency(itemizedCosts.rebar, currency)}

@@ -24,6 +24,11 @@ export function LiveKpiStrip({
   const items = [
     { k: 'Бетон', v: `${calculation.concreteVolumeM3} м³`, c: 'text-sky-300' },
     { k: `Ø${diameterMm}`, v: `${calculation.rebarWeightKg} кг`, c: 'text-orange-300' },
+    {
+      k: 'Хлысты',
+      v: `${calculation.rebarStockBarsApprox} шт`,
+      c: 'text-amber-300',
+    },
     { k: 'Опалубка', v: `${calculation.formworkAreaM2} м²`, c: 'text-teal-300' },
     {
       k: 'Грунт',

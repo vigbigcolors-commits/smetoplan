@@ -47,10 +47,18 @@ export function nestPiecesToStock(
   stockM: number,
   lapM: number
 ): StockNestResult {
+  // Одинаковая длина (слои L1/L2 и т.п.) режется из общих хлыстов — сначала суммируем count.
+  const merged = new Map<number, number>();
+  for (const p of pieces) {
+    if (p.count <= 0 || p.lengthM <= 0) continue;
+    const len = Math.round(p.lengthM * 1000) / 1000;
+    merged.set(len, (merged.get(len) ?? 0) + Math.floor(p.count));
+  }
+
   let barsNeeded = 0;
   let wasteM = 0;
-  for (const p of pieces) {
-    const r = stockBarsForPieces(p.lengthM, p.count, stockM, lapM);
+  for (const [lengthM, count] of merged) {
+    const r = stockBarsForPieces(lengthM, count, stockM, lapM);
     barsNeeded += r.bars;
     wasteM += r.wasteM;
   }

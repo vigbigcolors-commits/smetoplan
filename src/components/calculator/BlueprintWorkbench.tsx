@@ -196,15 +196,20 @@ export function BlueprintWorkbench({
             </p>
           </div>
 
-          <div className="rounded-lg border border-[#3D6494]/40 bg-[#3D6494]/15 p-3 font-mono text-xs text-slate-200">
+          <div
+            className="rounded-lg border border-[#3D6494]/40 bg-[#3D6494]/15 p-3 font-mono text-xs text-slate-200"
+            data-purchase-bars={calculation.rebarStockBarsApprox}
+          >
             <div className="mb-1 flex items-center gap-1.5 text-[#9BB6D4]">
               <ClipboardList className="h-3.5 w-3.5" />
               Заказ на склад
             </div>
             <p>
               Нужно прутков:{' '}
-              <strong className="text-white">{calculation.rebarStockBarsApprox} шт</strong> по{' '}
-              {stockLengthM.toFixed(1)} м
+              <strong className="text-white">
+                {calculation.rebarStockBarsApprox} шт
+              </strong>{' '}
+              по {calculation.rebarStockLengthM.toFixed(1)} м
             </p>
             <p>
               Отход:{' '}
@@ -214,6 +219,10 @@ export function BlueprintWorkbench({
             <p>
               Нахлёст:{' '}
               <strong className="text-white">{calculation.lapMm} мм</strong> (~40Ø)
+            </p>
+            <p className="mt-1.5 text-[10px] text-slate-400">
+              Те же {calculation.rebarStockBarsApprox} шт, что в ведомости раскроя и «Купить
+              завтра» · {calculation.rebarWeightKg} кг
             </p>
           </div>
         </div>

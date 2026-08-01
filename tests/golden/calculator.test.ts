@@ -6,7 +6,7 @@ import {
   buildLShapeStripPlan,
   computeStripPlanMetrics,
 } from '../../src/domain/geometry';
-import { stockBarsForPieces } from '../../src/domain/rebar/cutting';
+import { nestPiecesToStock, stockBarsForPieces } from '../../src/domain/rebar/cutting';
 import { computeRebar } from '../../src/domain/rebar';
 import { rebarLinearDensityKgM } from '../../src/domain/norms/tables';
 import { computeLoads } from '../../src/domain/loads';
@@ -138,6 +138,22 @@ describe('golden: cutting nest', () => {
       Math.abs(r.weightKg - expected) < 0.15,
       `weight ${r.weightKg} vs bars×L×ρ ${expected}`
     );
+  });
+
+  it('merges same-length layers into one nest (no overcount)', () => {
+    const separate =
+      stockBarsForPieces(3.92, 151, 11.7, 0.4).bars +
+      stockBarsForPieces(3.92, 151, 11.7, 0.4).bars;
+    const merged = nestPiecesToStock(
+      [
+        { lengthM: 3.92, count: 151 },
+        { lengthM: 3.92, count: 151 },
+      ],
+      11.7,
+      0.4
+    );
+    assert.equal(separate, 152);
+    assert.equal(merged.barsNeeded, 151);
   });
 });
 
