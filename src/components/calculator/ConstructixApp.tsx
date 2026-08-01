@@ -55,6 +55,10 @@ import { getStructurePreset } from '@/lib/calculator-routes';
 import { buildRectangleStripPlan, type StripPlan } from '@/domain/geometry';
 import { computeFormworkBom } from '@/domain/formwork';
 import { TrustSourcesNote } from '@/components/pseo/TrustSourcesNote';
+import {
+  loadCalculatorDraft,
+  saveCalculatorDraft,
+} from '@/lib/calculator-draft';
 
 const slabPreset = getStructurePreset('slab');
 const defaultRegion: PriceRegionId = 'moscow';
@@ -142,6 +146,7 @@ export default function ConstructixApp({
   const [isQuoteModalOpen, setIsQuoteModalOpen] = useState<boolean>(false);
   const [helperOpen, setHelperOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [draftReady, setDraftReady] = useState(false);
   const exportCsvRef = useRef<() => void>(() => undefined);
 
   useEffect(() => {
@@ -155,9 +160,130 @@ export default function ConstructixApp({
     };
   }, []);
 
+  // Restore last calculator settings after refresh
+  useEffect(() => {
+    const draft = loadCalculatorDraft();
+    if (draft) {
+      setStructureType(draft.structureType);
+      setUnitSystem(draft.unitSystem);
+      setCurrency(draft.currency);
+      setDimensions(draft.dimensions);
+      setConcreteSpec(draft.concreteSpec);
+      setRebarSpec(draft.rebarSpec);
+      setPrices(draft.prices);
+      setSafetyFactor(draft.safetyFactor);
+      setCalcMode(draft.calcMode);
+      setStripLayout(draft.stripLayout);
+      setStripInnerLong(draft.stripInnerLong);
+      setStripInnerCross(draft.stripInnerCross);
+      setStripPlan(draft.stripPlan);
+      setStripPlanCustom(draft.stripPlanCustom);
+      setPierSpacingM(draft.pierSpacingM);
+      setCoverMm(draft.coverMm);
+      setStockLengthM(draft.stockLengthM);
+      setBuildingDeadLoadKpa(draft.buildingDeadLoadKpa);
+      setLiveLoadKpa(draft.liveLoadKpa);
+      setPriceRegionId(draft.priceRegionId);
+      setSnowRegion(draft.snowRegion);
+      setApplySnow(draft.applySnow);
+      setSoilTypeId(draft.soilTypeId);
+      setSoilResistanceKpa(draft.soilResistanceKpa);
+    }
+    setDraftReady(true);
+  }, []);
+
+  // Autosave settings so refresh never wipes inputs
+  useEffect(() => {
+    if (!draftReady) return;
+    const timer = window.setTimeout(() => {
+      saveCalculatorDraft({
+        structureType,
+        unitSystem,
+        currency,
+        dimensions,
+        concreteSpec,
+        rebarSpec,
+        prices,
+        safetyFactor,
+        calcMode,
+        stripLayout,
+        stripInnerLong,
+        stripInnerCross,
+        stripPlan,
+        stripPlanCustom,
+        pierSpacingM,
+        coverMm,
+        stockLengthM,
+        buildingDeadLoadKpa,
+        liveLoadKpa,
+        priceRegionId,
+        snowRegion,
+        applySnow,
+        soilTypeId,
+        soilResistanceKpa,
+      });
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [
+    draftReady,
+    structureType,
+    unitSystem,
+    currency,
+    dimensions,
+    concreteSpec,
+    rebarSpec,
+    prices,
+    safetyFactor,
+    calcMode,
+    stripLayout,
+    stripInnerLong,
+    stripInnerCross,
+    stripPlan,
+    stripPlanCustom,
+    pierSpacingM,
+    coverMm,
+    stockLengthM,
+    buildingDeadLoadKpa,
+    liveLoadKpa,
+    priceRegionId,
+    snowRegion,
+    applySnow,
+    soilTypeId,
+    soilResistanceKpa,
+  ]);
+
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const persistNow = () => {
+    saveCalculatorDraft({
+      structureType,
+      unitSystem,
+      currency,
+      dimensions,
+      concreteSpec,
+      rebarSpec,
+      prices,
+      safetyFactor,
+      calcMode,
+      stripLayout,
+      stripInnerLong,
+      stripInnerCross,
+      stripPlan,
+      stripPlanCustom,
+      pierSpacingM,
+      coverMm,
+      stockLengthM,
+      buildingDeadLoadKpa,
+      liveLoadKpa,
+      priceRegionId,
+      snowRegion,
+      applySnow,
+      soilTypeId,
+      soilResistanceKpa,
+    });
   };
 
   // Switch presets helper
@@ -628,7 +754,10 @@ export default function ConstructixApp({
           concreteSpec={concreteSpec}
           rebarSpec={rebarSpec}
           currency={currency}
-          onSaveProject={() => showToast('Параметры расчета сохранены!')}
+          onSaveProject={() => {
+            persistNow();
+            showToast('Параметры расчета сохранены!');
+          }}
           onExportCsv={handleExportCsv}
           onPrint={handlePrint}
         />

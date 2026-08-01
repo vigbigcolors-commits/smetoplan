@@ -78,22 +78,26 @@ export function ToolsRail() {
               key={t.id}
               type="button"
               onClick={() => jump(t.id)}
-              className={`group relative flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide transition ${
+              className={`group relative flex shrink-0 items-center gap-1.5 rounded-sm px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide transition-colors ${
                 on
                   ? 'bg-[#0F172A] text-white shadow-md'
                   : primary
-                    ? 'bg-sky-50 text-[#1F5A8E] hover:bg-sky-100'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900'
+                    ? 'bg-sky-50 text-[#1F5A8E] hover:bg-[#3D6494] hover:text-white'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-700 hover:text-white'
               }`}
             >
               <Icon
                 className={`h-3.5 w-3.5 ${
-                  on ? 'text-sky-300' : primary ? 'text-[#3D6494]' : 'text-slate-400 group-hover:text-slate-600'
+                  on
+                    ? 'text-sky-300'
+                    : primary
+                      ? 'text-[#3D6494] group-hover:text-white'
+                      : 'text-slate-400 group-hover:text-white'
                 }`}
               />
               {t.label}
               {on ? (
-                <span className="absolute inset-x-3 -bottom-[7px] h-0.5 rounded-full bg-[#3D6494]" />
+                <span className="absolute inset-x-3 -bottom-[7px] h-0.5 rounded-sm bg-[#3D6494]" />
               ) : null}
             </button>
           );
