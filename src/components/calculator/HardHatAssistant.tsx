@@ -19,6 +19,7 @@ import {
 } from '@/lib/calculator';
 import type { AiAssistantReply, AiCalcPatch, AiSuggestion } from '@/lib/ai/types';
 import {
+  describeCalcPatch,
   extractApplyPatchFromDialog,
   isCalcPatchEmpty,
   shouldAutoApplyParams,
@@ -330,11 +331,41 @@ export function HardHatAssistant({
     const q = question.trim();
     if (!q || loading) return;
     setInput('');
-    setLoading(true);
     const historySnapshot = messages.slice(-6);
     setMessages((m) => [...m, { role: 'user', content: q }]);
     setSuggestions([]);
 
+    // Instant path: parse + write params without waiting for DeepSeek
+    const instantPatch = extractApplyPatchFromDialog(q, historySnapshot);
+    if (shouldAutoApplyParams(q, historySnapshot, instantPatch)) {
+      onApplyPatch?.(instantPatch);
+      const lines = describeCalcPatch(instantPatch);
+      setMessages((m) => [
+        ...m,
+        {
+          role: 'assistant',
+          content: [
+            'Готово — параметры уже в калькуляторе:',
+            ...lines.map((l) => `• ${l}`),
+            '',
+            'Смета и раскрой пересчитались сразу.',
+          ].join('\n'),
+          meta: 'локально · применено',
+        },
+      ]);
+      setSuggestions([
+        {
+          id: 'goto-params',
+          label: 'Открыть параметры',
+          scrollTo: 'site-params',
+          reason: 'Проверить поля ввода',
+        },
+      ]);
+      setProviderHint('local');
+      return;
+    }
+
+    setLoading(true);
     abortRef.current?.abort();
     const ac = new AbortController();
     abortRef.current = ac;
@@ -366,23 +397,19 @@ export function HardHatAssistant({
 
       if (ac.signal.aborted) return;
 
-      const answerText =
-        autoApply && patch && !isCalcPatchEmpty(patch)
-          ? data.answer.replace(
-              /я\s+не\s+могу[^.!?\n]{0,80}(вносить|изменить|менять|поставить|заполнить|интерфейс)[^.!?\n]*[.!?]?/gi,
-              ''
-            )
-          : data.answer;
-
       setMessages((m) => [
         ...m,
         {
           role: 'assistant',
-          content: answerText.trim() || data.answer,
+          content: data.answer,
           meta: `${data.provider} · ${data.model}${autoApply ? ' · применено' : ''}`,
         },
       ]);
-      setSuggestions(data.suggestions || []);
+      setSuggestions(
+        autoApply
+          ? (data.suggestions || []).filter((s) => s.scrollTo && !s.field).slice(0, 2)
+          : data.suggestions || []
+      );
       setProviderHint(data.provider);
 
       if (autoApply && patch && !isCalcPatchEmpty(patch)) {
@@ -407,23 +434,6 @@ export function HardHatAssistant({
           },
         ]);
         return;
-      }
-      // Offline fallback: still apply parsed numbers when assignment is clear
-      if (shouldAutoApplyParams(q, historySnapshot, extractApplyPatchFromDialog(q, historySnapshot))) {
-        const local = extractApplyPatchFromDialog(q, historySnapshot);
-        if (!isCalcPatchEmpty(local)) {
-          onApplyPatch?.(local);
-          setMessages((m) => [
-            ...m,
-            {
-              role: 'assistant',
-              content:
-                'Сеть недоступна, но я разобрал задание и проставил параметры в калькулятор локально. Сверьте смету.',
-              meta: 'offline · применено',
-            },
-          ]);
-          return;
-        }
       }
       setMessages((m) => [
         ...m,

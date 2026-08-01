@@ -188,41 +188,41 @@ function withAutoApply(
 
   const lines = describeCalcPatch(merged);
   const fromPatch = patchToSuggestions(merged);
-  const suggestions = [
-    ...fromPatch,
-    ...reply.suggestions.filter(
-      (s) => !s.field || !fromPatch.some((p) => p.field === s.field)
-    ),
-  ].slice(0, 12);
 
   if (!doApply) {
     return {
       ...reply,
       answer: stripCannotApplyClaims(reply.answer),
-      suggestions,
+      suggestions: [
+        ...fromPatch,
+        ...reply.suggestions.filter(
+          (s) => !s.field || !fromPatch.some((p) => p.field === s.field)
+        ),
+      ].slice(0, 6),
       patch: merged,
       autoApply: false,
     };
   }
 
-  const cleanedTail = stripCannotApplyClaims(reply.answer);
   const answer = [
     `Готово — параметры уже проставлены в калькулятор:`,
     ...lines.map((l) => `• ${l}`),
     '',
-    'Смета, раскрой и KPI пересчитаются сразу. Карточки ниже — что именно записано.',
-    cleanedTail && !/проставил|записал|применил/i.test(cleanedTail)
-      ? `\n${cleanedTail}`
-      : '',
-  ]
-    .filter(Boolean)
-    .join('\n')
-    .trim();
+    'Смета, раскрой и KPI пересчитаются сразу.',
+  ].join('\n');
 
   return {
     ...reply,
     answer,
-    suggestions,
+    // No wall of field cards — already written into the form
+    suggestions: [
+      {
+        id: 'goto-params',
+        label: 'Открыть параметры',
+        scrollTo: 'site-params',
+        reason: 'Проверить поля ввода',
+      },
+    ],
     autoApply: true,
     patch: merged,
   };
@@ -236,9 +236,11 @@ async function callGeminiPro(
   if (!apiKey) return null;
 
   const models = [
-    process.env.GEMINI_MODEL || 'gemini-2.5-pro',
+    process.env.GEMINI_MODEL || 'gemini-2.0-flash',
     'gemini-2.0-flash',
+    'gemini-2.5-pro',
   ];
+  const uniqueGemini = [...new Set(models)];
 
   const userBlob = messages
     .filter((m) => m.role !== 'system')
@@ -253,7 +255,7 @@ ${JSON.stringify(calcContext)}
 Диалог:
 ${userBlob}`;
 
-  for (const model of models) {
+  for (const model of uniqueGemini) {
     try {
       const res = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
@@ -295,11 +297,14 @@ async function callDeepSeekR1(
   if (!apiKey) return null;
 
   const models = [
-    process.env.DEEPSEEK_MODEL || 'deepseek-reasoner',
+    process.env.DEEPSEEK_MODEL || 'deepseek-chat',
     'deepseek-chat',
+    'deepseek-reasoner',
   ];
+  // Prefer chat over reasoner — reasoner is slow for simple calculator Q&A
+  const uniqueModels = [...new Set(models)];
 
-  for (const model of models) {
+  for (const model of uniqueModels) {
     try {
       const res = await fetch('https://api.deepseek.com/chat/completions', {
         method: 'POST',
@@ -373,7 +378,6 @@ export function localEngineerBrain(
     parts.push(
       `Готово — параметры уже проставлены в калькулятор:\n${lines.map((l) => `• ${l}`).join('\n')}`
     );
-    suggestions.push(...patchToSuggestions(applyPatch));
     suggestions.push({
       id: 'goto-params',
       label: 'Открыть параметры',
@@ -384,7 +388,7 @@ export function localEngineerBrain(
       answer: parts.join('\n\n'),
       provider: 'local',
       model: 'smetoplan-local-r1',
-      suggestions: suggestions.slice(0, 12),
+      suggestions: suggestions.slice(0, 2),
       autoApply: true,
       patch: applyPatch,
       disclaimer:
@@ -548,7 +552,25 @@ export async function runAssistantChain(input: {
   calcContext: Record<string, unknown>;
   question: string;
 }): Promise<AiAssistantReply> {
-  // Prefer DeepSeek when configured (cost-efficient R1-class); Gemini if paid key present.
+  // Fast path: writing params into the calculator needs no LLM
+  const dialogPatch = extractApplyPatchFromDialog(input.question, input.messages);
+  if (shouldAutoApplyParams(input.question, input.messages, dialogPatch)) {
+    return withAutoApply(
+      {
+        answer: '',
+        provider: 'local',
+        model: 'smetoplan-instant-apply',
+        suggestions: [],
+        disclaimer: 'Параметры записаны локально без ожидания нейросети.',
+        patch: dialogPatch,
+        autoApply: true,
+      },
+      input.question,
+      input.messages
+    );
+  }
+
+  // Prefer fast DeepSeek chat; Gemini fallback; local brain last.
   const preferDeepseek = Boolean(process.env.DEEPSEEK_API_KEY);
   let reply: AiAssistantReply | null = null;
 
