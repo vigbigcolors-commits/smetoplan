@@ -7,17 +7,42 @@
 
 import type {
   AiAssistantReply,
+  AiCalcPatch,
   AiChatMessage,
   AiProviderId,
   AiSuggestion,
+  AiSuggestionField,
 } from '@/lib/ai/types';
 import {
   SMETOPLAN_PAGE_MAP,
   SMETOPLAN_PLATFORM_BRIEF,
   searchPageMap,
 } from '@/lib/ai/platform-map';
+import {
+  describeCalcPatch,
+  detectApplyIntent,
+  extractApplyPatchFromDialog,
+  isCalcPatchEmpty,
+  patchToSuggestions,
+} from '@/lib/ai/calc-patch';
 
 export type { AiAssistantReply, AiChatMessage, AiProviderId, AiSuggestion };
+
+const ALLOWED_FIELDS = new Set<AiSuggestionField>([
+  'coverMm',
+  'safetyFactor',
+  'spacingMm',
+  'diameterMm',
+  'layers',
+  'soilResistanceKpa',
+  'stockLengthM',
+  'lengthM',
+  'widthM',
+  'depthM',
+  'ribWidthM',
+  'ribDepthM',
+  'structureType',
+]);
 
 const SYSTEM_RU = `Ты — HELPER, ассистент Smetoplan.ru (синий каскер на кнопке).
 Роль: суперумный прораб + сметчик + навигатор по калькулятору. Отвечай по-русски, коротко и по делу.
@@ -29,50 +54,152 @@ ${SMETOPLAN_PLATFORM_BRIEF}
 2) Если спрашивают «где / как открыть / найди» — назови блок и дай scrollTo на якорь.
 3) Если вопрос про расчёт — используй цифры из calcContext (м³, кг, σ, R%, a, раскрой).
 4) Предлагай конкретные действия в калькуляторе, не общие лекции.
-5) Ответ: 2–6 коротких абзацев или список.
+5) КРИТИЧНО — запись в калькулятор:
+   - Если пользователь дал параметры (габариты, рёбра, a, Ø, шаг, слои, запас) и/или просит «поставь / примени / выставь / сам» — НЕ объясняй как кликать.
+   - Сам заполни поля через блок APPLY (ниже). Клиент применит их автоматически.
+   - В APPLY пиши ВСЕ найденные числа из задания и недавнего диалога: lengthM, widthM, depthM, ribWidthM, ribDepthM, coverMm, diameterMm, spacingMm, layers, safetyFactor (1.0 = 0% запаса), stockLengthM, structureType, concreteGrade.
+6) Ответ: 2–6 коротких абзацев. После APPLY кратко подтверди, что цифры уже проставлены.
 
 В конце обязательно (после текста):
+<<<APPLY
+{"structureType":"slab","lengthM":10,"widthM":8,"depthM":0.25,"ribWidthM":0.05,"ribDepthM":0.05,"coverMm":50,"diameterMm":12,"spacingMm":200,"layers":2,"safetyFactor":1,"stockLengthM":11.7,"concreteGrade":"M250"}
+APPLY<<<
 <<<SUGGESTIONS
-[{"id":"...","label":"...","field":"coverMm|safetyFactor|spacingMm|diameterMm|soilResistanceKpa|stockLengthM|null","value":number|null,"scrollTo":"tool-rebar|tool-pour|tool-rbu|bom-estimate-total|null","reason":"..."}]
+[{"id":"...","label":"...","field":"coverMm|safetyFactor|spacingMm|diameterMm|layers|lengthM|widthM|depthM|ribWidthM|ribDepthM|soilResistanceKpa|stockLengthM|null","value":number|null,"scrollTo":"tool-rebar|tool-pour|tool-rbu|bom-estimate-total|site-params|null","reason":"..."}]
 SUGGESTIONS<<<
-Максимум 3 suggestions. scrollTo — id панели на странице.`;
+До 12 suggestions. Если APPLY заполнен — suggestions дублируют применённые поля для прозрачности.`;
 
-function extractJsonBlock(text: string): { prose: string; suggestions: AiSuggestion[] } {
-  const m = text.match(/<<<SUGGESTIONS\s*([\s\S]*?)\s*SUGGESTIONS<<</);
-  if (!m) return { prose: text.trim(), suggestions: [] };
-  const prose = text.replace(m[0], '').trim();
+function parseApplyBlock(text: string): AiCalcPatch | undefined {
+  const m = text.match(/<<<APPLY\s*([\s\S]*?)\s*APPLY<<</);
+  if (!m) return undefined;
+  try {
+    const raw = JSON.parse(m[1]) as Record<string, unknown>;
+    const patch: AiCalcPatch = {};
+    const numKeys: (keyof AiCalcPatch)[] = [
+      'lengthM',
+      'widthM',
+      'depthM',
+      'ribWidthM',
+      'ribDepthM',
+      'coverMm',
+      'diameterMm',
+      'spacingMm',
+      'safetyFactor',
+      'stockLengthM',
+    ];
+    for (const k of numKeys) {
+      const v = raw[k];
+      if (typeof v === 'number' && Number.isFinite(v)) {
+        (patch as Record<string, number>)[k] = v;
+      } else if (v != null && v !== 'null' && Number.isFinite(Number(v))) {
+        (patch as Record<string, number>)[k] = Number(v);
+      }
+    }
+    if (raw.layers === 1 || raw.layers === 2 || raw.layers === 3) {
+      patch.layers = raw.layers;
+    } else if (raw.layers != null) {
+      const n = Number(raw.layers);
+      if (n === 1 || n === 2 || n === 3) patch.layers = n;
+    }
+    const st = String(raw.structureType || '');
+    if (['slab', 'strip', 'beam', 'pier', 'wall'].includes(st)) {
+      patch.structureType = st as AiCalcPatch['structureType'];
+    }
+    const grade = String(raw.concreteGrade || '');
+    if (['M150', 'M200', 'M250', 'M300', 'M350', 'M400'].includes(grade)) {
+      patch.concreteGrade = grade as AiCalcPatch['concreteGrade'];
+    }
+    return isCalcPatchEmpty(patch) ? undefined : patch;
+  } catch {
+    return undefined;
+  }
+}
+
+function extractJsonBlock(text: string): {
+  prose: string;
+  suggestions: AiSuggestion[];
+  patch?: AiCalcPatch;
+} {
+  const patch = parseApplyBlock(text);
+  let cleaned = text.replace(/<<<APPLY\s*[\s\S]*?\s*APPLY<<</, '').trim();
+  const m = cleaned.match(/<<<SUGGESTIONS\s*([\s\S]*?)\s*SUGGESTIONS<<</);
+  if (!m) return { prose: cleaned.trim(), suggestions: [], patch };
+  const prose = cleaned.replace(m[0], '').trim();
   try {
     const raw = JSON.parse(m[1]) as unknown;
     const arr = Array.isArray(raw) ? raw : [];
     const allowedScroll = new Set(SMETOPLAN_PAGE_MAP.map((p) => p.id));
     const suggestions: AiSuggestion[] = arr
-      .slice(0, 3)
+      .slice(0, 12)
       .map((s: Record<string, unknown>, i: number) => {
         const scrollRaw =
           s.scrollTo && s.scrollTo !== 'null' ? String(s.scrollTo) : undefined;
+        const fieldRaw =
+          s.field && s.field !== 'null' ? String(s.field) : undefined;
+        const field =
+          fieldRaw && ALLOWED_FIELDS.has(fieldRaw as AiSuggestionField)
+            ? (fieldRaw as AiSuggestionField)
+            : undefined;
+        let value: number | string | undefined;
+        if (typeof s.value === 'number' && Number.isFinite(s.value)) {
+          value = s.value;
+        } else if (typeof s.value === 'string' && s.value !== 'null') {
+          const n = Number(s.value);
+          value = Number.isFinite(n) ? n : s.value;
+        } else if (s.value != null && s.value !== 'null') {
+          const n = Number(s.value);
+          if (Number.isFinite(n)) value = n;
+        }
         return {
           id: String(s.id || `s${i}`),
           label: String(s.label || 'Подсказка'),
-          field:
-            s.field && s.field !== 'null'
-              ? (String(s.field) as AiSuggestion['field'])
-              : undefined,
-          value:
-            typeof s.value === 'number'
-              ? s.value
-              : s.value != null && s.value !== 'null'
-                ? Number(s.value)
-                : undefined,
+          field,
+          value,
           scrollTo:
             scrollRaw && allowedScroll.has(scrollRaw) ? scrollRaw : undefined,
           reason: String(s.reason || ''),
         };
       })
       .filter((s) => s.label);
-    return { prose, suggestions };
+    return { prose, suggestions, patch };
   } catch {
-    return { prose, suggestions: [] };
+    return { prose, suggestions: [], patch };
   }
+}
+
+function withAutoApply(
+  reply: AiAssistantReply,
+  question: string,
+  messages: AiChatMessage[]
+): AiAssistantReply {
+  const wantApply = detectApplyIntent(question);
+  const dialogPatch = extractApplyPatchFromDialog(question, messages);
+  const merged: AiCalcPatch = { ...dialogPatch, ...reply.patch };
+
+  if (isCalcPatchEmpty(merged)) {
+    return reply;
+  }
+
+  const lines = describeCalcPatch(merged);
+  const fromPatch = patchToSuggestions(merged);
+  const suggestions = [
+    ...fromPatch,
+    ...reply.suggestions.filter(
+      (s) => !s.field || !fromPatch.some((p) => p.field === s.field)
+    ),
+  ].slice(0, 12);
+
+  const prefix = wantApply
+    ? `Готово — проставил параметры в калькулятор:\n${lines.map((l) => `• ${l}`).join('\n')}\n\n`
+    : '';
+
+  return {
+    ...reply,
+    answer: wantApply ? `${prefix}${reply.answer}`.trim() : reply.answer,
+    suggestions,
+    autoApply: wantApply,
+    patch: merged,
+  };
 }
 
 async function callGeminiPro(
@@ -117,12 +244,13 @@ ${userBlob}`;
       const raw = await res.json();
       const text = raw?.candidates?.[0]?.content?.parts?.[0]?.text;
       if (!text || typeof text !== 'string') continue;
-      const { prose, suggestions } = extractJsonBlock(text);
+      const { prose, suggestions, patch } = extractJsonBlock(text);
       return {
         answer: prose,
         provider: 'gemini-pro',
         model,
         suggestions,
+        patch,
         disclaimer:
           'Ответ модели Gemini. Ориентир по цифрам калькулятора — не проект КЖ/ИГИ.',
       };
@@ -174,12 +302,13 @@ async function callDeepSeekR1(
       const raw = await res.json();
       const text = raw?.choices?.[0]?.message?.content;
       if (!text || typeof text !== 'string') continue;
-      const { prose, suggestions } = extractJsonBlock(text);
+      const { prose, suggestions, patch } = extractJsonBlock(text);
       return {
         answer: prose,
         provider: 'deepseek-r1',
         model,
         suggestions,
+        patch,
         disclaimer:
           'Ответ DeepSeek. Ориентир по цифрам калькулятора Smetoplan — не проект КЖ/ИГИ.',
       };
@@ -193,7 +322,8 @@ async function callDeepSeekR1(
 /** Always-on brain from real calc numbers — no invented plants or SP stamps. */
 export function localEngineerBrain(
   question: string,
-  calcContext: Record<string, unknown>
+  calcContext: Record<string, unknown>,
+  messages: AiChatMessage[] = []
 ): AiAssistantReply {
   const vol = Number(calcContext.concreteVolumeM3 ?? 0);
   const rebar = Number(calcContext.rebarWeightKg ?? 0);
@@ -210,6 +340,31 @@ export function localEngineerBrain(
 
   const suggestions: AiSuggestion[] = [];
   const parts: string[] = [];
+
+  const applyPatch = extractApplyPatchFromDialog(question, messages);
+  if (detectApplyIntent(question) && !isCalcPatchEmpty(applyPatch)) {
+    const lines = describeCalcPatch(applyPatch);
+    parts.push(
+      `Проставляю параметры в калькулятор автоматически:\n${lines.map((l) => `• ${l}`).join('\n')}`
+    );
+    suggestions.push(...patchToSuggestions(applyPatch));
+    suggestions.push({
+      id: 'goto-params',
+      label: 'Открыть параметры',
+      scrollTo: 'site-params',
+      reason: 'Проверьте, что поля обновились',
+    });
+    return {
+      answer: parts.join('\n\n'),
+      provider: 'local',
+      model: 'smetoplan-local-r1',
+      suggestions: suggestions.slice(0, 12),
+      autoApply: true,
+      patch: applyPatch,
+      disclaimer:
+        'Параметры записаны в калькулятор. Сверьте объёмы с эталоном — не заменяет КЖ/ИГИ.',
+    };
+  }
 
   if (
     pageHits.length > 0 &&
@@ -369,20 +524,25 @@ export async function runAssistantChain(input: {
 }): Promise<AiAssistantReply> {
   // Prefer DeepSeek when configured (cost-efficient R1-class); Gemini if paid key present.
   const preferDeepseek = Boolean(process.env.DEEPSEEK_API_KEY);
+  let reply: AiAssistantReply | null = null;
+
   if (preferDeepseek) {
-    const deepseek = await callDeepSeekR1(input.messages, input.calcContext);
-    if (deepseek) return deepseek;
+    reply = await callDeepSeekR1(input.messages, input.calcContext);
   }
 
-  const gemini = await callGeminiPro(input.messages, input.calcContext);
-  if (gemini) return gemini;
-
-  if (!preferDeepseek) {
-    const deepseek = await callDeepSeekR1(input.messages, input.calcContext);
-    if (deepseek) return deepseek;
+  if (!reply) {
+    reply = await callGeminiPro(input.messages, input.calcContext);
   }
 
-  return localEngineerBrain(input.question, input.calcContext);
+  if (!reply && !preferDeepseek) {
+    reply = await callDeepSeekR1(input.messages, input.calcContext);
+  }
+
+  if (!reply) {
+    reply = localEngineerBrain(input.question, input.calcContext, input.messages);
+  }
+
+  return withAutoApply(reply, input.question, input.messages);
 }
 
 export function resolveProviderStatus(): {

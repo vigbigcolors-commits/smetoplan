@@ -36,7 +36,7 @@ import { BackToTop } from '@/components/calculator/ui/BackToTop';
 import { WorkStatusPanel } from '@/components/calculator/WorkStatusPanel';
 import { SitePipeline } from '@/components/calculator/SitePipeline';
 import { ResultsReveal } from '@/components/calculator/ResultsReveal';
-import type { AiSuggestion } from '@/lib/ai/types';
+import type { AiCalcPatch, AiSuggestion } from '@/lib/ai/types';
 import { OPEN_QUOTE_EVENT } from '@/lib/rbu-spec';
 import { DOWNLOAD_BOM_CSV_EVENT } from '@/lib/site-events';
 import {
@@ -495,41 +495,117 @@ export default function ConstructixApp({
         behavior: 'smooth',
         block: 'start',
       });
-      showToast(s.label);
+      if (!s.field) showToast(s.label);
     }
-    if (s.field === 'coverMm' && typeof s.value === 'number') {
-      setCoverMm(s.value);
-      showToast(`Защитный слой → ${s.value} мм`);
+    if (s.field === 'structureType' && typeof s.value === 'string') {
+      const t = s.value as StructureType;
+      if (['slab', 'strip', 'beam', 'pier', 'wall'].includes(t)) {
+        setStructureType(t);
+        showToast(`Тип → ${t}`);
+      }
       return;
     }
-    if (s.field === 'safetyFactor' && typeof s.value === 'number') {
-      setSafetyFactor(s.value);
-      showToast(`Запас объёма → ${s.value}`);
+    const n = typeof s.value === 'number' ? s.value : Number(s.value);
+    if (!Number.isFinite(n) && s.field && s.field !== 'structureType') return;
+
+    if (s.field === 'coverMm') {
+      setCoverMm(n);
+      showToast(`Защитный слой → ${n} мм`);
       return;
     }
-    if (s.field === 'spacingMm' && typeof s.value === 'number') {
-      setRebarSpec((prev) => ({ ...prev, spacingMm: s.value! }));
-      showToast(`Шаг сетки → ${s.value} мм`);
+    if (s.field === 'safetyFactor') {
+      setSafetyFactor(n);
+      showToast(`Запас объёма → ${Math.round((n - 1) * 100)}%`);
       return;
     }
-    if (s.field === 'diameterMm' && typeof s.value === 'number') {
-      setRebarSpec((prev) => ({ ...prev, diameterMm: s.value! }));
-      showToast(`Диаметр → Ø${s.value}`);
+    if (s.field === 'spacingMm') {
+      setRebarSpec((prev) => ({ ...prev, spacingMm: n }));
+      showToast(`Шаг сетки → ${n} мм`);
       return;
     }
-    if (s.field === 'soilResistanceKpa' && typeof s.value === 'number') {
-      setSoilResistanceKpa(s.value);
-      showToast(`R грунта → ${s.value} кПа`);
+    if (s.field === 'diameterMm') {
+      setRebarSpec((prev) => ({ ...prev, diameterMm: n }));
+      showToast(`Диаметр → Ø${n}`);
       return;
     }
-    if (s.field === 'stockLengthM' && typeof s.value === 'number') {
-      setStockLengthM(s.value);
-      showToast(`Хлыст → ${s.value} м`);
+    if (s.field === 'layers' && (n === 1 || n === 2 || n === 3)) {
+      setRebarSpec((prev) => ({ ...prev, layers: n }));
+      showToast(`Слоёв → ${n}`);
+      return;
+    }
+    if (s.field === 'soilResistanceKpa') {
+      setSoilResistanceKpa(n);
+      showToast(`R грунта → ${n} кПа`);
+      return;
+    }
+    if (s.field === 'stockLengthM') {
+      setStockLengthM(n);
+      showToast(`Хлыст → ${n} м`);
+      return;
+    }
+    if (s.field === 'lengthM') {
+      setDimensions((prev) => ({ ...prev, length: n }));
+      showToast(`Длина → ${n} м`);
+      return;
+    }
+    if (s.field === 'widthM') {
+      setDimensions((prev) => ({ ...prev, width: n }));
+      showToast(`Ширина → ${n} м`);
+      return;
+    }
+    if (s.field === 'depthM') {
+      setDimensions((prev) => ({ ...prev, depth: n }));
+      showToast(`Толщина → ${n} м`);
+      return;
+    }
+    if (s.field === 'ribWidthM') {
+      setDimensions((prev) => ({ ...prev, perimeterThickeningWidth: n }));
+      showToast(`Ребро ширина → ${n} м`);
+      return;
+    }
+    if (s.field === 'ribDepthM') {
+      setDimensions((prev) => ({ ...prev, perimeterThickeningDepth: n }));
+      showToast(`Ребро высота → ${n} м`);
       return;
     }
     if (!s.scrollTo && !s.field) {
       showToast(s.label);
     }
+  };
+
+  const applyAiPatch = (patch: AiCalcPatch) => {
+    if (patch.structureType) setStructureType(patch.structureType);
+    setDimensions((prev) => ({
+      ...prev,
+      ...(patch.lengthM != null ? { length: patch.lengthM } : {}),
+      ...(patch.widthM != null ? { width: patch.widthM } : {}),
+      ...(patch.depthM != null ? { depth: patch.depthM } : {}),
+      ...(patch.ribWidthM != null
+        ? { perimeterThickeningWidth: patch.ribWidthM }
+        : {}),
+      ...(patch.ribDepthM != null
+        ? { perimeterThickeningDepth: patch.ribDepthM }
+        : {}),
+    }));
+    if (
+      patch.diameterMm != null ||
+      patch.spacingMm != null ||
+      patch.layers != null
+    ) {
+      setRebarSpec((prev) => ({
+        ...prev,
+        ...(patch.diameterMm != null ? { diameterMm: patch.diameterMm } : {}),
+        ...(patch.spacingMm != null ? { spacingMm: patch.spacingMm } : {}),
+        ...(patch.layers != null ? { layers: patch.layers } : {}),
+      }));
+    }
+    if (patch.concreteGrade) {
+      setConcreteSpec((prev) => ({ ...prev, grade: patch.concreteGrade! }));
+    }
+    if (patch.coverMm != null) setCoverMm(patch.coverMm);
+    if (patch.safetyFactor != null) setSafetyFactor(patch.safetyFactor);
+    if (patch.stockLengthM != null) setStockLengthM(patch.stockLengthM);
+    showToast('HELPER проставил параметры в калькулятор');
   };
 
   return (
@@ -872,6 +948,7 @@ export default function ConstructixApp({
       <HardHatAssistant
         calculation={calculation}
         onApplySuggestion={applyAiSuggestion}
+        onApplyPatch={applyAiPatch}
         open={helperOpen}
         onOpenChange={setHelperOpen}
       />

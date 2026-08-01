@@ -16,7 +16,12 @@ import {
   buildAiCalcContext,
   type ExtendedCalculationResult,
 } from '@/lib/calculator';
-import type { AiAssistantReply, AiSuggestion } from '@/lib/ai/types';
+import type { AiAssistantReply, AiCalcPatch, AiSuggestion } from '@/lib/ai/types';
+import {
+  detectApplyIntent,
+  extractApplyPatchFromDialog,
+  isCalcPatchEmpty,
+} from '@/lib/ai/calc-patch';
 
 type ChatRow = { role: 'user' | 'assistant'; content: string; meta?: string };
 type Pos = { x: number; y: number };
@@ -69,11 +74,13 @@ function textScaleFor(size: Size, maximized: boolean) {
 export function HardHatAssistant({
   calculation,
   onApplySuggestion,
+  onApplyPatch,
   open: openProp,
   onOpenChange,
 }: {
   calculation: ExtendedCalculationResult;
   onApplySuggestion?: (s: AiSuggestion) => void;
+  onApplyPatch?: (patch: AiCalcPatch) => void;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }) {
@@ -314,6 +321,7 @@ export function HardHatAssistant({
     if (!q || loading) return;
     setInput('');
     setLoading(true);
+    const historySnapshot = messages.slice(-6);
     setMessages((m) => [...m, { role: 'user', content: q }]);
     setSuggestions([]);
 
@@ -324,23 +332,63 @@ export function HardHatAssistant({
         body: JSON.stringify({
           question: q,
           calcContext: buildAiCalcContext(calculation),
-          history: messages.slice(-6).map(({ role, content }) => ({ role, content })),
+          history: historySnapshot.map(({ role, content }) => ({ role, content })),
         }),
       });
       const json = await res.json();
       if (!json.success || !json.data) throw new Error(json.error || 'fail');
       const data = json.data as AiAssistantReply;
+
+      let patch = data.patch;
+      let autoApply = Boolean(data.autoApply);
+      if (
+        detectApplyIntent(q) &&
+        (!patch || isCalcPatchEmpty(patch))
+      ) {
+        const local = extractApplyPatchFromDialog(q, historySnapshot);
+        if (!isCalcPatchEmpty(local)) {
+          patch = local;
+          autoApply = true;
+        }
+      }
+
       setMessages((m) => [
         ...m,
         {
           role: 'assistant',
           content: data.answer,
-          meta: `${data.provider} · ${data.model}`,
+          meta: `${data.provider} · ${data.model}${autoApply ? ' · применено' : ''}`,
         },
       ]);
       setSuggestions(data.suggestions || []);
       setProviderHint(data.provider);
+
+      if (autoApply && patch && !isCalcPatchEmpty(patch)) {
+        onApplyPatch?.(patch);
+      } else if (autoApply && data.suggestions?.length) {
+        for (const s of data.suggestions) {
+          if (s.field != null && s.value != null) onApplySuggestion?.(s);
+        }
+      }
     } catch {
+      // Offline fallback: still apply parsed numbers if user asked to set them
+      if (detectApplyIntent(q)) {
+        const local = extractApplyPatchFromDialog(q, historySnapshot);
+        if (!isCalcPatchEmpty(local)) {
+          onApplyPatch?.(local);
+          setMessages((m) => [
+            ...m,
+            {
+              role: 'assistant',
+              content:
+                'Сеть недоступна, но я разобрал задание и проставил параметры в калькулятор локально. Сверьте смету.',
+              meta: 'offline · применено',
+            },
+          ]);
+          setLoading(false);
+          return;
+        }
+      }
       setMessages((m) => [
         ...m,
         {
@@ -579,7 +627,7 @@ export function HardHatAssistant({
                   type="button"
                   onClick={() => onApplySuggestion?.(s)}
                   style={{ fontSize: chipPx }}
-                  className="flex w-full items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-1.5 text-left text-amber-100 hover:bg-amber-500/20"
+                  className="flex w-full items-start gap-2 rounded-sm border border-amber-500/30 bg-amber-500/10 px-2.5 py-1.5 text-left text-amber-100 transition-colors hover:bg-amber-400/35 hover:text-white"
                 >
                   <Wrench className="mt-0.5 h-3 w-3 shrink-0" />
                   <span>

@@ -18,9 +18,9 @@ export async function POST(request: Request) {
   }
 
   const question = String(body.question || '').trim();
-  if (!question || question.length > 2000) {
+  if (!question || question.length > 8000) {
     return NextResponse.json(
-      { success: false, error: 'Нужен вопрос (до 2000 символов)' },
+      { success: false, error: 'Нужен вопрос (до 8000 символов)' },
       { status: 400 }
     );
   }
