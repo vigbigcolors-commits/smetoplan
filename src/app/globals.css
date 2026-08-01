@@ -415,61 +415,14 @@ body {
 @keyframes helperPromoIn {
   from {
     opacity: 0;
-    transform: translateY(-14px) scale(0.985);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes helperGlow {
-  0%,
-  100% {
-    opacity: 0.55;
-    transform: translate(0, 0) scale(1);
-  }
-  50% {
-    opacity: 0.9;
-    transform: translate(-8px, 6px) scale(1.06);
-  }
-}
-
-@keyframes helperChipIn {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes helperCtaPulse {
-  0%,
-  100% {
-    box-shadow: 0 12px 28px -12px rgba(107, 155, 138, 0.7);
-  }
-  50% {
-    box-shadow: 0 14px 34px -10px rgba(107, 155, 138, 0.9);
   }
 }
 
 .helper-promo {
-  animation: helperPromoIn 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-.helper-promo-glow {
-  animation: helperGlow 5.5s ease-in-out infinite;
-}
-
-.helper-promo-chip {
-  animation: helperChipIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-.helper-promo-cta {
-  animation: helperCtaPulse 2.8s ease-in-out infinite;
+  animation: helperPromoIn 0.45s ease-out both;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -477,10 +430,7 @@ body {
     animation: none;
   }
 
-  .helper-promo,
-  .helper-promo-glow,
-  .helper-promo-chip,
-  .helper-promo-cta {
+  .helper-promo {
     animation: none;
   }
 }

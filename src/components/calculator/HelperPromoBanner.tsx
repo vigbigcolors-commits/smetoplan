@@ -56,49 +56,37 @@ export function HelperPromoBanner({ onOpenHelper }: { onOpenHelper: () => void }
 
   return (
     <section
-      className="helper-promo relative mb-6 overflow-hidden rounded-2xl border border-sky-400/25 bg-[#0B1220] shadow-[0_18px_50px_-28px_rgba(15,23,42,0.85)]"
+      className="helper-promo relative mb-6 isolate overflow-hidden rounded-2xl border border-slate-600/80 bg-[#0B1220]"
       aria-label="Помощник HELPER проставляет параметры"
     >
       <div
-        className="pointer-events-none absolute inset-0 opacity-40"
+        className="pointer-events-none absolute inset-0 opacity-[0.28]"
         style={{
           backgroundImage:
-            'linear-gradient(rgba(56,189,248,0.11) 1px, transparent 1px), linear-gradient(90deg, rgba(56,189,248,0.11) 1px, transparent 1px)',
+            'linear-gradient(rgba(56,189,248,0.14) 1px, transparent 1px), linear-gradient(90deg, rgba(56,189,248,0.14) 1px, transparent 1px)',
           backgroundSize: '24px 24px',
         }}
-        aria-hidden
-      />
-      <div
-        className="pointer-events-none absolute -left-20 -top-24 h-64 w-64 rounded-full bg-[#3D6494]/45 blur-3xl"
-        aria-hidden
-      />
-      <div
-        className="helper-promo-glow pointer-events-none absolute -right-10 top-0 h-56 w-56 rounded-full bg-[#6B9B8A]/25 blur-3xl"
-        aria-hidden
-      />
-      <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-teal-300/60 to-transparent"
         aria-hidden
       />
 
       <button
         type="button"
         onClick={dismiss}
-        className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-slate-400 transition hover:border-white/25 hover:bg-white/10 hover:text-white"
+        className="absolute right-3 top-3 z-20 flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-[#0B1220] text-slate-400 transition hover:border-white/25 hover:text-white"
         aria-label="Скрыть баннер"
         title="Скрыть"
       >
         <X className="h-4 w-4" />
       </button>
 
-      <div className="relative grid gap-0 lg:grid-cols-[1.35fr_0.95fr]">
-        <div className="border-b border-white/10 p-5 sm:p-6 lg:border-b-0 lg:border-r lg:pr-8">
+      <div className="relative z-10 grid gap-0 lg:grid-cols-[1.35fr_0.95fr]">
+        <div className="border-b border-white/10 p-5 sm:p-6 lg:border-b-0 lg:border-r lg:border-white/10 lg:pr-8">
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-1.5 rounded-md bg-[#6B9B8A] px-2 py-1 font-mono text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#0B1220]">
               <Sparkles className="h-3 w-3" />
               HELPER
             </span>
-            <span className="inline-flex items-center gap-1 rounded-md border border-teal-400/30 bg-teal-400/10 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-teal-200">
+            <span className="inline-flex items-center gap-1 rounded-md border border-teal-400/35 bg-teal-950/80 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-teal-200">
               <Zap className="h-3 w-3" />
               сам пишет в поля
             </span>
@@ -106,9 +94,7 @@ export function HelperPromoBanner({ onOpenHelper }: { onOpenHelper: () => void }
 
           <h2 className="mt-3 max-w-xl font-[family-name:var(--font-display)] text-2xl font-bold leading-tight tracking-tight text-white sm:text-3xl">
             Экономьте своё время —{' '}
-            <span className="bg-gradient-to-r from-sky-200 to-[#B8D4C8] bg-clip-text text-transparent">
-              цифры ставит помощник
-            </span>
+            <span className="text-[#9BC4B5]">цифры ставит помощник</span>
           </h2>
 
           <p className="mt-2.5 max-w-xl text-sm leading-relaxed text-slate-300 sm:text-[15px]">
@@ -117,11 +103,10 @@ export function HelperPromoBanner({ onOpenHelper }: { onOpenHelper: () => void }
           </p>
 
           <div className="mt-4 flex flex-wrap gap-2">
-            {CHIPS.map((chip, i) => (
+            {CHIPS.map((chip) => (
               <div
                 key={chip.label}
-                className="helper-promo-chip inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.06] px-2.5 py-1.5 backdrop-blur-sm"
-                style={{ animationDelay: `${0.12 + i * 0.08}s` }}
+                className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-[#111827] px-2.5 py-1.5"
               >
                 <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-sky-300/80">
                   {chip.label}
@@ -134,8 +119,8 @@ export function HelperPromoBanner({ onOpenHelper }: { onOpenHelper: () => void }
           </div>
         </div>
 
-        <div className="flex flex-col justify-center gap-3 bg-gradient-to-b from-white/[0.07] to-transparent p-5 sm:p-6">
-          <div className="rounded-xl border border-white/10 bg-[#0F172A]/80 p-3.5 shadow-inner">
+        <div className="flex flex-col justify-center gap-3 bg-[#0E1628] p-5 sm:p-6">
+          <div className="rounded-xl border border-white/10 bg-[#0B1220] p-3.5">
             <div className="mb-2 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
               <Keyboard className="h-3 w-3 text-sky-300" />
               Пример сообщения
@@ -148,7 +133,7 @@ export function HelperPromoBanner({ onOpenHelper }: { onOpenHelper: () => void }
           <button
             type="button"
             onClick={openWithExample}
-            className="helper-promo-cta group inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#6B9B8A] px-5 py-3.5 text-sm font-extrabold text-[#0B1220] shadow-[0_12px_28px_-12px_rgba(107,155,138,0.7)] transition hover:bg-[#7AAB9A] active:scale-[0.98]"
+            className="group inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#6B9B8A] px-5 py-3.5 text-sm font-extrabold text-[#0B1220] transition hover:bg-[#7AAB9A] active:scale-[0.98]"
           >
             <Wand2 className="h-4 w-4 transition group-hover:rotate-12" />
             Открыть HELPER и подставить
