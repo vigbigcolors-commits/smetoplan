@@ -173,15 +173,33 @@ export function computeRebar(
     }
   }
 
-  const nest = nestPiecesToStock(
-    pieces.map((p) => ({ lengthM: p.lengthMm / 1000, count: p.count })),
-    stockLengthM,
-    lapM
-  );
+  // Раскрой по диаметрам отдельно: Ø8 и Ø12 нельзя резать из одного хлыста.
+  const byDiameter = new Map<number, { lengthM: number; count: number }[]>();
+  for (const p of pieces) {
+    const list = byDiameter.get(p.diameterMm) ?? [];
+    list.push({ lengthM: p.lengthMm / 1000, count: p.count });
+    byDiameter.set(p.diameterMm, list);
+  }
+
+  let barsNeeded = 0;
+  let wasteM = 0;
+  let stockTotalM = 0;
+  /** Масса к закупке = Σ (хлысты × L × ρ), без «скрытого» (1+waste%). */
+  let purchaseWeightKg = 0;
+  for (const [dia, group] of byDiameter) {
+    const nest = nestPiecesToStock(group, stockLengthM, lapM);
+    barsNeeded += nest.barsNeeded;
+    wasteM += nest.wasteM;
+    stockTotalM += nest.stockTotalM;
+    purchaseWeightKg +=
+      nest.barsNeeded * stockLengthM * rebarLinearDensityKgM(dia);
+  }
+
+  const wastePct =
+    stockTotalM > 0 ? Math.round((wasteM / stockTotalM) * 1000) / 10 : 0;
+  const weightKg = Math.round(purchaseWeightKg * 10) / 10;
 
   const netLen = pieces.reduce((s, p) => s + (p.lengthMm / 1000) * p.count, 0);
-  const netWeight = pieces.reduce((s, p) => s + p.weightKg, 0);
-  const weightWithWaste = netWeight * (1 + nest.wastePct / 100);
 
   const barArea = Math.PI * (d / 2) ** 2;
   const spacingM = Math.max(0.05, rebarSpec.spacingMm / 1000);
@@ -189,21 +207,21 @@ export function computeRebar(
   const asMin = MU_S_MIN * H * 1e6;
 
   notes.push(
-    `Нахлёст ${lapMm} мм (~40Ø), хлыст ${stockLengthM.toFixed(1)} м → ${nest.barsNeeded} шт, отход ${nest.wastePct}%`
+    `Нахлёст ${lapMm} мм (~40Ø), хлыст ${stockLengthM.toFixed(1)} м → ${barsNeeded} шт, отход ${wastePct}%`
   );
 
   return {
     lengthM: Math.round(netLen * 10) / 10,
-    weightKg: Math.round(weightWithWaste * 10) / 10,
-    bindingWireKg: Math.round(Math.max(1.5, weightWithWaste * 0.012) * 10) / 10,
+    weightKg,
+    bindingWireKg: Math.round(Math.max(1.5, weightKg * 0.012) * 10) / 10,
     lapMm,
     coverMm: input.coverMm,
     asProvidedMm2PerM: asProvided,
     asMinMm2PerM: asMin,
-    wastePct: nest.wastePct,
-    stockBarsApprox: nest.barsNeeded,
+    wastePct,
+    stockBarsApprox: barsNeeded,
     stockLengthM,
-    wasteM: nest.wasteM,
+    wasteM: Math.round(wasteM * 10) / 10,
     pieces,
     notes,
   };

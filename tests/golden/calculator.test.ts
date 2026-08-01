@@ -7,6 +7,8 @@ import {
   computeStripPlanMetrics,
 } from '../../src/domain/geometry';
 import { stockBarsForPieces } from '../../src/domain/rebar/cutting';
+import { computeRebar } from '../../src/domain/rebar';
+import { rebarLinearDensityKgM } from '../../src/domain/norms/tables';
 import { computeLoads } from '../../src/domain/loads';
 import { computeFormworkBom } from '../../src/domain/formwork';
 import { computePourSchedule } from '../../src/domain/pour';
@@ -113,6 +115,29 @@ describe('golden: cutting nest', () => {
     const r = stockBarsForPieces(12, 2, 11.7, 0.48);
     // usable 11.22 → ceil(12/11.22)=2 segs × 2 pieces = 4 bars
     assert.equal(r.bars, 4);
+  });
+
+  it('purchase mass = stock bars × length × density (no hidden waste uplift)', () => {
+    const r = computeRebar(
+      'slab',
+      { diameterMm: 12, spacingMm: 200, layers: 2, customPricePerTon: 0 },
+      {
+        lengthM: 10,
+        widthM: 8,
+        depthM: 0.25,
+        auxWidthM: 0.05,
+        stripLengthM: 0,
+        pierCount: 0,
+        coverMm: 50,
+        stockLengthM: 11.7,
+      }
+    );
+    const dens = rebarLinearDensityKgM(12);
+    const expected = r.stockBarsApprox * r.stockLengthM * dens;
+    assert.ok(
+      Math.abs(r.weightKg - expected) < 0.15,
+      `weight ${r.weightKg} vs bars×L×ρ ${expected}`
+    );
   });
 });
 
