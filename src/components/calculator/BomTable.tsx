@@ -179,30 +179,57 @@ export const BomTable: React.FC<BomTableProps> = ({
               </td>
             </tr>
 
-            {/* 5. Steel Rebar Mesh */}
-            <tr className="hover:bg-slate-50 transition">
-              <td className="py-3 px-4 font-semibold text-slate-900">
-                <span className="text-[#1F5A8E]">АРМ-05:</span> Арматурный Прокат Ø{rebarSpec.diameterMm}мм А500С
-              </td>
-              <td className="py-3 px-4 font-bold">{calculation.rebarWeightKg} кг</td>
-              <td className="py-3 px-4 text-slate-600">
-                {calculation.rebarStockByDiameter.length > 1
-                  ? calculation.rebarStockByDiameter
-                      .map((s) => `${s.bars}×Ø${s.diameterMm}`)
-                      .join(' + ')
-                  : `${calculation.rebarStockBarsApprox} хлыстов Ø${rebarSpec.diameterMm}`}{' '}
-                × {calculation.rebarStockLengthM.toFixed(1)} м · нетто{' '}
-                {calculation.rebarLengthMeters} м
-              </td>
-              <td className="py-3 px-4 text-right font-bold text-slate-900">
-                {formatCurrency(itemizedCosts.rebar, currency)}
-              </td>
-              <td className="py-3 px-4">
-                <span className="inline-flex items-center gap-1 text-[11px] text-slate-600 font-sans">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-slate-400" /> ГОСТ 52544 — смета
-                </span>
-              </td>
-            </tr>
+            {/* 5. Steel Rebar — отдельная строка на каждый диаметр (Ø16 рабочая / Ø8 хомуты) */}
+            {(() => {
+              const byDia = calculation.rebarStockByDiameter;
+              if (!byDia || byDia.length === 0) {
+                return (
+                  <tr className="hover:bg-slate-50 transition">
+                    <td className="py-3 px-4 font-semibold text-slate-900">
+                      <span className="text-[#1F5A8E]">АРМ-05:</span> Арматурный Прокат Ø{rebarSpec.diameterMm}мм А500С
+                    </td>
+                    <td className="py-3 px-4 font-bold">{calculation.rebarWeightKg} кг</td>
+                    <td className="py-3 px-4 text-slate-600">
+                      {calculation.rebarStockBarsApprox} хлыстов × {calculation.rebarStockLengthM.toFixed(1)} м
+                    </td>
+                    <td className="py-3 px-4 text-right font-bold text-slate-900">
+                      {formatCurrency(itemizedCosts.rebar, currency)}
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="inline-flex items-center gap-1 text-[11px] text-slate-600 font-sans">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-slate-400" /> ГОСТ 52544 — смета
+                      </span>
+                    </td>
+                  </tr>
+                );
+              }
+              const totalMass = byDia.reduce((s, r) => s + r.weightKg, 0) || 1;
+              return byDia.map((row, i) => (
+                <tr key={`arm-${row.diameterMm}`} className="hover:bg-slate-50 transition">
+                  <td className="py-3 px-4 font-semibold text-slate-900">
+                    <span className="text-[#1F5A8E]">АРМ-05.{i + 1}:</span> Арматурный Прокат Ø{row.diameterMm}мм А500С
+                    <span className="ml-1 text-[10px] font-normal text-slate-500">
+                      {i === 0 ? '· рабочая продольная' : '· поперечные хомуты'}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4 font-bold">{row.weightKg} кг</td>
+                  <td className="py-3 px-4 text-slate-600">
+                    {row.bars} хлыстов × {calculation.rebarStockLengthM.toFixed(1)} м
+                  </td>
+                  <td className="py-3 px-4 text-right font-bold text-slate-900">
+                    {formatCurrency(
+                      Math.round((itemizedCosts.rebar * row.weightKg) / totalMass),
+                      currency
+                    )}
+                  </td>
+                  <td className="py-3 px-4">
+                    <span className="inline-flex items-center gap-1 text-[11px] text-slate-600 font-sans">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-slate-400" /> ГОСТ 52544 — смета
+                    </span>
+                  </td>
+                </tr>
+              ));
+            })()}
 
             {/* 6. Binding Wire & Spacers */}
             <tr className="hover:bg-slate-50 transition">

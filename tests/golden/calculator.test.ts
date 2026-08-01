@@ -61,7 +61,9 @@ describe('golden: geometry', () => {
       stripLayout: 'perimeter_plus_one',
     });
     assert.equal(g.stripLengthM, 52);
-    assert.ok(Math.abs(g.concreteVolumeRawM3 - 10.24) < 1e-9);
+    // Рама 12×8 (наруж.) + 1 внутр. стена, w=0.4, H=0.5:
+    // площадь бетона 19.84 м² → объём 9.92 м³ (углы/крестовины не задвоены).
+    assert.ok(Math.abs(g.concreteVolumeRawM3 - 9.92) < 1e-9);
     assert.equal(g.junctionCount, 2);
   });
 
@@ -327,8 +329,10 @@ describe('golden: calculateMaterials', () => {
       1.0,
       { coverMm: 40, stockLengthM: 11.7, stripLayout: 'perimeter_plus_one' }
     );
-    assert.equal(r.concreteVolumeM3, 20.48);
-    assert.equal(r.formworkAreaM2, 104);
+    // 12×8×1.0 (наруж.), стенка 0.4, 1 внутр. стена:
+    // 2 пустоты 11.2×3.4 → бетон 19.84 м³; опалубка 40 + 2×29.2 = 98.4 м².
+    assert.equal(r.concreteVolumeM3, 19.84);
+    assert.equal(r.formworkAreaM2, 98.4);
     assert.ok(r.rebarPieces.some((p) => p.mark === 'А1'));
     assert.ok(r.rebarPieces.some((p) => p.mark === 'Х1'));
     const stirrup = r.rebarPieces.find((p) => p.mark === 'Х1')!;

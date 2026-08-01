@@ -1,6 +1,6 @@
 import type { StructureType } from '@/lib/types';
 import {
-  buildRectangleStripPlan,
+  computeRectStripFootprint,
   computeStripPlanMetrics,
   isValidStripPlan,
   type StripPlan,
@@ -78,46 +78,6 @@ export function resolveStripAxes(
   };
 }
 
-/**
- * Strip volume by centerline length × ribbon × depth, minus junction cubes
- * (T/cross overlaps) so volume is not double-counted at intersections.
- */
-export function computeStripMetrics(
-  lengthM: number,
-  widthM: number,
-  depthM: number,
-  ribbonWidth: number,
-  innerLong: number,
-  innerCross: number
-): {
-  stripLengthM: number;
-  concreteVolumeRawM3: number;
-  formworkAreaM2: number;
-  contactAreaM2: number;
-  junctionCount: number;
-} {
-  const L = lengthM;
-  const W = widthM;
-  const H = depthM;
-  const w = ribbonWidth;
-  const nL = innerLong;
-  const nC = innerCross;
-
-  const stripLengthM = 2 * (L + W) + nL * L + nC * W;
-  const junctions = nL * nC + 2 * nL + 2 * nC;
-  const gross = stripLengthM * w * H;
-  const deduct = junctions * w * w * H;
-  const concreteVolumeRawM3 = Math.max(w * w * H * 4, gross - deduct);
-
-  return {
-    stripLengthM,
-    concreteVolumeRawM3,
-    formworkAreaM2: 2 * stripLengthM * H,
-    contactAreaM2: Math.max(w * w * 4, stripLengthM * w - junctions * w * w),
-    junctionCount: junctions,
-  };
-}
-
 export function buildGeometry(
   structureType: StructureType,
   input: GeometryInput
@@ -165,16 +125,12 @@ export function buildGeometry(
         input.stripInnerLong,
         input.stripInnerCross
       );
-      const plan = isValidStripPlan(input.stripPlan)
-        ? input.stripPlan
-        : buildRectangleStripPlan(L, W, axes.long, axes.cross);
-      const m = computeStripPlanMetrics(plan, H, ribbonWidth);
+      // Прямоугольный план → точная аналитика (рама + стены, углы не задвоены).
+      // Произвольный контур из редактора → осевая модель по полигону.
+      const m = isValidStripPlan(input.stripPlan)
+        ? computeStripPlanMetrics(input.stripPlan, H, ribbonWidth)
+        : computeRectStripFootprint(L, W, H, ribbonWidth, axes.long, axes.cross);
       notes.push(...m.notes);
-      if (!isValidStripPlan(input.stripPlan)) {
-        notes.push(
-          `Прямоугольник ${L}×${W} м + ${axes.long} прод. / ${axes.cross} попер.`
-        );
-      }
       return {
         concreteVolumeRawM3: m.concreteVolumeRawM3,
         formworkAreaM2: m.formworkAreaM2,

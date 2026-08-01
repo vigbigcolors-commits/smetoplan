@@ -236,12 +236,15 @@ export function computeStripPlanMetrics(
   }
   const stripLengthM = outerLen + innerLen;
   const junctionCount = countStripJunctions(plan);
+  // Наружные углы контура тоже задваивают куб w×w×H — вычитаем их вместе со стыками.
+  const outerCorners = plan.outer.length;
+  const deductNodes = junctionCount + outerCorners;
   const gross = stripLengthM * w * H;
-  const deduct = junctionCount * w * w * H;
+  const deduct = deductNodes * w * w * H;
   const concreteVolumeRawM3 = Math.max(w * w * H * 4, gross - deduct);
   const contactAreaM2 = Math.max(
     w * w * 4,
-    stripLengthM * w - junctionCount * w * w
+    stripLengthM * w - deductNodes * w * w
   );
   const planAreaM2 = polygonArea(plan.outer);
   const notes = [
@@ -254,6 +257,73 @@ export function computeStripPlanMetrics(
     contactAreaM2,
     junctionCount,
     planAreaM2,
+    notes,
+  };
+}
+
+/**
+ * Аналитическая модель прямоугольного ленточного фундамента как объединения
+ * лент шириной `w`: наружная рама + внутренние стены, заданные габариты — НАРУЖНЫЕ.
+ *
+ * Объём = площадь застройки (рама + стены) × H — без двойного счёта углов/крестовин,
+ * потому что считаем реальную площадь бетона, а не осевую длину.
+ * Опалубка = (наружный периметр + Σ периметров внутренних пустот) × H.
+ */
+export function computeRectStripFootprint(
+  lengthM: number,
+  widthM: number,
+  depthM: number,
+  ribbonWidth: number,
+  innerLong: number,
+  innerCross: number
+): StripPlanMetrics {
+  const L = Math.max(0.5, lengthM);
+  const W = Math.max(0.5, widthM);
+  const H = Math.max(0.05, depthM);
+  const w = Math.max(0.15, ribbonWidth);
+  const nL = Math.max(0, Math.min(6, Math.round(innerLong)));
+  const nC = Math.max(0, Math.min(6, Math.round(innerCross)));
+
+  const stripLengthM = 2 * (L + W) + nL * L + nC * W;
+  const junctionCount = nL * nC + 2 * nL + 2 * nC;
+
+  const interiorL = L - 2 * w;
+  const interiorW = W - 2 * w;
+  const colW = (interiorL - nC * w) / (nC + 1);
+  const rowH = (interiorW - nL * w) / (nL + 1);
+
+  const outerPerimeter = 2 * (L + W);
+  const outerArea = L * W;
+
+  let concreteVolumeRawM3: number;
+  let formworkAreaM2: number;
+  let contactAreaM2: number;
+
+  if (interiorL <= 0 || interiorW <= 0 || colW <= EPS || rowH <= EPS) {
+    // Стены съели весь просвет — сплошной массив.
+    contactAreaM2 = outerArea;
+    concreteVolumeRawM3 = outerArea * H;
+    formworkAreaM2 = outerPerimeter * H;
+  } else {
+    const voidCount = (nL + 1) * (nC + 1);
+    const voidArea = voidCount * colW * rowH;
+    const voidPerimeter = voidCount * 2 * (colW + rowH);
+    contactAreaM2 = Math.max(w * w * 4, outerArea - voidArea);
+    concreteVolumeRawM3 = contactAreaM2 * H;
+    formworkAreaM2 = (outerPerimeter + voidPerimeter) * H;
+  }
+
+  const notes = [
+    `Лента ${L}×${W} м (наружные), стенка ${w.toFixed(2)} м: площадь бетона ${contactAreaM2.toFixed(2)} м²; стыков ${junctionCount} (углы/крестовины не задвоены)`,
+  ];
+
+  return {
+    stripLengthM,
+    concreteVolumeRawM3,
+    formworkAreaM2,
+    contactAreaM2,
+    junctionCount,
+    planAreaM2: outerArea,
     notes,
   };
 }
