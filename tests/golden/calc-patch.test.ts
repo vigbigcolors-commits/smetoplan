@@ -5,6 +5,8 @@ import {
   detectApplyIntent,
   extractApplyPatchFromDialog,
   extractCalcPatchFromText,
+  shouldAutoApplyParams,
+  stripCannotApplyClaims,
 } from '../../src/lib/ai/calc-patch';
 
 const SAMPLE = `
@@ -40,5 +42,18 @@ describe('calc-patch extractor', () => {
     assert.equal(patch.lengthM, 10);
     assert.equal(patch.coverMm, 50);
     assert.equal(patch.safetyFactor, 1);
+  });
+
+  it('auto-applies when user pastes full assignment without magic words', () => {
+    const patch = extractCalcPatchFromText(SAMPLE);
+    assert.equal(shouldAutoApplyParams(SAMPLE, [], patch), true);
+  });
+
+  it('strips cannot-apply refusals from model text', () => {
+    const raw =
+      'Я не могу сам вносить значения в интерфейс — это доступно только вам. Но вот настройка.';
+    const cleaned = stripCannotApplyClaims(raw);
+    assert.equal(/не могу/i.test(cleaned), false);
+    assert.match(cleaned, /настройка/i);
   });
 });

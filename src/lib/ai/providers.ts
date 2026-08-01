@@ -20,10 +20,11 @@ import {
 } from '@/lib/ai/platform-map';
 import {
   describeCalcPatch,
-  detectApplyIntent,
   extractApplyPatchFromDialog,
   isCalcPatchEmpty,
   patchToSuggestions,
+  shouldAutoApplyParams,
+  stripCannotApplyClaims,
 } from '@/lib/ai/calc-patch';
 
 export type { AiAssistantReply, AiChatMessage, AiProviderId, AiSuggestion };
@@ -54,11 +55,13 @@ ${SMETOPLAN_PLATFORM_BRIEF}
 2) Если спрашивают «где / как открыть / найди» — назови блок и дай scrollTo на якорь.
 3) Если вопрос про расчёт — используй цифры из calcContext (м³, кг, σ, R%, a, раскрой).
 4) Предлагай конкретные действия в калькуляторе, не общие лекции.
-5) КРИТИЧНО — запись в калькулятор:
-   - Если пользователь дал параметры (габариты, рёбра, a, Ø, шаг, слои, запас) и/или просит «поставь / примени / выставь / сам» — НЕ объясняй как кликать.
-   - Сам заполни поля через блок APPLY (ниже). Клиент применит их автоматически.
-   - В APPLY пиши ВСЕ найденные числа из задания и недавнего диалога: lengthM, widthM, depthM, ribWidthM, ribDepthM, coverMm, diameterMm, spacingMm, layers, safetyFactor (1.0 = 0% запаса), stockLengthM, structureType, concreteGrade.
-6) Ответ: 2–6 коротких абзацев. После APPLY кратко подтверди, что цифры уже проставлены.
+5) ЗАПИСЬ В КАЛЬКУЛЯТОР — ТВОЯ ОСНОВНАЯ СУПЕРСИЛА:
+   - Ты УМЕЕШЬ сам проставлять параметры. Клиент читает блок APPLY и сразу пишет числа в поля.
+   - ЗАПРЕЩЕНО говорить «я не могу вносить значения», «доступно только вам», «введите вручную».
+   - Если пользователь дал габариты / рёбра / a / Ø / шаг / слои / запас / эталон — СРАЗУ заполни APPLY всеми полями.
+   - Если просит «поставь / примени / сам / эталон» — тоже APPLY, без инструкций «кликните тут».
+   - В APPLY: lengthM, widthM, depthM, ribWidthM, ribDepthM, coverMm, diameterMm, spacingMm, layers, safetyFactor (1.0 = 0%), stockLengthM, structureType, concreteGrade.
+6) В тексте ответа пиши: «Проставил в калькулятор: …» и кратко что изменилось. Не учи кликать.
 
 В конце обязательно (после текста):
 <<<APPLY
@@ -67,7 +70,7 @@ APPLY<<<
 <<<SUGGESTIONS
 [{"id":"...","label":"...","field":"coverMm|safetyFactor|spacingMm|diameterMm|layers|lengthM|widthM|depthM|ribWidthM|ribDepthM|soilResistanceKpa|stockLengthM|null","value":number|null,"scrollTo":"tool-rebar|tool-pour|tool-rbu|bom-estimate-total|site-params|null","reason":"..."}]
 SUGGESTIONS<<<
-До 12 suggestions. Если APPLY заполнен — suggestions дублируют применённые поля для прозрачности.`;
+До 12 suggestions — дублируют уже применённые поля для прозрачности.`;
 
 function parseApplyBlock(text: string): AiCalcPatch | undefined {
   const m = text.match(/<<<APPLY\s*([\s\S]*?)\s*APPLY<<</);
@@ -172,12 +175,15 @@ function withAutoApply(
   question: string,
   messages: AiChatMessage[]
 ): AiAssistantReply {
-  const wantApply = detectApplyIntent(question);
   const dialogPatch = extractApplyPatchFromDialog(question, messages);
   const merged: AiCalcPatch = { ...dialogPatch, ...reply.patch };
+  const doApply = shouldAutoApplyParams(question, messages, merged);
 
   if (isCalcPatchEmpty(merged)) {
-    return reply;
+    return {
+      ...reply,
+      answer: stripCannotApplyClaims(reply.answer),
+    };
   }
 
   const lines = describeCalcPatch(merged);
@@ -189,15 +195,35 @@ function withAutoApply(
     ),
   ].slice(0, 12);
 
-  const prefix = wantApply
-    ? `Готово — проставил параметры в калькулятор:\n${lines.map((l) => `• ${l}`).join('\n')}\n\n`
-    : '';
+  if (!doApply) {
+    return {
+      ...reply,
+      answer: stripCannotApplyClaims(reply.answer),
+      suggestions,
+      patch: merged,
+      autoApply: false,
+    };
+  }
+
+  const cleanedTail = stripCannotApplyClaims(reply.answer);
+  const answer = [
+    `Готово — параметры уже проставлены в калькулятор:`,
+    ...lines.map((l) => `• ${l}`),
+    '',
+    'Смета, раскрой и KPI пересчитаются сразу. Карточки ниже — что именно записано.',
+    cleanedTail && !/проставил|записал|применил/i.test(cleanedTail)
+      ? `\n${cleanedTail}`
+      : '',
+  ]
+    .filter(Boolean)
+    .join('\n')
+    .trim();
 
   return {
     ...reply,
-    answer: wantApply ? `${prefix}${reply.answer}`.trim() : reply.answer,
+    answer,
     suggestions,
-    autoApply: wantApply,
+    autoApply: true,
     patch: merged,
   };
 }
@@ -342,10 +368,10 @@ export function localEngineerBrain(
   const parts: string[] = [];
 
   const applyPatch = extractApplyPatchFromDialog(question, messages);
-  if (detectApplyIntent(question) && !isCalcPatchEmpty(applyPatch)) {
+  if (shouldAutoApplyParams(question, messages, applyPatch)) {
     const lines = describeCalcPatch(applyPatch);
     parts.push(
-      `Проставляю параметры в калькулятор автоматически:\n${lines.map((l) => `• ${l}`).join('\n')}`
+      `Готово — параметры уже проставлены в калькулятор:\n${lines.map((l) => `• ${l}`).join('\n')}`
     );
     suggestions.push(...patchToSuggestions(applyPatch));
     suggestions.push({

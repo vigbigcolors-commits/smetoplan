@@ -2,7 +2,10 @@ import type { AiCalcPatch, AiSuggestion } from '@/lib/ai/types';
 import type { ConcreteSpec, StructureType } from '@/lib/types';
 
 const APPLY_RE =
-  /поставь|проставь|выставь|установи|заполни|примени|внеси|задай|сам(а|и)?\b|автомат|в калькулятор|все параметр|все цифр/i;
+  /поставь|проставь|выставь|установи|заполни|примени|внеси|задай|сам(а|и)?\b|автомат|в калькулятор|все параметр|все цифр|эталон|скорректир|настро(й|и)|подставь|запиши|сделай\s+сам/i;
+
+const CANNOT_APPLY_RE =
+  /я\s+не\s+могу[^.!?\n]{0,80}(вносить|изменить|менять|поставить|заполнить|интерфейс)|не\s+могу\s+сам[^.!?\n]{0,60}|доступно\s+только\s+вам|вы\s+должны\s+ввести|вручную\s+введите|кликните\s+по/gi;
 
 const STRUCTURE_RE: Array<{ re: RegExp; type: StructureType }> = [
   { re: /плит/i, type: 'slab' },
@@ -37,6 +40,44 @@ function firstMatch(text: string, re: RegExp): RegExpMatchArray | null {
 /** User asks helper to write numbers into the calculator itself. */
 export function detectApplyIntent(text: string): boolean {
   return APPLY_RE.test(text);
+}
+
+/** Enough numbers to safely write into the calculator. */
+export function isSubstantialPatch(patch: AiCalcPatch): boolean {
+  const hasDims =
+    patch.lengthM != null && patch.widthM != null && patch.depthM != null;
+  const hasRebar =
+    patch.diameterMm != null &&
+    (patch.spacingMm != null || patch.layers != null || patch.coverMm != null);
+  return hasDims || hasRebar;
+}
+
+/**
+ * Decide whether HELPER should write the patch into the calculator now.
+ * Covers «поставь сам», pasting a full assignment, and apply-intent in recent chat.
+ */
+export function shouldAutoApplyParams(
+  question: string,
+  history: Array<{ role: string; content: string }>,
+  patch: AiCalcPatch
+): boolean {
+  if (isCalcPatchEmpty(patch) || !isSubstantialPatch(patch)) return false;
+  if (detectApplyIntent(question)) return true;
+  if (isSubstantialPatch(extractCalcPatchFromText(question))) return true;
+  const recentUser = history
+    .filter((m) => m.role === 'user')
+    .slice(-3)
+    .map((m) => m.content)
+    .join('\n');
+  return detectApplyIntent(recentUser);
+}
+
+/** Remove LLM refusals like «я не могу вносить значения в интерфейс». */
+export function stripCannotApplyClaims(text: string): string {
+  return text
+    .replace(CANNOT_APPLY_RE, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }
 
 /**

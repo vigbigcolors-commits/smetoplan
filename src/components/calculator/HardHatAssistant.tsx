@@ -19,9 +19,9 @@ import {
 } from '@/lib/calculator';
 import type { AiAssistantReply, AiCalcPatch, AiSuggestion } from '@/lib/ai/types';
 import {
-  detectApplyIntent,
   extractApplyPatchFromDialog,
   isCalcPatchEmpty,
+  shouldAutoApplyParams,
 } from '@/lib/ai/calc-patch';
 
 type ChatRow = { role: 'user' | 'assistant'; content: string; meta?: string };
@@ -357,24 +357,28 @@ export function HardHatAssistant({
 
       let patch = data.patch;
       let autoApply = Boolean(data.autoApply);
-      if (
-        detectApplyIntent(q) &&
-        (!patch || isCalcPatchEmpty(patch))
-      ) {
-        const local = extractApplyPatchFromDialog(q, historySnapshot);
-        if (!isCalcPatchEmpty(local)) {
-          patch = local;
-          autoApply = true;
-        }
+      const local = extractApplyPatchFromDialog(q, historySnapshot);
+      if (!patch || isCalcPatchEmpty(patch)) patch = local;
+      else patch = { ...local, ...patch };
+      if (!autoApply && shouldAutoApplyParams(q, historySnapshot, patch || {})) {
+        autoApply = true;
       }
 
       if (ac.signal.aborted) return;
+
+      const answerText =
+        autoApply && patch && !isCalcPatchEmpty(patch)
+          ? data.answer.replace(
+              /я\s+не\s+могу[^.!?\n]{0,80}(вносить|изменить|менять|поставить|заполнить|интерфейс)[^.!?\n]*[.!?]?/gi,
+              ''
+            )
+          : data.answer;
 
       setMessages((m) => [
         ...m,
         {
           role: 'assistant',
-          content: data.answer,
+          content: answerText.trim() || data.answer,
           meta: `${data.provider} · ${data.model}${autoApply ? ' · применено' : ''}`,
         },
       ]);
@@ -404,8 +408,8 @@ export function HardHatAssistant({
         ]);
         return;
       }
-      // Offline fallback: still apply parsed numbers if user asked to set them
-      if (detectApplyIntent(q)) {
+      // Offline fallback: still apply parsed numbers when assignment is clear
+      if (shouldAutoApplyParams(q, historySnapshot, extractApplyPatchFromDialog(q, historySnapshot))) {
         const local = extractApplyPatchFromDialog(q, historySnapshot);
         if (!isCalcPatchEmpty(local)) {
           onApplyPatch?.(local);
