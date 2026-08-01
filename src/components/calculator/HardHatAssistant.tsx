@@ -152,6 +152,22 @@ export function HardHatAssistant({
   }, [open]);
 
   useEffect(() => {
+    const applyPrefill = () => {
+      try {
+        const prefill = sessionStorage.getItem('smetoplan-helper-prefill');
+        if (!prefill) return;
+        sessionStorage.removeItem('smetoplan-helper-prefill');
+        setInput(prefill);
+      } catch {
+        /* ignore */
+      }
+    };
+    if (open) applyPrefill();
+    window.addEventListener('smetoplan-helper-prefill', applyPrefill);
+    return () => window.removeEventListener('smetoplan-helper-prefill', applyPrefill);
+  }, [open]);
+
+  useEffect(() => {
     setFabPos(fabDefaultPos());
     setRect(defaultWindowRect());
   }, []);

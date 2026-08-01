@@ -32,6 +32,7 @@ import { AcceptancePanel } from '@/components/calculator/AcceptancePanel';
 import { ToolsRail } from '@/components/calculator/ui/ToolsRail';
 import { LiveKpiStrip } from '@/components/calculator/ui/LiveKpiStrip';
 import { HardHatAssistant } from '@/components/calculator/HardHatAssistant';
+import { HelperPromoBanner } from '@/components/calculator/HelperPromoBanner';
 import { BackToTop } from '@/components/calculator/ui/BackToTop';
 import { WorkStatusPanel } from '@/components/calculator/WorkStatusPanel';
 import { SitePipeline } from '@/components/calculator/SitePipeline';
@@ -688,6 +689,8 @@ export default function ConstructixApp({
 
       {/* Main Container */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+        <HelperPromoBanner onOpenHelper={() => setHelperOpen(true)} />
+
         {(boot.h1 || boot.description) && (
           <header className="mb-6">
             {boot.h1 && (
