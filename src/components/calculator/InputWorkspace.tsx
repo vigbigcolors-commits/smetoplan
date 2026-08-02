@@ -266,7 +266,11 @@ export const InputWorkspace: React.FC<InputWorkspaceProps> = ({
         {/* Depth / Thickness Input */}
         <div className="space-y-1.5 bg-[#F4F4F5] p-3 rounded-lg border border-slate-200">
           <div className="flex justify-between items-center text-xs">
-            <label className="font-semibold text-slate-700">Толщина / Высота ($H$)</label>
+            <label className="font-semibold text-slate-700">
+              {structureType === 'pier'
+                ? 'Глубина свай ($H$)'
+                : 'Толщина / Высота ($H$)'}
+            </label>
             <div className="flex items-center gap-1">
               <input
                 type="number"
@@ -281,7 +285,15 @@ export const InputWorkspace: React.FC<InputWorkspaceProps> = ({
           <input
             type="range"
             min={0.1}
-            max={unitSystem === 'imperial' ? 5 : 1.5}
+            max={
+              structureType === 'pier'
+                ? unitSystem === 'imperial'
+                  ? 20
+                  : 6
+                : unitSystem === 'imperial'
+                  ? 5
+                  : 1.5
+            }
             step={0.05}
             value={dimensions.depth}
             onChange={(e) => updateDimension('depth', parseFloat(e.target.value))}
@@ -427,16 +439,69 @@ export const InputWorkspace: React.FC<InputWorkspaceProps> = ({
 
         {structureType === 'pier' && (
           <div className="space-y-2 rounded-lg border border-violet-200 bg-violet-50/70 p-3 text-xs">
-            <label className="font-semibold text-violet-950">Шаг свай, м</label>
-            <input
-              type="number"
-              min={1.5}
-              max={4}
-              step={0.1}
-              value={pierSpacingM}
-              onChange={(e) => onPierSpacingMChange(Number(e.target.value) || 2.5)}
-              className="w-full rounded-lg border border-violet-300 bg-white px-2 py-1.5 font-mono text-xs font-bold"
-            />
+            <div className="flex items-center justify-between font-semibold text-violet-950">
+              <span>Плита и сваи</span>
+              <span className="text-[10px] bg-violet-200/70 text-violet-900 px-1.5 py-0.5 rounded font-mono">
+                СВАЙНО-ПЛИТНЫЙ
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="mb-0.5 block text-[11px] text-slate-600">
+                  Толщина плиты, м
+                </label>
+                <input
+                  type="number"
+                  min={0.1}
+                  max={1.2}
+                  step={0.05}
+                  value={dimensions.perimeterThickeningDepth}
+                  onChange={(e) =>
+                    updateDimension(
+                      'perimeterThickeningDepth',
+                      parseFloat(e.target.value) || 0
+                    )
+                  }
+                  className="w-full rounded-lg border border-violet-300 bg-white px-2 py-1.5 font-mono text-xs font-bold"
+                />
+              </div>
+              <div>
+                <label className="mb-0.5 block text-[11px] text-slate-600">
+                  Диаметр сваи, м
+                </label>
+                <input
+                  type="number"
+                  min={0.15}
+                  max={0.8}
+                  step={0.05}
+                  value={dimensions.perimeterThickeningWidth}
+                  onChange={(e) =>
+                    updateDimension(
+                      'perimeterThickeningWidth',
+                      parseFloat(e.target.value) || 0
+                    )
+                  }
+                  className="w-full rounded-lg border border-violet-300 bg-white px-2 py-1.5 font-mono text-xs font-bold"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="mb-0.5 block font-semibold text-violet-950">
+                Шаг свай, м
+              </label>
+              <input
+                type="number"
+                min={1.5}
+                max={4}
+                step={0.1}
+                value={pierSpacingM}
+                onChange={(e) => onPierSpacingMChange(Number(e.target.value) || 2.5)}
+                className="w-full rounded-lg border border-violet-300 bg-white px-2 py-1.5 font-mono text-xs font-bold"
+              />
+              <p className="mt-1 text-[11px] text-violet-800/80">
+                Бетон = плита L×W×t + Σ свай. Опалубка только по периметру плиты (сваи в грунте без щитов).
+              </p>
+            </div>
           </div>
         )}
 

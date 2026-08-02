@@ -370,6 +370,47 @@ describe('golden: calculateMaterials', () => {
     assert.ok(Math.abs(r.rebarWeightKg - fromDia) < 1.5);
     assert.ok(r.rebarStockByDiameter.length >= 2);
   });
+
+  it('pier pile-slab: slab+piles volume, perimeter formwork, mesh by spacing', () => {
+    const r = calculateMaterials(
+      'pier',
+      {
+        length: 10,
+        width: 10,
+        depth: 3.0,
+        perimeterThickeningWidth: 0.3,
+        perimeterThickeningDepth: 0.3,
+      },
+      concrete,
+      {
+        diameterMm: 12,
+        spacingMm: 200,
+        layers: 2,
+        customPricePerTon: 62000,
+      },
+      prices,
+      'metric',
+      1.0,
+      { coverMm: 40, stockLengthM: 11.7, pierSpacingM: 2.5 }
+    );
+    // 5×5 = 25 свай; плита 10×10×0.3 = 30; сваи 25×π×0.15²×3 ≈ 5.301
+    assert.equal(r.pierCount, 25);
+    assert.ok(Math.abs(r.concreteVolumeM3 - 35.301) < 0.02);
+    // Опалубка только борт плиты: 40×0.3 = 12 (не поверхности свай)
+    assert.equal(r.formworkAreaM2, 12);
+    const mesh = r.rebarPieces.filter((p) => p.mark.startsWith('П'));
+    assert.ok(mesh.length >= 2);
+    // шаг 200 → 51+51 стержней на слой × 2 слоя
+    const long = mesh.find((p) => p.mark.includes('П1'))!;
+    assert.equal(long.count, 51);
+    const fromDia = r.rebarStockByDiameter.reduce(
+      (s, row) =>
+        s + row.bars * r.rebarStockLengthM * rebarLinearDensityKgM(row.diameterMm),
+      0
+    );
+    assert.ok(Math.abs(r.rebarWeightKg - fromDia) < 1.5);
+    assert.ok(r.rebarLengthMeters > 1800, 'сетка плиты ~2000 м + сваи');
+  });
 });
 
 describe('golden: formwork pour acceptance', () => {

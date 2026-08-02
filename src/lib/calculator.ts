@@ -125,6 +125,7 @@ export function calculateMaterials(
     widthM: W,
     depthM: H,
     auxWidthM: pW,
+    auxDepthM: pH,
     stripLengthM: geometry.stripLengthM,
     pierCount: geometry.pierCount,
     coverMm,

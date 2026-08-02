@@ -12,6 +12,8 @@ export interface RebarInput {
   widthM: number;
   depthM: number;
   auxWidthM: number;
+  /** Толщина плиты/ростверка для pier (auxDepth). */
+  auxDepthM?: number;
   stripLengthM: number;
   pierCount: number;
   coverMm: number;
@@ -190,16 +192,38 @@ export function computeRebar(
       break;
     }
     case 'pier': {
-      const pierSize = pW > 0 ? pW : 0.4;
+      const pierDia = pW > 0 ? pW : 0.3;
+      const slabH = input.auxDepthM && input.auxDepthM > 0 ? input.auxDepthM : 0.3;
+      const pileDepth = Math.max(0.5, H);
       const pierCount = Math.max(4, input.pierCount);
-      const barMm = Math.max(500, Math.round((H + 0.5) * 1000));
-      const longCount = pierCount * 4;
-      addPiece(pieces, 'А1', 'Стержни свай (4Ø)', d, barMm, longCount);
+
+      // Сетка плиты/ростверка — строго по шагу армирования (не по шагу свай).
+      const spacingM = Math.max(0.05, rebarSpec.spacingMm / 1000);
+      const numLong = Math.ceil(W / spacingM) + 1;
+      const numTrans = Math.ceil(L / spacingM) + 1;
+      const longMm = Math.max(500, Math.round((L - 2 * coverM) * 1000));
+      const transMm = Math.max(500, Math.round((W - 2 * coverM) * 1000));
+      const slabLayers = rebarSpec.layers;
+      for (let layer = 1; layer <= slabLayers; layer++) {
+        const suffix = slabLayers > 1 ? `-L${layer}` : '';
+        addPiece(pieces, `П1${suffix}`, 'Сетка плиты продольная', d, longMm, numLong);
+        addPiece(pieces, `П2${suffix}`, 'Сетка плиты поперечная', d, transMm, numTrans);
+      }
+
+      // Каркасы свай: 4 продольных + хомуты; выпуск в плиту ≈ slabH.
+      const barMm = Math.max(500, Math.round((pileDepth + slabH) * 1000));
+      addPiece(pieces, 'А1', 'Стержни свай (4Ø)', d, barMm, pierCount * 4);
       const stirrupD = Math.min(8, d);
-      const stirrupMm = Math.max(400, Math.round(4 * pierSize * 1000));
-      const stirrupsCount = pierCount * Math.max(3, Math.ceil(H / 0.25));
+      const stirrupMm = Math.max(
+        400,
+        Math.round(Math.PI * Math.max(0.15, pierDia - 2 * coverM) * 1000) + 2 * Math.max(75, 10 * stirrupD)
+      );
+      const stirrupsCount = pierCount * Math.max(3, Math.ceil(pileDepth / 0.25));
       addPiece(pieces, 'Х1', 'Хомуты свай', stirrupD, stirrupMm, stirrupsCount);
-      notes.push(`Сваи: ${pierCount} шт × 4 стержня Ø${d}`);
+
+      notes.push(
+        `Плита: сетка шаг ${rebarSpec.spacingMm} мм × ${slabLayers} сл.; сваи ${pierCount} шт × 4Ø${d}`
+      );
       break;
     }
     case 'wall': {
@@ -269,7 +293,10 @@ export function computeRebar(
         : W;
     asProvided = (longBars * barArea) / Math.max(0.1, sectionW);
   }
-  const asMin = MU_S_MIN * H * 1e6;
+  const asMin =
+    structureType === 'pier'
+      ? MU_S_MIN * Math.max(0.1, input.auxDepthM && input.auxDepthM > 0 ? input.auxDepthM : 0.3) * 1e6
+      : MU_S_MIN * H * 1e6;
 
   notes.push(
     `Нахлёст ${lapMm} мм (~40Ø), хлыст ${stockLengthM.toFixed(1)} м → ${barsNeeded} шт (${stockByDiameter

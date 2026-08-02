@@ -119,22 +119,22 @@ export function getStructurePreset(type: StructureType): StructurePreset {
     case 'pier':
       return {
         structureType: 'pier',
-        label: 'Сваи и ростверк',
-        h1: 'Калькулятор свайного фундамента',
+        label: 'Сваи и плита',
+        h1: 'Калькулятор свайно-плитного фундамента',
         description:
-          'Поле свай по плану здания, опциональный ростверк: число свай, бетон и арматура.',
+          'Плита по плану + поле свай: объём бетона, сетка плиты, каркасы свай и смета.',
         dimensions: {
           length: 10,
-          width: 8,
-          depth: 1.2,
-          perimeterThickeningWidth: 0.4,
-          perimeterThickeningDepth: 0.4,
+          width: 10,
+          depth: 3.0,
+          perimeterThickeningWidth: 0.3,
+          perimeterThickeningDepth: 0.3,
         },
         concreteSpec: { ...DEFAULT_CONCRETE },
         rebarSpec: {
           diameterMm: 12,
           spacingMm: 200,
-          layers: 1,
+          layers: 2,
           customPricePerTon: 62000,
         },
       };

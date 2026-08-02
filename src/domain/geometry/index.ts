@@ -156,28 +156,32 @@ export function buildGeometry(
       };
     }
     case 'pier': {
-      const pierSize = pW > 0 ? pW : 0.4;
+      // Свайно-плитный: плита L×W×t + поле свай. Опалубка только по борту плиты
+      // (сваи — бурение/обсадка в грунте, щиты не закупаются).
+      const pierDia = pW > 0 ? pW : 0.3;
+      const slabH = pH > 0 ? pH : 0.3;
+      const pileDepth = Math.max(0.5, H);
       const spacing = Math.max(1.5, input.pierSpacingM ?? 2.5);
       const nx = Math.max(2, Math.ceil(L / spacing) + 1);
       const ny = Math.max(2, Math.ceil(W / spacing) + 1);
       const pierCount = nx * ny;
-      const pierVol = pierCount * (pierSize * pierSize * H);
-      const grillageVol = pH > 0 ? 2 * (L + W) * pierSize * pH : 0;
-      if (pH > 0) notes.push('Учтён ростверк по контуру');
+      const pierArea = Math.PI * (pierDia / 2) ** 2;
+      const pierVol = pierCount * pierArea * pileDepth;
+      const slabVol = L * W * slabH;
       notes.push(
-        `Свайное поле: ${pierCount} шт (${nx}×${ny}), шаг ${spacing.toFixed(2)} м`
+        `Плита ${L.toFixed(1)}×${W.toFixed(1)}×${slabH.toFixed(2)} м = ${slabVol.toFixed(2)} м³`
+      );
+      notes.push(
+        `Сваи: ${pierCount} шт (${nx}×${ny}), Ø${pierDia.toFixed(2)} м, L=${pileDepth.toFixed(2)} м, шаг ${spacing.toFixed(2)} м`
       );
       return {
-        concreteVolumeRawM3: pierVol + grillageVol,
-        formworkAreaM2:
-          pierCount * (4 * pierSize * H) +
-          (pH > 0 ? 2 * (L + W) * (2 * pH + pierSize) : 0),
-        contactAreaM2:
-          pierCount * (pierSize * pierSize) +
-          (pH > 0 ? 2 * (L + W) * pierSize : 0),
+        concreteVolumeRawM3: slabVol + pierVol,
+        formworkAreaM2: 2 * (L + W) * slabH,
+        contactAreaM2: L * W,
         stripLengthM: 0,
         pierCount,
         ...emptyAxes,
+        planAreaM2: L * W,
         notes,
       };
     }
