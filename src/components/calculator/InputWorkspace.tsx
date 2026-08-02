@@ -129,7 +129,7 @@ export const InputWorkspace: React.FC<InputWorkspaceProps> = ({
 
   const unitLabel = unitSystem === 'imperial' ? 'фут' : 'м';
   const minDim = 1.0;
-  const maxDim = unitSystem === 'imperial' ? 100 : 35;
+  const maxDim = unitSystem === 'imperial' ? 200 : 120;
   const stepDim = unitSystem === 'imperial' ? 0.5 : 0.1;
 
   const updateDimension = (key: keyof DimensionState, val: number) => {

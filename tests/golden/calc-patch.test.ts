@@ -121,4 +121,28 @@ describe('calc-patch extractor', () => {
       (patch.lengthM! * patch.depthM! * (patch.widthM! + patch.ribWidthM!)) / 2;
     assert.ok(Math.abs(vol - 11.25) < 1e-9);
   });
+
+  it('industrial slab Д×Ш + толщина (not L×W×H) applies full geometry', () => {
+    const text = `
+Параметры геометрии (Фундамент промздания)
+Габариты (Д х Ш): 45.0 × 25.0 м
+Толщина: 0.6 м
+Защитный слой: 40 мм
+Диаметр стержней: Ø16 мм (А500С)
+Количество слоев: 2 (верх + низ)
+Шаг ячейки: 200 × 200 мм
+`;
+    const patch = extractCalcPatchFromText(text);
+    assert.equal(patch.structureType, 'slab');
+    assert.equal(patch.lengthM, 45);
+    assert.equal(patch.widthM, 25);
+    assert.equal(patch.depthM, 0.6);
+    assert.equal(patch.ribWidthM, 0);
+    assert.equal(patch.ribDepthM, 0);
+    assert.equal(patch.diameterMm, 16);
+    assert.equal(patch.layers, 2);
+    assert.equal(patch.spacingMm, 200);
+    assert.equal(patch.coverMm, 40);
+    assert.equal(shouldAutoApplyParams(text, [], patch), true);
+  });
 });

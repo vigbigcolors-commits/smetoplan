@@ -450,6 +450,44 @@ describe('golden: calculateMaterials', () => {
     assert.ok(Math.abs(r.rebarWeightKg - fromDia) < 1.5);
     assert.ok(r.rebarLengthMeters > 1800, 'сетка плиты ~2000 м + сваи');
   });
+
+  it('industrial slab 45×25×0.6: volume, formwork, lap stock mass', () => {
+    const r = calculateMaterials(
+      'slab',
+      {
+        length: 45,
+        width: 25,
+        depth: 0.6,
+        perimeterThickeningWidth: 0,
+        perimeterThickeningDepth: 0,
+      },
+      concrete,
+      {
+        diameterMm: 16,
+        spacingMm: 200,
+        layers: 2,
+        customPricePerTon: 62000,
+      },
+      prices,
+      'metric',
+      1.0,
+      { coverMm: 40, stockLengthM: 11.7 }
+    );
+    assert.equal(r.concreteVolumeM3, 675);
+    assert.equal(r.formworkAreaM2, 84);
+    // 45 м > 11.7 → стыки с нахлёстом, закупка >> нетто
+    assert.ok(r.rebarStockBarsApprox > 200);
+    assert.ok(r.rebarWeightKg > 35000);
+    const fromDia = r.rebarStockByDiameter.reduce(
+      (s, row) =>
+        s + row.bars * r.rebarStockLengthM * rebarLinearDensityKgM(row.diameterMm),
+      0
+    );
+    assert.ok(Math.abs(r.rebarWeightKg - fromDia) < 2);
+    const long = r.rebarPieces.find((p) => p.mark.includes('А1'));
+    assert.ok(long);
+    assert.ok(long!.lengthMm > 44000);
+  });
 });
 
 describe('golden: formwork pour acceptance', () => {

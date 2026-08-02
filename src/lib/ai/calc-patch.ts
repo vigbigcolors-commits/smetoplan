@@ -63,6 +63,13 @@ export function shouldAutoApplyParams(
   patch: AiCalcPatch
 ): boolean {
   if (isCalcPatchEmpty(patch) || !isSubstantialPatch(patch)) return false;
+  const blob = [question, ...history.map((m) => m.content)].join('\n');
+  // Не писать «полупатч» (только Ø), если в тексте явно есть габариты, а L/W/H не извлеклись.
+  const mentionsPlan =
+    /габарит|толщин|длин[аы]|высот|\d+(?:[.,]\d+)?\s*[×xх]\s*\d+/i.test(blob);
+  const hasDims =
+    patch.lengthM != null && patch.widthM != null && patch.depthM != null;
+  if (mentionsPlan && !hasDims) return false;
   if (detectApplyIntent(question)) return true;
   if (isSubstantialPatch(extractCalcPatchFromText(question))) return true;
   const recentUser = history
@@ -114,6 +121,35 @@ export function extractCalcPatchFromText(text: string): AiCalcPatch {
     if (depthM != null) patch.depthM = depthM;
   }
 
+  // План Д×Ш без толщины: «Габариты (Д х Ш): 45.0 × 25.0 м»
+  if (patch.lengthM == null || patch.widthM == null) {
+    const plan = firstMatch(
+      text,
+      /(?:габарит\S{0,24}|Д\s*[×xх]\s*Ш|план\S{0,12}|размер\S{0,12})[^0-9]{0,36}(\d+(?:[.,]\d+)?)\s*[×xх]\s*(\d+(?:[.,]\d+)?)\s*м/i
+    ) ||
+      firstMatch(
+        text,
+        /(\d+(?:[.,]\d+)?)\s*[×xх]\s*(\d+(?:[.,]\d+)?)\s*м(?![а-яё])/i
+      );
+    if (plan) {
+      const lengthM = num(plan[1]);
+      const widthM = num(plan[2]);
+      if (lengthM != null) patch.lengthM = lengthM;
+      if (widthM != null) patch.widthM = widthM;
+    }
+  }
+
+  // «Толщина: 0.6 м» / «толщина плиты 0.6»
+  const thickness = firstMatch(
+    text,
+    /толщин\S{0,20}(?:плит\S{0,8}|стен\S{0,8})?[^0-9]{0,20}(\d+(?:[.,]\d+)?)\s*м/i
+  );
+  if (thickness && patch.structureType !== 'wall') {
+    const v = num(thickness[1]);
+    // Для стены толщина верха/подошвы парсится отдельно; здесь — высота плиты/слоя.
+    if (v != null && v > 0 && v <= 3) patch.depthM = v;
+  }
+
   // Именованные габариты (стена / общее) — приоритетнее L×W×H из «плиты».
   const labeledLen = firstMatch(
     text,
@@ -130,6 +166,25 @@ export function extractCalcPatchFromText(text: string): AiCalcPatch {
   if (labeledH) {
     const v = num(labeledH[1]);
     if (v != null) patch.depthM = v;
+  }
+
+  // Промздание / плитный фундамент без слова «плита» в начале.
+  if (
+    !patch.structureType &&
+    /промздан|плитн\S{0,8}\s*фунд|фунд\S{0,12}плит|монолитн\S{0,8}\s*плит/i.test(text)
+  ) {
+    patch.structureType = 'slab';
+  }
+  if (
+    !patch.structureType &&
+    patch.lengthM != null &&
+    patch.widthM != null &&
+    patch.depthM != null &&
+    patch.lengthM >= 5 &&
+    patch.widthM >= 5 &&
+    patch.depthM <= 1.5
+  ) {
+    patch.structureType = 'slab';
   }
 
   const ribs = firstMatch(
@@ -168,10 +223,23 @@ export function extractCalcPatchFromText(text: string): AiCalcPatch {
     if (d != null && d >= 6) patch.diameterMm = d;
   }
 
-  const layers = firstMatch(text, /(\d+)\s*сло[яй]/i);
-  if (layers) {
-    const n = Number(layers[1]);
-    if (n === 1 || n === 2 || n === 3) patch.layers = n;
+  {
+    const layersHit =
+      firstMatch(text, /(\d+)\s*сло(?:я|ёв|ев|и)(?![а-яё])/i) ||
+      firstMatch(
+        text,
+        /(?:количеств\S{0,10}\s+)?сло(?:ев|ёв|я|и)(?![а-яё]|[\s]*мм)[^0-9]{0,12}(\d+)/i
+      );
+    let layersN = layersHit ? Number(layersHit[1]) : NaN;
+    if (
+      !Number.isFinite(layersN) &&
+      /верх\s*\+\s*низ|верх\s+и\s+низ/i.test(text)
+    ) {
+      layersN = 2;
+    }
+    // «защитный слой: 40» не путать со слоями сетки
+    if (layersN === 40 || layersN === 50 || layersN === 70) layersN = NaN;
+    if (layersN === 1 || layersN === 2 || layersN === 3) patch.layers = layersN;
   }
 
   const longBars = firstMatch(
@@ -291,6 +359,22 @@ export function extractCalcPatchFromText(text: string): AiCalcPatch {
       const d = num(pileDia[1]);
       if (d != null && d > 0 && d < 2) patch.ribWidthM = d;
     }
+  }
+
+  // Плита без рёбер в тексте — сбрасываем старые рёбра из UI (иначе 675 → 675+рёбра).
+  if (
+    (patch.structureType === 'slab' ||
+      (patch.lengthM != null &&
+        patch.widthM != null &&
+        patch.depthM != null &&
+        patch.lengthM >= 5)) &&
+    patch.structureType !== 'wall' &&
+    patch.structureType !== 'pier' &&
+    !/р[её]бр/i.test(text)
+  ) {
+    patch.structureType = patch.structureType ?? 'slab';
+    patch.ribWidthM = 0;
+    patch.ribDepthM = 0;
   }
 
   return patch;
