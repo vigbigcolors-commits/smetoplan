@@ -609,7 +609,11 @@ export default function ConstructixApp({
     }
     if (s.field === 'ribWidthM') {
       setDimensions((prev) => ({ ...prev, perimeterThickeningWidth: n }));
-      showToast(`Ребро ширина → ${n} м`);
+      showToast(
+        structureType === 'wall'
+          ? `Толщина подошвы → ${n} м`
+          : `Ребро ширина → ${n} м`
+      );
       return;
     }
     if (s.field === 'ribDepthM') {
@@ -624,18 +628,33 @@ export default function ConstructixApp({
 
   const applyAiPatch = (patch: AiCalcPatch) => {
     if (patch.structureType) setStructureType(patch.structureType);
-    setDimensions((prev) => ({
-      ...prev,
-      ...(patch.lengthM != null ? { length: patch.lengthM } : {}),
-      ...(patch.widthM != null ? { width: patch.widthM } : {}),
-      ...(patch.depthM != null ? { depth: patch.depthM } : {}),
-      ...(patch.ribWidthM != null
-        ? { perimeterThickeningWidth: patch.ribWidthM }
-        : {}),
-      ...(patch.ribDepthM != null
-        ? { perimeterThickeningDepth: patch.ribDepthM }
-        : {}),
-    }));
+    setDimensions((prev) => {
+      const next = {
+        ...prev,
+        ...(patch.lengthM != null ? { length: patch.lengthM } : {}),
+        ...(patch.widthM != null ? { width: patch.widthM } : {}),
+        ...(patch.depthM != null ? { depth: patch.depthM } : {}),
+        ...(patch.ribWidthM != null
+          ? { perimeterThickeningWidth: patch.ribWidthM }
+          : {}),
+        ...(patch.ribDepthM != null
+          ? { perimeterThickeningDepth: patch.ribDepthM }
+          : {}),
+      };
+      // Стена: подошва обязательна для трапеции; рёбра плиты сбрасываем.
+      if (patch.structureType === 'wall' || structureType === 'wall') {
+        if (patch.ribWidthM != null) {
+          next.perimeterThickeningWidth = patch.ribWidthM;
+        } else if (
+          !(next.perimeterThickeningWidth > 0) &&
+          next.width > 0
+        ) {
+          next.perimeterThickeningWidth = next.width;
+        }
+        if (patch.ribDepthM == null) next.perimeterThickeningDepth = 0;
+      }
+      return next;
+    });
     if (
       patch.diameterMm != null ||
       patch.spacingMm != null ||

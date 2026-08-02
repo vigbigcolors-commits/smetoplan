@@ -103,7 +103,7 @@ export function extractCalcPatchFromText(text: string): AiCalcPatch {
     ) ||
     firstMatch(
       text,
-      /(\d+(?:[.,]\d+)?)\s*[×xх]\s*(\d+(?:[.,]\d+)?)\s*[×xх]\s*(\d+(?:[.,]\d+)?)\s*м\b/i
+      /(\d+(?:[.,]\d+)?)\s*[×xх]\s*(\d+(?:[.,]\d+)?)\s*[×xх]\s*(\d+(?:[.,]\d+)?)\s*м(?![а-яё])/i
     );
   if (dims) {
     const lengthM = num(dims[1]);
@@ -112,6 +112,24 @@ export function extractCalcPatchFromText(text: string): AiCalcPatch {
     if (lengthM != null) patch.lengthM = lengthM;
     if (widthM != null) patch.widthM = widthM;
     if (depthM != null) patch.depthM = depthM;
+  }
+
+  // Именованные габариты (стена / общее) — приоритетнее L×W×H из «плиты».
+  const labeledLen = firstMatch(
+    text,
+    /длин[аы]\s*(?:стен\S{0,10})?[^0-9]{0,20}(\d+(?:[.,]\d+)?)\s*м/i
+  );
+  const labeledH = firstMatch(
+    text,
+    /высот[аы]\s*(?:стен\S{0,10})?[^0-9]{0,20}(\d+(?:[.,]\d+)?)\s*м/i
+  );
+  if (labeledLen) {
+    const v = num(labeledLen[1]);
+    if (v != null) patch.lengthM = v;
+  }
+  if (labeledH) {
+    const v = num(labeledH[1]);
+    if (v != null) patch.depthM = v;
   }
 
   const ribs = firstMatch(
@@ -134,11 +152,17 @@ export function extractCalcPatchFromText(text: string): AiCalcPatch {
     if (c != null) patch.coverMm = c;
   }
 
-  const dia = firstMatch(
+  // Рабочая / вертикальная Ø и шаг — приоритетнее первого попавшегося Ø.
+  const workingDia = firstMatch(
     text,
-    // Только арматура (мм / Ø). «Диаметр 0.3 м» у свай — не diameterMm.
-    /[Øø⌀]\s*(\d+(?:[.,]\d+)?)|диаметр[^0-9]{0,12}(\d+(?:[.,]\d+)?)\s*мм/i
+    /(?:рабоч\S{0,20}|вертикальн\S{0,20}|основн\S{0,20})[^Øø⌀\n]{0,60}[Øø⌀]\s*(\d+(?:[.,]\d+)?)/i
   );
+  const dia = workingDia
+    ? workingDia
+    : firstMatch(
+        text,
+        /[Øø⌀]\s*(\d+(?:[.,]\d+)?)|диаметр[^0-9]{0,12}(\d+(?:[.,]\d+)?)\s*мм/i
+      );
   if (dia) {
     const d = num(dia[1] || dia[2]);
     if (d != null && d >= 6) patch.diameterMm = d;
@@ -159,7 +183,12 @@ export function extractCalcPatchFromText(text: string): AiCalcPatch {
     if (n === 4 || n === 6 || n === 8) patch.longitudinalBars = n;
   }
 
+  const workingStep = firstMatch(
+    text,
+    /(?:рабоч\S{0,20}|вертикальн\S{0,20}|основн\S{0,40})[^0-9\n]{0,80}шаг[^0-9]{0,12}(\d+(?:[.,]\d+)?)\s*мм/i
+  );
   const spacing =
+    workingStep ||
     firstMatch(
       text,
       /шаг[^0-9]{0,16}(?:хомут\S{0,8}[^0-9]{0,12})?(\d+(?:[.,]\d+)?)\s*[×xх]\s*(\d+(?:[.,]\d+)?)/i
@@ -209,6 +238,35 @@ export function extractCalcPatchFromText(text: string): AiCalcPatch {
     }
   }
 
+  // Подпорная стена: верх / подошва явно, без «рёбер плиты».
+  if (patch.structureType === 'wall' || /подпорн/i.test(text)) {
+    patch.structureType = 'wall';
+    const top = firstMatch(
+      text,
+      /(?:верхушк|тело)\S{0,20}[^0-9]{0,24}(\d+(?:[.,]\d+)?)\s*м|толщин\S{0,40}(?:верхушк|тело)[^0-9]{0,24}(\d+(?:[.,]\d+)?)\s*м|толщин\S{0,20}стен\S{0,20}\([^)]*(?:верхушк|тело)[^)]*\)[^0-9]{0,16}(\d+(?:[.,]\d+)?)/i
+    );
+    const base = firstMatch(
+      text,
+      /(?:подошв|основан)\S{0,20}[^0-9]{0,24}(\d+(?:[.,]\d+)?)\s*м|толщин\S{0,40}(?:подошв|основан)[^0-9]{0,24}(\d+(?:[.,]\d+)?)\s*м|толщин\S{0,20}стен\S{0,20}\([^)]*(?:подошв|основан)[^)]*\)[^0-9]{0,16}(\d+(?:[.,]\d+)?)/i
+    );
+    if (top) {
+      const v = num(top[1] || top[2] || top[3]);
+      if (v != null && v > 0 && v < 3) patch.widthM = v;
+    }
+    if (base) {
+      const v = num(base[1] || base[2] || base[3]);
+      if (v != null && v > 0 && v < 3) patch.ribWidthM = v;
+    }
+    // Рёбра плиты на стене не нужны
+    if (patch.ribDepthM != null && patch.ribDepthM > 0 && !/р[её]бр/i.test(text)) {
+      // keep if explicit ribs; else clear phantom from pier/slab bleed
+    }
+    if (!/р[её]бр/i.test(text)) {
+      patch.ribDepthM = 0;
+    }
+    if (patch.layers == null) patch.layers = 2;
+  }
+
   // Свайно-плитный: глубина/Ø свай (м) ≠ толщина плиты / Ø арматуры.
   if (patch.structureType === 'pier') {
     const pileDepth = firstMatch(
@@ -252,8 +310,25 @@ export function isCalcPatchEmpty(patch: AiCalcPatch): boolean {
 
 export function describeCalcPatch(patch: AiCalcPatch): string[] {
   const lines: string[] = [];
+  const isWall = patch.structureType === 'wall';
+  const isPier = patch.structureType === 'pier';
   if (patch.structureType) lines.push(`Тип: ${patch.structureType}`);
-  if (
+  if (isWall) {
+    if (patch.lengthM != null) lines.push(`Длина стены: ${patch.lengthM} м`);
+    if (patch.depthM != null) lines.push(`Высота стены: ${patch.depthM} м`);
+    if (patch.widthM != null) lines.push(`Толщина верха: ${patch.widthM} м`);
+    if (patch.ribWidthM != null) lines.push(`Толщина подошвы: ${patch.ribWidthM} м`);
+    if (
+      patch.lengthM != null &&
+      patch.depthM != null &&
+      patch.widthM != null &&
+      patch.ribWidthM != null
+    ) {
+      const tAvg = (patch.widthM + patch.ribWidthM) / 2;
+      const vol = patch.lengthM * patch.depthM * tAvg;
+      lines.push(`Эталон бетона (трапеция): ${vol.toFixed(2)} м³ (tср=${tAvg.toFixed(3)} м)`);
+    }
+  } else if (
     patch.lengthM != null &&
     patch.widthM != null &&
     patch.depthM != null
@@ -262,9 +337,11 @@ export function describeCalcPatch(patch: AiCalcPatch): string[] {
       `Габариты: ${patch.lengthM} × ${patch.widthM} × ${patch.depthM} м`
     );
   }
-  if (patch.ribWidthM != null || patch.ribDepthM != null) {
+  if (!isWall && (patch.ribWidthM != null || patch.ribDepthM != null)) {
     lines.push(
-      `Рёбра: ${patch.ribWidthM ?? '—'} × ${patch.ribDepthM ?? '—'} м`
+      isPier
+        ? `Свая Ø/плита: ${patch.ribWidthM ?? '—'} / ${patch.ribDepthM ?? '—'} м`
+        : `Рёбра: ${patch.ribWidthM ?? '—'} × ${patch.ribDepthM ?? '—'} м`
     );
   }
   if (patch.coverMm != null) lines.push(`Защитный слой: ${patch.coverMm} мм`);
@@ -284,6 +361,7 @@ export function describeCalcPatch(patch: AiCalcPatch): string[] {
 
 export function patchToSuggestions(patch: AiCalcPatch): AiSuggestion[] {
   const out: AiSuggestion[] = [];
+  const isWall = patch.structureType === 'wall';
   const push = (
     id: string,
     label: string,
@@ -296,20 +374,40 @@ export function patchToSuggestions(patch: AiCalcPatch): AiSuggestion[] {
   };
 
   if (patch.lengthM != null)
-    push('len', `Длина: ${patch.lengthM} м`, 'lengthM', patch.lengthM, 'Из задания');
+    push(
+      'len',
+      isWall ? `Длина стены: ${patch.lengthM} м` : `Длина: ${patch.lengthM} м`,
+      'lengthM',
+      patch.lengthM,
+      'Из задания'
+    );
   if (patch.widthM != null)
-    push('wid', `Ширина: ${patch.widthM} м`, 'widthM', patch.widthM, 'Из задания');
+    push(
+      'wid',
+      isWall ? `Толщина верха: ${patch.widthM} м` : `Ширина: ${patch.widthM} м`,
+      'widthM',
+      patch.widthM,
+      'Из задания'
+    );
   if (patch.depthM != null)
-    push('dep', `Толщина: ${patch.depthM} м`, 'depthM', patch.depthM, 'Из задания');
+    push(
+      'dep',
+      isWall ? `Высота стены: ${patch.depthM} м` : `Толщина: ${patch.depthM} м`,
+      'depthM',
+      patch.depthM,
+      'Из задания'
+    );
   if (patch.ribWidthM != null)
     push(
       'ribW',
-      `Ребро ширина: ${patch.ribWidthM} м`,
+      isWall
+        ? `Толщина подошвы: ${patch.ribWidthM} м`
+        : `Ребро ширина: ${patch.ribWidthM} м`,
       'ribWidthM',
       patch.ribWidthM,
-      'Рёбра жёсткости'
+      isWall ? 'Трапеция подпорной стены' : 'Рёбра жёсткости'
     );
-  if (patch.ribDepthM != null)
+  if (patch.ribDepthM != null && !isWall)
     push(
       'ribD',
       `Ребро высота: ${patch.ribDepthM} м`,

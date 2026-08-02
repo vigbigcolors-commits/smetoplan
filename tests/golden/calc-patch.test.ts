@@ -81,4 +81,44 @@ describe('calc-patch extractor', () => {
     assert.equal(patch.structureType, 'slab');
     assert.equal(patch.diameterMm, 14);
   });
+
+  it('retaining wall labeled top/base → trapezoid patch', () => {
+    const text = `
+Подпорная стена
+Длина стены: 12.0 м
+Высота стены: 2.5 м
+Толщина стены (подошва/основание): 0.5 м
+Толщина стены (верхушка/тело): 0.3 м
+Защитный слой: 40 мм
+Рабочая арматура (вертикальная/основная): Ø16 мм (А500С), шаг 200 мм
+Конструктивная арматура (горизонтальная): Ø10 мм, шаг 300 мм
+`;
+    const patch = extractCalcPatchFromText(text);
+    assert.equal(patch.structureType, 'wall');
+    assert.equal(patch.lengthM, 12);
+    assert.equal(patch.depthM, 2.5);
+    assert.equal(patch.widthM, 0.3);
+    assert.equal(patch.ribWidthM, 0.5);
+    assert.equal(patch.ribDepthM, 0);
+    assert.equal(patch.coverMm, 40);
+    assert.equal(patch.diameterMm, 16);
+    assert.equal(patch.spacingMm, 200);
+    assert.equal(shouldAutoApplyParams(text, [], patch), true);
+    const lines = describeCalcPatch(patch);
+    assert.ok(lines.some((l) => /подошвы:\s*0\.5/i.test(l)));
+    assert.ok(lines.some((l) => /12\.00 м³/i.test(l)));
+  });
+
+  it('wall base 0.6 with L=10 → эталон 11.25 м³', () => {
+    const patch = extractCalcPatchFromText(
+      'Подпорная стена длина 10 м высота 2.5 м верхушка 0.3 м подошва 0.6 м'
+    );
+    assert.equal(patch.structureType, 'wall');
+    assert.equal(patch.lengthM, 10);
+    assert.equal(patch.widthM, 0.3);
+    assert.equal(patch.ribWidthM, 0.6);
+    const vol =
+      (patch.lengthM! * patch.depthM! * (patch.widthM! + patch.ribWidthM!)) / 2;
+    assert.ok(Math.abs(vol - 11.25) < 1e-9);
+  });
 });
