@@ -25,9 +25,9 @@ export interface GeometryInput {
   lengthM: number;
   widthM: number;
   depthM: number;
-  /** Slab rib / strip ribbon / pier size / wall thickness override */
+  /** Slab rib / strip ribbon / pier diameter / wall base thickness (подошва) */
   auxWidthM: number;
-  /** Slab rib depth / grillage height */
+  /** Slab rib depth / pier slab thickness */
   auxDepthM: number;
   stripLayout: StripLayoutMode;
   /** Internal strip axes parallel to length (custom / overrides preset) */
@@ -186,15 +186,26 @@ export function buildGeometry(
       };
     }
     case 'wall': {
-      const wallThickness = W > 1.5 ? (pW > 0 ? pW : 0.3) : W;
+      // Подпорная стена: трапеция в сечении (верхушка W, подошва pW).
+      // Объём = L × H × (t_top + t_base) / 2. Если подошва не задана — прямоугольник.
+      const tTop = Math.max(0.1, W);
+      const tBase = pW > 0 ? Math.max(0.1, pW) : tTop;
+      const tAvg = (tTop + tBase) / 2;
+      if (Math.abs(tBase - tTop) > 1e-6) {
+        notes.push(
+          `Трапеция: верх ${tTop.toFixed(2)} м / подошва ${tBase.toFixed(2)} м → tср=${tAvg.toFixed(3)} м`
+        );
+      } else {
+        notes.push('Стена постоянного сечения (прямоугольник)');
+      }
       return {
-        concreteVolumeRawM3: L * wallThickness * H,
+        concreteVolumeRawM3: L * H * tAvg,
         formworkAreaM2: 2 * L * H,
-        contactAreaM2: L * wallThickness,
+        contactAreaM2: L * tBase,
         stripLengthM: 0,
         pierCount: 0,
         ...emptyAxes,
-        notes: ['Стена: две стороны опалубки'],
+        notes,
       };
     }
   }

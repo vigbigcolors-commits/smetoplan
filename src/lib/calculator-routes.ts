@@ -144,12 +144,12 @@ export function getStructurePreset(type: StructureType): StructurePreset {
         label: 'Подпорная стена',
         h1: 'Калькулятор подпорной стены',
         description:
-          'Длина, толщина и высота стены: опалубка двух сторон, двойная сетка и смета.',
+          'Трапециевидное сечение: длина, высота, толщина верха и подошвы — опалубка, сетка и смета.',
         dimensions: {
           length: 10,
           width: 0.3,
           depth: 2.5,
-          perimeterThickeningWidth: 0,
+          perimeterThickeningWidth: 0.5,
           perimeterThickeningDepth: 0,
         },
         concreteSpec: {

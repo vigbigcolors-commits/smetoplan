@@ -125,6 +125,21 @@ describe('golden: geometry', () => {
     assert.equal(g.concreteVolumeRawM3, 9);
     assert.equal(g.formworkAreaM2, 60);
   });
+
+  it('wall trapezoid average thickness', () => {
+    // 10 × 2.5 × (0.5+0.3)/2 = 10 м³; опалубка 2×10×2.5 = 50
+    const g = buildGeometry('wall', {
+      lengthM: 10,
+      widthM: 0.3,
+      depthM: 2.5,
+      auxWidthM: 0.5,
+      auxDepthM: 0,
+      stripLayout: 'perimeter',
+    });
+    assert.equal(g.concreteVolumeRawM3, 10);
+    assert.equal(g.formworkAreaM2, 50);
+    assert.equal(g.contactAreaM2, 5);
+  });
 });
 
 describe('golden: cutting nest', () => {

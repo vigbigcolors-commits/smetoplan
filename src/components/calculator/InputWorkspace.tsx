@@ -240,13 +240,19 @@ export const InputWorkspace: React.FC<InputWorkspaceProps> = ({
         {/* Width Input */}
         <div className="space-y-1.5 bg-[#F4F4F5] p-3 rounded-lg border border-slate-200">
           <div className="flex justify-between items-center text-xs">
-            <label className="font-semibold text-slate-700">Ширина ($W$)</label>
+            <label className="font-semibold text-slate-700">
+              {structureType === 'wall'
+                ? 'Толщина верха ($t_{top}$)'
+                : structureType === 'beam'
+                  ? 'Ширина сечения ($b$)'
+                  : 'Ширина ($W$)'}
+            </label>
             <div className="flex items-center gap-1">
               <input
                 type="number"
                 value={dimensions.width}
                 onChange={(e) => updateDimension('width', parseFloat(e.target.value) || 0)}
-                step={stepDim}
+                step={structureType === 'wall' || structureType === 'beam' ? 0.05 : stepDim}
                 className="w-20 bg-white border border-slate-300 font-mono font-bold text-slate-900 text-right px-2 py-0.5 rounded text-xs focus:ring-1 focus:ring-[#1F5A8E] focus:outline-none"
               />
               <span className="text-slate-500 font-mono text-[11px]">{unitLabel}</span>
@@ -254,9 +260,15 @@ export const InputWorkspace: React.FC<InputWorkspaceProps> = ({
           </div>
           <input
             type="range"
-            min={minDim}
-            max={maxDim}
-            step={stepDim}
+            min={structureType === 'wall' || structureType === 'beam' ? 0.15 : minDim}
+            max={
+              structureType === 'wall' || structureType === 'beam'
+                ? unitSystem === 'imperial'
+                  ? 4
+                  : 1.2
+                : maxDim
+            }
+            step={structureType === 'wall' || structureType === 'beam' ? 0.05 : stepDim}
             value={dimensions.width}
             onChange={(e) => updateDimension('width', parseFloat(e.target.value))}
             className="w-full accent-[#1F5A8E] cursor-pointer"
@@ -267,9 +279,11 @@ export const InputWorkspace: React.FC<InputWorkspaceProps> = ({
         <div className="space-y-1.5 bg-[#F4F4F5] p-3 rounded-lg border border-slate-200">
           <div className="flex justify-between items-center text-xs">
             <label className="font-semibold text-slate-700">
-              {structureType === 'pier'
-                ? 'Глубина свай ($H$)'
-                : 'Толщина / Высота ($H$)'}
+              {structureType === 'wall'
+                ? 'Высота стены ($H$)'
+                : structureType === 'pier'
+                  ? 'Глубина свай ($H$)'
+                  : 'Толщина / Высота ($H$)'}
             </label>
             <div className="flex items-center gap-1">
               <input
@@ -286,7 +300,7 @@ export const InputWorkspace: React.FC<InputWorkspaceProps> = ({
             type="range"
             min={0.1}
             max={
-              structureType === 'pier'
+              structureType === 'pier' || structureType === 'wall'
                 ? unitSystem === 'imperial'
                   ? 20
                   : 6
@@ -300,6 +314,41 @@ export const InputWorkspace: React.FC<InputWorkspaceProps> = ({
             className="w-full accent-[#1F5A8E] cursor-pointer"
           />
         </div>
+
+        {structureType === 'wall' && (
+          <div className="space-y-2 rounded-lg border border-emerald-200 bg-emerald-50/70 p-3 text-xs">
+            <div className="flex items-center justify-between font-semibold text-emerald-950">
+              <span className="flex items-center gap-1">
+                <Info className="h-3.5 w-3.5 text-emerald-600" /> Толщина подошвы (трапеция)
+              </span>
+              <span className="rounded bg-emerald-200/70 px-1.5 py-0.5 font-mono text-[10px] text-emerald-900">
+                ПРОТИВ ОПРОКИДЫВАНИЯ
+              </span>
+            </div>
+            <input
+              type="number"
+              min={0.15}
+              max={1.5}
+              step={0.05}
+              value={
+                dimensions.perimeterThickeningWidth > 0
+                  ? dimensions.perimeterThickeningWidth
+                  : dimensions.width
+              }
+              onChange={(e) =>
+                updateDimension(
+                  'perimeterThickeningWidth',
+                  parseFloat(e.target.value) || 0
+                )
+              }
+              className="w-full rounded-lg border border-emerald-300 bg-white px-2 py-1.5 font-mono text-xs font-bold"
+            />
+            <p className="text-[11px] text-emerald-900/80">
+              Объём = L × H × (t верха + t подошвы) / 2. Если подошва = верху — прямоугольное
+              сечение.
+            </p>
+          </div>
+        )}
 
         {/* Perimeter Stiffening Ribs for Slab */}
         {structureType === 'slab' && (

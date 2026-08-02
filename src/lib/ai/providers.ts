@@ -63,6 +63,7 @@ ${SMETOPLAN_PLATFORM_BRIEF}
    - В APPLY: lengthM, widthM, depthM, ribWidthM, ribDepthM, coverMm, diameterMm, spacingMm, layers, safetyFactor (1.0 = 0%), stockLengthM, structureType, concreteGrade.
    - structureType: slab | strip | beam | pier | wall. «Свайно-плитный / сваи / ростверк» → pier (НЕ slab). «Монолитная плита» без свай → slab.
    - Для pier: depthM = глубина свай (м), ribWidthM = диаметр/сечение сваи (м), ribDepthM = толщина плиты/ростверка (м).
+   - Для wall: widthM = толщина верха, ribWidthM = толщина подошвы (трапеция), depthM = высота стены.
 6) В тексте ответа пиши: «Проставил в калькулятор: …» и кратко что изменилось. Не учи кликать.
 
 В конце обязательно (после текста):
