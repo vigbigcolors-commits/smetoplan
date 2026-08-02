@@ -222,11 +222,55 @@ export function countStripJunctions(plan: StripPlan): number {
   return keys.size;
 }
 
+function isAxisAlignedSeg(a: Point2, b: Point2): boolean {
+  return Math.abs(a.x - b.x) < EPS || Math.abs(a.y - b.y) < EPS;
+}
+
+/** Прямоугольный наружный контур с ортогональными внутренними стенами → точная модель пустот. */
+export function classifyRectStripPlan(
+  plan: StripPlan
+): { lengthM: number; widthM: number; innerLong: number; innerCross: number } | null {
+  if (plan.outer.length !== 4) return null;
+  for (let i = 0; i < 4; i++) {
+    if (!isAxisAlignedSeg(plan.outer[i], plan.outer[(i + 1) % 4])) return null;
+  }
+  const bb = boundingBox(plan.outer);
+  if (Math.abs(polygonArea(plan.outer) - bb.lengthM * bb.widthM) > EPS) return null;
+
+  let innerLong = 0;
+  let innerCross = 0;
+  for (const s of plan.inners) {
+    if (!isAxisAlignedSeg(s.a, s.b)) return null;
+    if (Math.abs(s.a.y - s.b.y) < EPS) innerLong += 1;
+    else if (Math.abs(s.a.x - s.b.x) < EPS) innerCross += 1;
+    else return null;
+  }
+  return {
+    lengthM: bb.lengthM,
+    widthM: bb.widthM,
+    innerLong,
+    innerCross,
+  };
+}
+
 export function computeStripPlanMetrics(
   plan: StripPlan,
   depthM: number,
   ribbonWidth: number
 ): StripPlanMetrics {
+  // UI всегда передаёт stripPlan прямоугольника — нельзя считать опалубку как 2×ось×H.
+  const rect = classifyRectStripPlan(plan);
+  if (rect) {
+    return computeRectStripFootprint(
+      rect.lengthM,
+      rect.widthM,
+      depthM,
+      ribbonWidth,
+      rect.innerLong,
+      rect.innerCross
+    );
+  }
+
   const H = Math.max(0.05, depthM);
   const w = Math.max(0.15, ribbonWidth);
   const outerLen = polygonPerimeter(plan.outer);
@@ -253,6 +297,7 @@ export function computeStripPlanMetrics(
   return {
     stripLengthM,
     concreteVolumeRawM3,
+    // Непрямоугольный контур (L и т.п.): обе стороны ленты по осевой длине.
     formworkAreaM2: 2 * stripLengthM * H,
     contactAreaM2,
     junctionCount,

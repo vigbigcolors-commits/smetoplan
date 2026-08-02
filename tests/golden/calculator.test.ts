@@ -4,6 +4,7 @@ import { calculateMaterials } from '../../src/lib/calculator';
 import {
   buildGeometry,
   buildLShapeStripPlan,
+  buildRectangleStripPlan,
   computeStripPlanMetrics,
 } from '../../src/domain/geometry';
 import { nestPiecesToStock, stockBarsForPieces } from '../../src/domain/rebar/cutting';
@@ -65,6 +66,27 @@ describe('golden: geometry', () => {
     // площадь бетона 19.84 м² → объём 9.92 м³ (углы/крестовины не задвоены).
     assert.ok(Math.abs(g.concreteVolumeRawM3 - 9.92) < 1e-9);
     assert.equal(g.junctionCount, 2);
+  });
+
+  it('rect stripPlan formwork = outer + void perimeters (not 2×axis)', () => {
+    // UI всегда передаёт stripPlan — раньше давало 2×52×1 = 104.
+    const plan = buildRectangleStripPlan(12, 8, 1, 0);
+    const m = computeStripPlanMetrics(plan, 1.0, 0.4);
+    // 40 + 2×(11.2+3.4)×2 = 40 + 58.4 = 98.4
+    assert.equal(m.formworkAreaM2, 98.4);
+    assert.ok(Math.abs(m.concreteVolumeRawM3 - 19.84) < 1e-9);
+
+    const g = buildGeometry('strip', {
+      lengthM: 12,
+      widthM: 8,
+      depthM: 1,
+      auxWidthM: 0.4,
+      auxDepthM: 0,
+      stripLayout: 'perimeter_plus_one',
+      stripPlan: plan,
+    });
+    assert.equal(g.formworkAreaM2, 98.4);
+    assert.ok(Math.abs(g.concreteVolumeRawM3 - 19.84) < 1e-9);
   });
 
   it('L-shape strip contour perimeter and area', () => {
