@@ -8,11 +8,12 @@ const CANNOT_APPLY_RE =
   /я\s+не\s+могу[^.!?\n]{0,80}(вносить|изменить|менять|поставить|заполнить|интерфейс)|не\s+могу\s+сам[^.!?\n]{0,60}|доступно\s+только\s+вам|вы\s+должны\s+ввести|вручную\s+введите|кликните\s+по/gi;
 
 const STRUCTURE_RE: Array<{ re: RegExp; type: StructureType }> = [
-  { re: /плит/i, type: 'slab' },
+  // pier раньше slab: «свайно-плитный» содержит «плит» и иначе уезжает в монолит.
+  { re: /свайн\w*|свайн[оа][-\s]?плит|ростверк|\bpier\b|свай/i, type: 'pier' },
   { re: /лент/i, type: 'strip' },
-  { re: /свай|ростверк|pier/i, type: 'pier' },
   { re: /балк|колонн/i, type: 'beam' },
-  { re: /стен/i, type: 'wall' },
+  { re: /подпорн|стен/i, type: 'wall' },
+  { re: /плит|монолит/i, type: 'slab' },
 ];
 
 const GRADE_RE = /\b(M(?:150|200|250|300|350|400)|B(?:15|20|22\.5|25|30|35|40))\b/i;
@@ -135,11 +136,12 @@ export function extractCalcPatchFromText(text: string): AiCalcPatch {
 
   const dia = firstMatch(
     text,
-    /[Øø⌀]\s*(\d+(?:[.,]\d+)?)|диаметр[^0-9]{0,12}(\d+(?:[.,]\d+)?)/i
+    // Только арматура (мм / Ø). «Диаметр 0.3 м» у свай — не diameterMm.
+    /[Øø⌀]\s*(\d+(?:[.,]\d+)?)|диаметр[^0-9]{0,12}(\d+(?:[.,]\d+)?)\s*мм/i
   );
   if (dia) {
     const d = num(dia[1] || dia[2]);
-    if (d != null) patch.diameterMm = d;
+    if (d != null && d >= 6) patch.diameterMm = d;
   }
 
   const layers = firstMatch(text, /(\d+)\s*сло[яй]/i);
@@ -204,6 +206,32 @@ export function extractCalcPatchFromText(text: string): AiCalcPatch {
       patch.concreteGrade = raw as ConcreteSpec['grade'];
     } else if (GRADE_FROM_B[raw]) {
       patch.concreteGrade = GRADE_FROM_B[raw];
+    }
+  }
+
+  // Свайно-плитный: глубина/Ø свай (м) ≠ толщина плиты / Ø арматуры.
+  if (patch.structureType === 'pier') {
+    const pileDepth = firstMatch(
+      text,
+      /глубин\S{0,20}(?:свай\S{0,8})?[^0-9]{0,16}(\d+(?:[.,]\d+)?)\s*м|(?:свай\S{0,12}[^0-9]{0,20})глубин\S{0,12}[^0-9]{0,12}(\d+(?:[.,]\d+)?)\s*м/i
+    );
+    const pileDia = firstMatch(
+      text,
+      /диаметр[^0-9]{0,16}(\d+(?:[.,]\d+)?)\s*м(?![а-яё])/i
+    );
+    if (pileDepth) {
+      const d = num(pileDepth[1] || pileDepth[2]);
+      if (d != null && d >= 1) {
+        // «Габариты плиты … × 0.5» уже легли в depthM — это ростверк/плита.
+        if (patch.depthM != null && patch.depthM < 1.2 && patch.ribDepthM == null) {
+          patch.ribDepthM = patch.depthM;
+        }
+        patch.depthM = d;
+      }
+    }
+    if (pileDia) {
+      const d = num(pileDia[1]);
+      if (d != null && d > 0 && d < 2) patch.ribWidthM = d;
     }
   }
 

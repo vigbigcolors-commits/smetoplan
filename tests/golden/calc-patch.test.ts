@@ -56,4 +56,29 @@ describe('calc-patch extractor', () => {
     assert.equal(/не могу/i.test(cleaned), false);
     assert.match(cleaned, /настройка/i);
   });
+
+  it('свайно-плитный maps to pier, not slab (плит in name)', () => {
+    const text = `
+Свайно-плитный фундамент
+Габариты плиты: 10.0 × 10.0 × 0.5 м
+Сваи: 16 шт, диаметр 0.3 м, глубина 3.0 м
+Армирование: Ø12 мм, 2 слоя, шаг 200 мм
+`;
+    const patch = extractCalcPatchFromText(text);
+    assert.equal(patch.structureType, 'pier');
+    assert.equal(patch.lengthM, 10);
+    assert.equal(patch.widthM, 10);
+    assert.equal(patch.depthM, 3);
+    assert.equal(patch.ribDepthM, 0.5);
+    assert.equal(patch.ribWidthM, 0.3);
+    assert.equal(patch.diameterMm, 12);
+  });
+
+  it('plain slab still maps to slab', () => {
+    const patch = extractCalcPatchFromText(
+      'Монолитная плита 12 × 8 × 0.3 м, Ø14 мм'
+    );
+    assert.equal(patch.structureType, 'slab');
+    assert.equal(patch.diameterMm, 14);
+  });
 });

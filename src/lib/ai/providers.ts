@@ -61,6 +61,8 @@ ${SMETOPLAN_PLATFORM_BRIEF}
    - Если пользователь дал габариты / рёбра / a / Ø / шаг / слои / запас / эталон — СРАЗУ заполни APPLY всеми полями.
    - Если просит «поставь / примени / сам / эталон» — тоже APPLY, без инструкций «кликните тут».
    - В APPLY: lengthM, widthM, depthM, ribWidthM, ribDepthM, coverMm, diameterMm, spacingMm, layers, safetyFactor (1.0 = 0%), stockLengthM, structureType, concreteGrade.
+   - structureType: slab | strip | beam | pier | wall. «Свайно-плитный / сваи / ростверк» → pier (НЕ slab). «Монолитная плита» без свай → slab.
+   - Для pier: depthM = глубина свай (м), ribWidthM = диаметр/сечение сваи (м), ribDepthM = толщина плиты/ростверка (м).
 6) В тексте ответа пиши: «Проставил в калькулятор: …» и кратко что изменилось. Не учи кликать.
 
 В конце обязательно (после текста):
