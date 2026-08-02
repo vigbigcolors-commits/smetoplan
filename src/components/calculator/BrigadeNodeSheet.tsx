@@ -27,30 +27,52 @@ function buildSectionSvg(p: {
   structureType: StructureType;
   depth: number;
   ribbon: number;
+  topThickness?: number;
   cover: number;
   layers: number;
 }): string {
   const W = 360;
   const H = 220;
-  const bodyW = Math.min(220, Math.max(90, p.ribbon * 180));
+  const tTop = Math.max(0.1, p.topThickness ?? p.ribbon);
+  const tBase = Math.max(0.1, p.ribbon);
+  const maxT = Math.max(tTop, tBase);
   const bodyH = Math.min(120, Math.max(50, p.depth * 160));
-  const x0 = (W - bodyW) / 2;
+  const baseW = Math.min(240, Math.max(70, (tBase / maxT) * 200));
+  const topW = Math.min(240, Math.max(40, (tTop / maxT) * 200));
   const y0 = (H - bodyH) / 2 + 6;
+  const cx = W / 2;
+  const xBase0 = cx - baseW / 2;
+  const xTop0 = cx - topW / 2;
   const a = Math.min(p.cover * 0.85, bodyH / 4);
   const bars: string[] = [];
   const n = Math.max(1, Math.min(2, p.layers));
   for (let i = 0; i < n; i++) {
     const y = i === 0 ? y0 + a : y0 + bodyH - a;
+    const wAtY =
+      topW + (baseW - topW) * ((y - y0) / Math.max(1, bodyH));
+    const xL = cx - wAtY / 2 + 10;
+    const xR = cx + wAtY / 2 - 10;
     bars.push(
-      `<line x1="${x0 + 14}" y1="${y}" x2="${x0 + bodyW - 14}" y2="${y}" stroke="#F59E0B" stroke-width="3.5" stroke-linecap="round" />`
+      `<line x1="${xL}" y1="${y}" x2="${xR}" y2="${y}" stroke="#F59E0B" stroke-width="3.5" stroke-linecap="round" />`
     );
   }
+
+  const isTrap =
+    p.structureType === 'wall' && Math.abs(tBase - tTop) > 0.001;
+  const body = isTrap
+    ? `<polygon points="${xTop0},${y0} ${xTop0 + topW},${y0} ${xBase0 + baseW},${y0 + bodyH} ${xBase0},${y0 + bodyH}" fill="#64748B" stroke="#E2E8F0" stroke-width="2"/>`
+    : `<rect x="${cx - baseW / 2}" y="${y0}" width="${baseW}" height="${bodyH}" fill="#64748B" stroke="#E2E8F0" stroke-width="2" rx="2"/>`;
+
+  const dimLabel = isTrap
+    ? `H=${p.depth} м · верх ${tTop.toFixed(2)} / подошва ${tBase.toFixed(2)} м`
+    : `H=${p.depth} м · b≈${tBase.toFixed(2)} м · ${p.structureType}`;
+
   return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
     <rect width="${W}" height="${H}" rx="10" fill="#0B132B"/>
     <text x="16" y="22" fill="#94A3B8" font-size="11" font-family="monospace">РАЗРЕЗ · a=${p.cover} мм</text>
-    <rect x="${x0}" y="${y0}" width="${bodyW}" height="${bodyH}" fill="#64748B" stroke="#E2E8F0" stroke-width="2" rx="2"/>
+    ${body}
     ${bars.join('')}
-    <text x="${x0}" y="${y0 + bodyH + 18}" fill="#CBD5E1" font-size="11" font-family="monospace">H=${p.depth} м · b≈${p.ribbon} м · ${p.structureType}</text>
+    <text x="16" y="${y0 + bodyH + 18}" fill="#CBD5E1" font-size="11" font-family="monospace">${dimLabel}</text>
   </svg>`;
 }
 
@@ -59,6 +81,7 @@ function buildPlanSvg(p: {
   length: number;
   width: number;
   ribbon: number;
+  topThickness?: number;
 }): string {
   const W = 360;
   const H = 220;
@@ -74,6 +97,7 @@ function buildPlanSvg(p: {
   const t = Math.max(4, Math.min(18, p.ribbon * scale));
 
   let shape = '';
+  let footLabel = `L=${p.length} · B=${p.width}`;
   if (p.structureType === 'strip') {
     shape = `
       <rect x="${x}" y="${y}" width="${rw}" height="${t}" fill="#38BDF8" opacity="0.85"/>
@@ -83,7 +107,12 @@ function buildPlanSvg(p: {
       <rect x="${x}" y="${y}" width="${rw}" height="${rh}" fill="none" stroke="#7DD3FC" stroke-width="1.5" stroke-dasharray="4 3"/>
     `;
   } else if (p.structureType === 'wall') {
-    shape = `<rect x="${x}" y="${y + rh / 2 - t / 2}" width="${rw}" height="${Math.max(t, 10)}" fill="#38BDF8" opacity="0.9"/>`;
+    const tTop = Math.max(0.1, p.topThickness ?? p.width);
+    const tBase = Math.max(0.1, p.ribbon > 0 ? p.ribbon : p.width);
+    const th = Math.max(8, Math.min(28, tBase * scale * 8));
+    const thTop = Math.max(6, Math.min(28, tTop * scale * 8));
+    shape = `<polygon points="${x},${y + rh / 2 - thTop / 2} ${x + rw},${y + rh / 2 - thTop / 2} ${x + rw},${y + rh / 2 + th / 2} ${x},${y + rh / 2 + th / 2}" fill="#38BDF8" opacity="0.9"/>`;
+    footLabel = `L=${p.length} · верх ${tTop.toFixed(2)} / подошва ${tBase.toFixed(2)}`;
   } else {
     shape = `
       <rect x="${x}" y="${y}" width="${rw}" height="${rh}" fill="#38BDF8" opacity="0.25" stroke="#7DD3FC" stroke-width="2"/>
@@ -96,7 +125,7 @@ function buildPlanSvg(p: {
     <rect width="${W}" height="${H}" rx="10" fill="#0B132B"/>
     <text x="16" y="22" fill="#94A3B8" font-size="11" font-family="monospace">ПЛАН ${p.length}×${p.width} м</text>
     ${shape}
-    <text x="${x}" y="${y + rh + 18}" fill="#CBD5E1" font-size="11" font-family="monospace">L=${p.length} · B=${p.width}</text>
+    <text x="${x}" y="${y + rh + 18}" fill="#CBD5E1" font-size="11" font-family="monospace">${footLabel}</text>
   </svg>`;
 }
 
@@ -145,10 +174,17 @@ function buildBrigadeA4Html(input: {
     structureType,
     depth,
     ribbon,
+    topThickness: structureType === 'wall' ? width : undefined,
     cover,
     layers,
   });
-  const planSvg = buildPlanSvg({ structureType, length, width, ribbon });
+  const planSvg = buildPlanSvg({
+    structureType,
+    length,
+    width,
+    ribbon,
+    topThickness: structureType === 'wall' ? width : undefined,
+  });
 
   return `<!DOCTYPE html>
 <html lang="ru">
@@ -357,6 +393,8 @@ export function BrigadeNodeSheet({
         : structureType === 'wall'
           ? dimensions.width
           : Math.min(dimensions.width, Math.max(0.4, dimensions.depth));
+  const topThickness =
+    structureType === 'wall' ? dimensions.width : undefined;
 
   const printPayload = useMemo(
     () => ({
@@ -459,8 +497,11 @@ export function BrigadeNodeSheet({
               Smetoplan · узел для бригады
             </p>
             <h4 className="mt-1 text-base font-extrabold uppercase tracking-wide text-[#0F172A]">
-              {TYPE_LABEL[structureType]} · {dimensions.length}×{dimensions.width}×
-              {dimensions.depth} м
+              {TYPE_LABEL[structureType]} · {dimensions.length}×
+              {structureType === 'wall'
+                ? `верх ${dimensions.width}/подошва ${ribbon}`
+                : dimensions.width}
+              ×{dimensions.depth} м
             </h4>
             <p className="mt-1 font-mono text-[11px] text-slate-500">
               a={cover} мм · Ø{diameterMm} шаг {spacingMm} мм · {layers} сетки · нахлёст ≈{lap} мм ·
@@ -492,6 +533,7 @@ export function BrigadeNodeSheet({
                   length: dimensions.length,
                   width: dimensions.width,
                   ribbon,
+                  topThickness,
                 }),
               }}
             />
@@ -506,6 +548,7 @@ export function BrigadeNodeSheet({
                   structureType,
                   depth: dimensions.depth,
                   ribbon,
+                  topThickness,
                   cover,
                   layers,
                 }),

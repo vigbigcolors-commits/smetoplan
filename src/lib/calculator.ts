@@ -83,11 +83,11 @@ export function calculateMaterials(
   const L = Math.max(0.5, dimensions.length * mFactor);
   const W = Math.max(0.05, dimensions.width * mFactor);
   const H = Math.max(0.05, dimensions.depth * mFactor);
-  const pW = dimensions.perimeterThickeningWidth
-    ? dimensions.perimeterThickeningWidth * mFactor
+  const pW = Number.isFinite(dimensions.perimeterThickeningWidth)
+    ? Math.max(0, dimensions.perimeterThickeningWidth * mFactor)
     : 0;
-  const pH = dimensions.perimeterThickeningDepth
-    ? dimensions.perimeterThickeningDepth * mFactor
+  const pH = Number.isFinite(dimensions.perimeterThickeningDepth)
+    ? Math.max(0, dimensions.perimeterThickeningDepth * mFactor)
     : 0;
 
   const stripLayout: StripLayoutMode =

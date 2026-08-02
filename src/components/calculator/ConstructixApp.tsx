@@ -194,6 +194,17 @@ export default function ConstructixApp({
     setDraftReady(true);
   }, []);
 
+  // Wall: если подошва не задана (старый черновик / 0) — синхронизируем state с верхом,
+  // чтобы инпут не показывал «фантом», а ядро видело реальное число. Трапеция = пользователь
+  // увеличит подошву вручную (напр. 0.5 при верхе 0.3).
+  useEffect(() => {
+    if (!draftReady || structureType !== 'wall') return;
+    setDimensions((prev) => {
+      if (prev.perimeterThickeningWidth > 0) return prev;
+      return { ...prev, perimeterThickeningWidth: Math.max(0.15, prev.width) };
+    });
+  }, [draftReady, structureType]);
+
   // Autosave settings so refresh never wipes inputs
   useEffect(() => {
     if (!draftReady) return;
@@ -915,7 +926,12 @@ export default function ConstructixApp({
             length: dimensions.length,
             width: dimensions.width,
             depth: dimensions.depth,
-            ribbon: dimensions.perimeterThickeningWidth || undefined,
+            ribbon:
+              structureType === 'wall'
+                ? dimensions.perimeterThickeningWidth > 0
+                  ? dimensions.perimeterThickeningWidth
+                  : dimensions.width
+                : dimensions.perimeterThickeningWidth || undefined,
           }}
           diameterMm={rebarSpec.diameterMm}
           spacingMm={rebarSpec.spacingMm}

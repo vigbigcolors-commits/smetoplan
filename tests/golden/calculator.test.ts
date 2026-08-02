@@ -140,6 +140,30 @@ describe('golden: geometry', () => {
     assert.equal(g.formworkAreaM2, 50);
     assert.equal(g.contactAreaM2, 5);
   });
+
+  it('wall trapezoid end-to-end through calculateMaterials', () => {
+    const r = calculateMaterials(
+      'wall',
+      {
+        length: 10,
+        width: 0.3,
+        depth: 2.5,
+        perimeterThickeningWidth: 0.5,
+        perimeterThickeningDepth: 0,
+      },
+      concrete,
+      rebar,
+      prices,
+      'metric',
+      1.0,
+      { coverMm: 40, stockLengthM: 11.7 }
+    );
+    assert.equal(r.concreteVolumeM3, 10);
+    assert.equal(r.formworkAreaM2, 50);
+    const ties = r.rebarPieces.find((p) => p.mark === 'С1');
+    assert.ok(ties);
+    assert.equal(ties!.lengthMm, 500);
+  });
 });
 
 describe('golden: cutting nest', () => {

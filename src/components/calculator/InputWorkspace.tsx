@@ -331,21 +331,33 @@ export const InputWorkspace: React.FC<InputWorkspaceProps> = ({
               max={1.5}
               step={0.05}
               value={
+                Number.isFinite(dimensions.perimeterThickeningWidth) &&
                 dimensions.perimeterThickeningWidth > 0
                   ? dimensions.perimeterThickeningWidth
-                  : dimensions.width
+                  : ''
               }
-              onChange={(e) =>
-                updateDimension(
-                  'perimeterThickeningWidth',
-                  parseFloat(e.target.value) || 0
-                )
-              }
+              placeholder="напр. 0.5"
+              onChange={(e) => {
+                const raw = String(e.target.value).replace(',', '.').trim();
+                if (raw === '') return;
+                const n = parseFloat(raw);
+                if (Number.isFinite(n) && n > 0) {
+                  updateDimension('perimeterThickeningWidth', n);
+                }
+              }}
               className="w-full rounded-lg border border-emerald-300 bg-white px-2 py-1.5 font-mono text-xs font-bold"
             />
             <p className="text-[11px] text-emerald-900/80">
-              Объём = L × H × (t верха + t подошвы) / 2. Если подошва = верху — прямоугольное
-              сечение.
+              Объём = L × H × (t верха + t подошвы) / 2
+              {dimensions.perimeterThickeningWidth > 0
+                ? ` → сейчас ${(
+                    dimensions.length *
+                    dimensions.depth *
+                    (dimensions.width + dimensions.perimeterThickeningWidth) /
+                    2
+                  ).toFixed(2)} м³`
+                : ' · задайте подошву, иначе считается прямоугольник по верху'}
+              .
             </p>
           </div>
         )}

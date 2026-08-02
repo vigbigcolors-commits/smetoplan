@@ -228,6 +228,9 @@ export function computeRebar(
     }
     case 'wall': {
       const spacingM = Math.max(0.05, rebarSpec.spacingMm / 1000);
+      const tTop = Math.max(0.1, W);
+      const tBase = input.auxWidthM > 0 ? Math.max(0.1, input.auxWidthM) : tTop;
+      const tMax = Math.max(tTop, tBase);
       const verticalBars = Math.ceil(L / spacingM) + 1;
       const horizontalBars = Math.ceil(H / spacingM) + 1;
       const vMm = Math.max(500, Math.round((H - 2 * coverM) * 1000));
@@ -237,8 +240,19 @@ export function computeRebar(
         addPiece(pieces, `А1${suffix}`, 'Вертикаль', d, vMm, verticalBars);
         addPiece(pieces, `А2${suffix}`, 'Горизонталь', d, hMm, horizontalBars);
       }
+      // Связи по толщине: длина ≈ макс. толщины сечения (подошва трапеции длиннее верха).
+      const tieMm = Math.max(200, Math.round(tMax * 1000));
+      const tieCount = verticalBars * Math.max(2, rebarSpec.layers);
+      addPiece(
+        pieces,
+        'С1',
+        `Связи по толщине (до ${tMax.toFixed(2)} м)`,
+        Math.min(8, d),
+        tieMm,
+        tieCount
+      );
       notes.push(
-        `Сетка стены шаг ${rebarSpec.spacingMm} мм, слоёв ${rebarSpec.layers}`
+        `Сетка стены шаг ${rebarSpec.spacingMm} мм, слоёв ${rebarSpec.layers}; сечение верх ${tTop.toFixed(2)} / подошва ${tBase.toFixed(2)} м`
       );
       break;
     }
