@@ -181,7 +181,8 @@ function withAutoApply(
   messages: AiChatMessage[]
 ): AiAssistantReply {
   const dialogPatch = extractApplyPatchFromDialog(question, messages);
-  const merged: AiCalcPatch = { ...dialogPatch, ...reply.patch };
+  // Локальный парсер важнее LLM: иначе reasoner/chat ломает «периметр 40» → «40×0.5×1.2».
+  const merged: AiCalcPatch = { ...reply.patch, ...dialogPatch };
   const doApply = shouldAutoApplyParams(question, messages, merged);
 
   if (isCalcPatchEmpty(merged)) {
@@ -301,13 +302,14 @@ async function callDeepSeekR1(
   const apiKey = process.env.DEEPSEEK_API_KEY;
   if (!apiKey) return null;
 
-  // Только быстрый chat. Reasoner — только если явно DEEPSEEK_MODEL=deepseek-reasoner.
-  const configured = (process.env.DEEPSEEK_MODEL || 'deepseek-chat').trim();
-  const model =
-    configured === 'deepseek-reasoner' ? 'deepseek-reasoner' : 'deepseek-chat';
+  // Всегда быстрый chat. Reasoner на Vercel (DEEPSEEK_MODEL=…) даёт минуты ожидания — игнорируем.
+  const model = 'deepseek-chat';
 
   const ctrl = new AbortController();
-  const timeoutMs = Number(process.env.DEEPSEEK_TIMEOUT_MS || 14_000);
+  const timeoutMs = Math.min(
+    12_000,
+    Math.max(4_000, Number(process.env.DEEPSEEK_TIMEOUT_MS || 8_000))
+  );
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
 
   try {

@@ -168,4 +168,14 @@ describe('calc-patch extractor', () => {
     assert.equal(patch.longitudinalBars, 6);
     assert.equal(shouldAutoApplyParams(text, [], patch), true);
   });
+
+  it('rejects LLM-style 40×0.5×1.2 strip prism as closed perimeter', () => {
+    const text = `ленточный фундамент замкнутый периметр длина 40 м ширина 0.5 м высота 1.2 м`;
+    const patch = extractCalcPatchFromText(text);
+    assert.equal(patch.structureType, 'strip');
+    assert.equal(patch.lengthM, 12);
+    assert.equal(patch.widthM, 8);
+    assert.equal(patch.ribWidthM, 0.5);
+    assert.equal(patch.depthM, 1.2);
+  });
 });

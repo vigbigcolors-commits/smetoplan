@@ -405,8 +405,9 @@ export function HardHatAssistant({
       let patch = data.patch;
       let autoApply = Boolean(data.autoApply);
       const local = extractApplyPatchFromDialog(q, historySnapshot);
+      // Локальный парсер побеждает LLM (не даём 40×0.5 вместо периметра 40 → 12×8).
       if (!patch || isCalcPatchEmpty(patch)) patch = local;
-      else patch = { ...local, ...patch };
+      else patch = { ...patch, ...local };
       if (!autoApply && shouldAutoApplyParams(q, historySnapshot, patch || {})) {
         autoApply = true;
       }

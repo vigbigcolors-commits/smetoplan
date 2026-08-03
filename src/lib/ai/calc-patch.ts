@@ -66,10 +66,16 @@ export function shouldAutoApplyParams(
   const blob = [question, ...history.map((m) => m.content)].join('\n');
   // Не писать «полупатч» (только Ø), если в тексте явно есть габариты, а L/W/H не извлеклись.
   const mentionsPlan =
-    /габарит|толщин|длин[аы]|высот|\d+(?:[.,]\d+)?\s*[×xх]\s*\d+/i.test(blob);
+    /габарит|толщин|длин[аы]|высот|периметр|\d+(?:[.,]\d+)?\s*[×xх]\s*\d+/i.test(
+      blob
+    );
   const hasDims =
     patch.lengthM != null && patch.widthM != null && patch.depthM != null;
   if (mentionsPlan && !hasDims) return false;
+  // Полное ТЗ / лента с осью — всегда мгновенно, без DeepSeek.
+  if (hasDims && (patch.structureType || patch.ribWidthM != null || patch.coverMm != null)) {
+    return true;
+  }
   if (detectApplyIntent(question)) return true;
   if (isSubstantialPatch(extractCalcPatchFromText(question))) return true;
   const recentUser = history
@@ -166,10 +172,17 @@ export function extractCalcPatchFromText(text: string): AiCalcPatch {
     text,
     /(?:общ\S{0,10}\s*)?периметр(?:\s*лент\S{0,8})?[^0-9]{0,28}(\d+(?:[.,]\d+)?)\s*м|длин[аы]\s*лент\S{0,40}(?:периметр|ось|сети)?[^0-9]{0,28}(\d+(?:[.,]\d+)?)\s*м/i
   );
-  const stripRibbon = firstMatch(
-    text,
-    /ширин[аы]\s*лент\S{0,12}[^0-9]{0,24}(\d+(?:[.,]\d+)?)\s*м/i
-  );
+  const stripRibbon =
+    firstMatch(
+      text,
+      /ширин[аы]\s*лент\S{0,12}[^0-9]{0,24}(\d+(?:[.,]\d+)?)\s*м/i
+    ) ||
+    (patch.structureType === 'strip' || /лент|периметр/i.test(text)
+      ? firstMatch(
+          text,
+          /ширин[аы](?!\s*пятн)[^0-9]{0,24}(\d+(?:[.,]\d+)?)\s*м/i
+        )
+      : null);
   if (stripAxis || stripRibbon || /ленточн|замкнут\S{0,8}\s*периметр|контур\s*=\s*1/i.test(text)) {
     if (!patch.structureType) patch.structureType = 'strip';
   }
@@ -413,6 +426,27 @@ export function extractCalcPatchFromText(text: string): AiCalcPatch {
   ) {
     patch.ribWidthM = 0;
     patch.ribDepthM = 0;
+  }
+
+  // Антибаг: «длина ленты 40 + ширина ленты 0.5» ошибочно как пятно 40×0.5.
+  // Это ось сети + ширина ленты → прямоугольник с периметром 40 (напр. 12×8).
+  if (
+    patch.structureType === 'strip' &&
+    patch.lengthM != null &&
+    patch.widthM != null &&
+    patch.depthM != null &&
+    patch.lengthM >= 16 &&
+    patch.widthM > 0 &&
+    patch.widthM <= 2 &&
+    patch.depthM <= 4 &&
+    (patch.ribWidthM == null || patch.ribWidthM === 0 || patch.ribWidthM === patch.widthM)
+  ) {
+    const P = patch.lengthM;
+    const ribbon = patch.ribWidthM && patch.ribWidthM > 0 ? patch.ribWidthM : patch.widthM;
+    patch.ribWidthM = ribbon;
+    const half = P / 2;
+    patch.lengthM = Math.round(half * 0.6 * 10) / 10;
+    patch.widthM = Math.round(half * 0.4 * 10) / 10;
   }
 
   return patch;
