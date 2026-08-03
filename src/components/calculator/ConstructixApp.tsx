@@ -59,7 +59,19 @@ import { TrustSourcesNote } from '@/components/pseo/TrustSourcesNote';
 import {
   loadCalculatorDraft,
   saveCalculatorDraft,
+  type CalculatorDraft,
 } from '@/lib/calculator-draft';
+import {
+  decodeShareToken,
+  readShareTokenFromLocation,
+  stripShareParamFromUrl,
+} from '@/lib/calculator-share';
+import {
+  downloadPdfOnly,
+  downloadReadyPackage,
+  buildPackageShareUrl,
+  copyTextToClipboard,
+} from '@/lib/smeta-package';
 
 const slabPreset = getStructurePreset('slab');
 const defaultRegion: PriceRegionId = 'moscow';
@@ -162,36 +174,57 @@ export default function ConstructixApp({
     };
   }, []);
 
-  // Restore last calculator settings after refresh
+  const applyDraft = (draft: CalculatorDraft) => {
+    setStructureType(draft.structureType);
+    setUnitSystem(draft.unitSystem);
+    setCurrency(draft.currency);
+    setDimensions(draft.dimensions);
+    setConcreteSpec(draft.concreteSpec);
+    setRebarSpec(draft.rebarSpec);
+    setPrices(draft.prices);
+    setSafetyFactor(draft.safetyFactor);
+    setCalcMode(draft.calcMode);
+    setStripLayout(draft.stripLayout);
+    setStripInnerLong(draft.stripInnerLong);
+    setStripInnerCross(draft.stripInnerCross);
+    setStripPlan(draft.stripPlan);
+    setStripPlanCustom(draft.stripPlanCustom);
+    setPierSpacingM(draft.pierSpacingM);
+    setCoverMm(draft.coverMm);
+    setStockLengthM(draft.stockLengthM);
+    setBuildingDeadLoadKpa(draft.buildingDeadLoadKpa);
+    setLiveLoadKpa(draft.liveLoadKpa);
+    setPriceRegionId(draft.priceRegionId);
+    setSnowRegion(draft.snowRegion);
+    setApplySnow(draft.applySnow);
+    setSoilTypeId(draft.soilTypeId);
+    setSoilResistanceKpa(draft.soilResistanceKpa);
+  };
+
+  // Share URL wins; otherwise restore localStorage draft
   useEffect(() => {
-    const draft = loadCalculatorDraft();
-    if (draft) {
-      setStructureType(draft.structureType);
-      setUnitSystem(draft.unitSystem);
-      setCurrency(draft.currency);
-      setDimensions(draft.dimensions);
-      setConcreteSpec(draft.concreteSpec);
-      setRebarSpec(draft.rebarSpec);
-      setPrices(draft.prices);
-      setSafetyFactor(draft.safetyFactor);
-      setCalcMode(draft.calcMode);
-      setStripLayout(draft.stripLayout);
-      setStripInnerLong(draft.stripInnerLong);
-      setStripInnerCross(draft.stripInnerCross);
-      setStripPlan(draft.stripPlan);
-      setStripPlanCustom(draft.stripPlanCustom);
-      setPierSpacingM(draft.pierSpacingM);
-      setCoverMm(draft.coverMm);
-      setStockLengthM(draft.stockLengthM);
-      setBuildingDeadLoadKpa(draft.buildingDeadLoadKpa);
-      setLiveLoadKpa(draft.liveLoadKpa);
-      setPriceRegionId(draft.priceRegionId);
-      setSnowRegion(draft.snowRegion);
-      setApplySnow(draft.applySnow);
-      setSoilTypeId(draft.soilTypeId);
-      setSoilResistanceKpa(draft.soilResistanceKpa);
-    }
-    setDraftReady(true);
+    let cancelled = false;
+    (async () => {
+      const token = readShareTokenFromLocation();
+      if (token) {
+        const shared = await decodeShareToken(token);
+        if (!cancelled && shared) {
+          applyDraft(shared);
+          stripShareParamFromUrl();
+          setDraftReady(true);
+          window.setTimeout(() => showToast('Расчёт открыт по ссылке'), 0);
+          return;
+        }
+      }
+      if (cancelled) return;
+      const draft = loadCalculatorDraft();
+      if (draft) applyDraft(draft);
+      setDraftReady(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- boot once
   }, []);
 
   // Wall: если подошва не задана (старый черновик / 0) — синхронизируем state с верхом,
@@ -298,6 +331,62 @@ export default function ConstructixApp({
       soilResistanceKpa,
     });
   };
+
+  const currentDraft = useMemo((): CalculatorDraft => {
+    return {
+      v: 1,
+      structureType,
+      unitSystem,
+      currency,
+      dimensions,
+      concreteSpec,
+      rebarSpec,
+      prices,
+      safetyFactor,
+      calcMode,
+      stripLayout,
+      stripInnerLong,
+      stripInnerCross,
+      stripPlan,
+      stripPlanCustom,
+      pierSpacingM,
+      coverMm,
+      stockLengthM,
+      buildingDeadLoadKpa,
+      liveLoadKpa,
+      priceRegionId,
+      snowRegion,
+      applySnow,
+      soilTypeId,
+      soilResistanceKpa,
+      savedAt: Date.now(),
+    };
+  }, [
+    structureType,
+    unitSystem,
+    currency,
+    dimensions,
+    concreteSpec,
+    rebarSpec,
+    prices,
+    safetyFactor,
+    calcMode,
+    stripLayout,
+    stripInnerLong,
+    stripInnerCross,
+    stripPlan,
+    stripPlanCustom,
+    pierSpacingM,
+    coverMm,
+    stockLengthM,
+    buildingDeadLoadKpa,
+    liveLoadKpa,
+    priceRegionId,
+    snowRegion,
+    applySnow,
+    soilTypeId,
+    soilResistanceKpa,
+  ]);
 
   // Switch presets helper
   const handleSelectPreset = (type: StructureType) => {
@@ -537,6 +626,55 @@ export default function ConstructixApp({
     showToast('Ведомость CSV скачана');
   };
   exportCsvRef.current = handleExportCsv;
+
+  const packageCtx = useMemo(
+    () => ({
+      draft: currentDraft,
+      calculation,
+      regionLabel: PRICE_REGIONS[priceRegionId].label,
+      structureLabel: getStructurePreset(structureType).label,
+      dimsLabel: `${dimensions.length}×${dimensions.width}×${dimensions.depth} м`,
+      concreteGrade: concreteSpec.grade,
+      currency,
+    }),
+    [
+      currentDraft,
+      calculation,
+      priceRegionId,
+      structureType,
+      dimensions,
+      concreteSpec.grade,
+      currency,
+    ]
+  );
+
+  const handleDownloadPackage = async () => {
+    try {
+      const { copied } = await downloadReadyPackage(packageCtx);
+      showToast(copied ? 'Пакет скачан · ссылка в буфере' : 'Пакет скачан');
+    } catch {
+      showToast('Не удалось собрать пакет');
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    try {
+      await downloadPdfOnly(packageCtx);
+      showToast('PDF-смета скачана');
+    } catch {
+      showToast('Ошибка PDF — проверьте сеть и повторите');
+    }
+  };
+
+  const handleCopyShareLink = async () => {
+    try {
+      const url = await buildPackageShareUrl(packageCtx);
+      const ok = await copyTextToClipboard(url);
+      showToast(ok ? 'Ссылка на расчёт скопирована' : 'Не удалось скопировать ссылку');
+    } catch {
+      showToast('Не удалось создать ссылку');
+    }
+  };
 
   const applyAiSuggestion = (s: AiSuggestion) => {
     if (s.scrollTo) {
@@ -913,6 +1051,9 @@ export default function ConstructixApp({
           }}
           onExportCsv={handleExportCsv}
           onPrint={handlePrint}
+          onDownloadPdf={() => void handleDownloadPdf()}
+          onCopyShareLink={() => void handleCopyShareLink()}
+          onDownloadPackage={() => void handleDownloadPackage()}
         />
 
         {calcMode === 'checks' && (
@@ -1027,6 +1168,10 @@ export default function ConstructixApp({
         currency={currency}
         regionLabel={PRICE_REGIONS[priceRegionId].label}
         concreteGrade={concreteSpec.grade}
+        structureLabel={getStructurePreset(structureType).label}
+        dimsLabel={`${dimensions.length}×${dimensions.width}×${dimensions.depth} м`}
+        draft={currentDraft}
+        onToast={showToast}
       />
       <HardHatAssistant
         calculation={calculation}

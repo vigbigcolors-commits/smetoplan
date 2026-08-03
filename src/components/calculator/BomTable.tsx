@@ -7,6 +7,8 @@ import {
   Printer,
   Save,
   CheckCircle2,
+  Link2,
+  Package,
 } from 'lucide-react';
 import { Currency, ConcreteSpec, RebarSpec } from '@/lib/types';
 import { formatCurrency, type ExtendedCalculationResult } from '@/lib/calculator';
@@ -19,6 +21,9 @@ interface BomTableProps {
   onSaveProject: () => void;
   onExportCsv: () => void;
   onPrint: () => void;
+  onDownloadPdf?: () => void;
+  onCopyShareLink?: () => void;
+  onDownloadPackage?: () => void;
 }
 
 export const BomTable: React.FC<BomTableProps> = ({
@@ -29,6 +34,9 @@ export const BomTable: React.FC<BomTableProps> = ({
   onSaveProject,
   onExportCsv,
   onPrint,
+  onDownloadPdf,
+  onCopyShareLink,
+  onDownloadPackage,
 }) => {
   const { itemizedCosts } = calculation;
 
@@ -54,24 +62,54 @@ export const BomTable: React.FC<BomTableProps> = ({
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {onDownloadPackage ? (
+              <button
+                type="button"
+                onClick={onDownloadPackage}
+                className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition cursor-pointer"
+              >
+                <Package className="w-3.5 h-3.5" /> Готово
+              </button>
+            ) : null}
+            {onDownloadPdf ? (
+              <button
+                type="button"
+                onClick={onDownloadPdf}
+                className="flex items-center gap-1.5 bg-[#1F5A8E] hover:bg-[#174771] text-white text-xs font-bold px-3 py-1.5 rounded-lg transition cursor-pointer"
+              >
+                <FileText className="w-3.5 h-3.5" /> PDF
+              </button>
+            ) : null}
+            {onCopyShareLink ? (
+              <button
+                type="button"
+                onClick={onCopyShareLink}
+                className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono font-semibold px-3 py-1.5 rounded-lg border border-slate-700 transition cursor-pointer"
+              >
+                <Link2 className="w-3.5 h-3.5 text-violet-400" /> Ссылка
+              </button>
+            ) : null}
             <button
+              type="button"
               onClick={onSaveProject}
               className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono font-semibold px-3 py-1.5 rounded-lg border border-slate-700 transition cursor-pointer"
             >
               <Save className="w-3.5 h-3.5 text-emerald-400" /> Сохранить
             </button>
             <button
+              type="button"
               onClick={onExportCsv}
               className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono font-semibold px-3 py-1.5 rounded-lg border border-slate-700 transition cursor-pointer"
             >
               <Download className="w-3.5 h-3.5 text-sky-400" /> CSV
             </button>
             <button
+              type="button"
               onClick={onPrint}
-              className="flex items-center gap-1.5 bg-[#1F5A8E] hover:bg-[#174771] text-white text-xs font-bold px-3 py-1.5 rounded-lg transition cursor-pointer"
+              className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono font-semibold px-3 py-1.5 rounded-lg border border-slate-700 transition cursor-pointer"
             >
-              <Printer className="w-3.5 h-3.5" /> Печать Сметы
+              <Printer className="w-3.5 h-3.5" /> Печать
             </button>
           </div>
         </div>

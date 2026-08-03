@@ -1,11 +1,28 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, CheckCircle, Download, Building2, Info } from 'lucide-react';
+import {
+  X,
+  CheckCircle,
+  Download,
+  Link2,
+  Mail,
+  FileText,
+  Package,
+  Loader2,
+} from 'lucide-react';
 import { Currency, MaterialCalculationResult } from '@/lib/types';
-import { formatCurrency } from '@/lib/calculator';
-import type { ExtendedCalculationResult } from '@/lib/calculator';
-import { buildRbuSpecText, downloadTextFile } from '@/lib/rbu-spec';
+import { formatCurrency, type ExtendedCalculationResult } from '@/lib/calculator';
+import type { CalculatorDraft } from '@/lib/calculator-draft';
+import {
+  buildPackageShareUrl,
+  buildPackageSpecText,
+  copyTextToClipboard,
+  downloadPdfOnly,
+  downloadReadyPackage,
+  type SmetaPackageContext,
+} from '@/lib/smeta-package';
+import { downloadTextFile } from '@/lib/rbu-spec';
 
 interface QuoteModalProps {
   isOpen: boolean;
@@ -14,6 +31,10 @@ interface QuoteModalProps {
   currency: Currency;
   regionLabel?: string;
   concreteGrade?: string;
+  structureLabel: string;
+  dimsLabel: string;
+  draft: CalculatorDraft;
+  onToast?: (msg: string) => void;
 }
 
 export const QuoteModal: React.FC<QuoteModalProps> = ({
@@ -23,42 +44,128 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({
   currency,
   regionLabel = 'регион',
   concreteGrade = 'M300',
+  structureLabel,
+  dimsLabel,
+  draft,
+  onToast,
 }) => {
-  const [submitted, setSubmitted] = useState<boolean>(false);
-  const [formData, setFormData] = useState({
-    name: '',
-    phone: '',
-    email: '',
-    location: '',
-    deliveryDate: '',
-  });
+  const [busy, setBusy] = useState<'pkg' | 'pdf' | 'link' | 'mail' | null>(null);
+  const [done, setDone] = useState<'pkg' | 'mail' | null>(null);
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [email, setEmail] = useState('');
+  const [mailError, setMailError] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
-  const downloadSpec = () => {
-    const ext = calculation as ExtendedCalculationResult;
-    downloadTextFile(
-      `smetoplan-zayavka-rbu-${Date.now()}.txt`,
-      buildRbuSpecText({
-        regionLabel,
-        concreteGrade,
-        concreteVolumeM3: calculation.concreteVolumeM3,
-        rebarWeightKg: calculation.rebarWeightKg,
-        formworkAreaM2: calculation.formworkAreaM2,
-        totalLabel: formatCurrency(calculation.itemizedCosts.total, currency),
-        rebarLines: (ext.rebarPieces || []).map(
-          (p) =>
-            `${p.mark}; ${p.role}; Ø${p.diameterMm}; L=${p.lengthMm}мм; N=${p.count}; m=${Math.round(p.weightKg * 10) / 10}кг`
-        ),
-        contact: formData,
-      })
-    );
+  const ext = calculation as ExtendedCalculationResult;
+
+  const ctx: SmetaPackageContext = {
+    draft,
+    calculation: ext,
+    regionLabel,
+    structureLabel,
+    dimsLabel,
+    concreteGrade,
+    currency,
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const toast = (msg: string) => onToast?.(msg);
+
+  const runPackage = async () => {
+    setBusy('pkg');
+    setMailError(null);
+    try {
+      const { shareUrl: url, copied } = await downloadReadyPackage(ctx);
+      setShareUrl(url);
+      setDone('pkg');
+      toast(
+        copied
+          ? 'Пакет скачан · ссылка в буфере'
+          : 'Пакет скачан · скопируйте ссылку вручную'
+      );
+    } catch {
+      toast('Не удалось собрать пакет. Попробуйте PDF или .txt отдельно.');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const runPdf = async () => {
+    setBusy('pdf');
+    try {
+      const url = await downloadPdfOnly(ctx);
+      setShareUrl(url);
+      toast('PDF скачан');
+    } catch {
+      toast('Ошибка PDF — проверьте сеть (шрифт) и повторите');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const runTxt = () => {
+    downloadTextFile(
+      `smetoplan-spec-rbu-${Date.now()}.txt`,
+      buildPackageSpecText(ctx)
+    );
+    toast('Спецификация .txt скачана');
+  };
+
+  const runCopyLink = async () => {
+    setBusy('link');
+    try {
+      const url = await buildPackageShareUrl(ctx);
+      setShareUrl(url);
+      const ok = await copyTextToClipboard(url);
+      toast(ok ? 'Ссылка на расчёт скопирована' : 'Скопируйте ссылку вручную');
+    } catch {
+      toast('Не удалось создать ссылку');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const runMail = async (e: React.FormEvent) => {
     e.preventDefault();
-    downloadSpec();
-    setSubmitted(true);
+    setMailError(null);
+    const addr = email.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(addr)) {
+      setMailError('Укажите корректный email');
+      return;
+    }
+    setBusy('mail');
+    try {
+      const url = shareUrl || (await buildPackageShareUrl(ctx));
+      setShareUrl(url);
+      const res = await fetch('/api/smeta/email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: addr,
+          shareUrl: url,
+          regionLabel,
+          structureLabel,
+          dimsLabel,
+          concreteGrade,
+          concreteVolumeM3: calculation.concreteVolumeM3,
+          rebarWeightKg: calculation.rebarWeightKg,
+          formworkAreaM2: calculation.formworkAreaM2,
+          totalLabel: formatCurrency(calculation.itemizedCosts.total, currency),
+          specText: buildPackageSpecText(ctx),
+        }),
+      });
+      const data = (await res.json()) as { ok?: boolean; error?: string };
+      if (!res.ok || !data.ok) {
+        setMailError(data.error || 'Не удалось отправить');
+        return;
+      }
+      setDone('mail');
+      toast('Письмо отправлено на ваш email');
+    } catch {
+      setMailError('Сеть недоступна. Скачайте пакет на устройство.');
+    } finally {
+      setBusy(null);
+    }
   };
 
   return (
@@ -67,14 +174,14 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({
         <div className="flex items-center justify-between border-b border-slate-800 bg-[#0F172A] p-5 text-white">
           <div className="flex items-center gap-2.5">
             <div className="rounded-lg bg-[#1F5A8E] p-2 text-white">
-              <Building2 className="h-5 w-5" />
+              <Package className="h-5 w-5" />
             </div>
             <div>
               <h3 className="text-base font-extrabold uppercase tracking-wide">
-                Спецификация для РБУ
+                Пакет «Готово»
               </h3>
               <p className="font-mono text-xs text-slate-400">
-                Скачается .txt — отправьте на завод сами
+                PDF + .txt + ссылка · без звонков и ожидания
               </p>
             </div>
           </div>
@@ -87,30 +194,39 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({
           </button>
         </div>
 
-        <div className="p-6">
-          {submitted ? (
-            <div className="space-y-3 py-4 text-center">
-              <div className="mx-auto mb-2 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-                <CheckCircle className="h-10 w-10" />
+        <div className="space-y-4 p-6 text-xs">
+          <div className="space-y-1 rounded-xl border border-sky-200 bg-sky-50 p-3 text-sky-950">
+            <p className="font-mono text-[11px] text-sky-900">
+              {concreteGrade} · {calculation.concreteVolumeM3} м³ · арматура{' '}
+              {calculation.rebarWeightKg} кг · {regionLabel}
+            </p>
+            <p className="text-[11px] text-sky-800">
+              Ориентир:{' '}
+              <strong>
+                {formatCurrency(calculation.itemizedCosts.total, currency)}
+              </strong>
+              {' · '}
+              {structureLabel} · {dimsLabel}
+            </p>
+          </div>
+
+          {done ? (
+            <div className="space-y-3 py-2 text-center">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+                <CheckCircle className="h-9 w-9" />
               </div>
-              <h4 className="text-xl font-black text-[#0F172A]">Спецификация скачана</h4>
+              <h4 className="text-lg font-black text-[#0F172A]">
+                {done === 'mail' ? 'Письмо у вас на почте' : 'Пакет у вас'}
+              </h4>
               <p className="mx-auto max-w-sm text-xs text-slate-600">
-                Файл .txt с объёмами и раскроем. Отправьте его на РБУ региона «{regionLabel}»:
-                {' '}
-                <strong className="text-slate-900">{calculation.concreteVolumeM3} м³</strong> бетона и{' '}
-                <strong className="text-slate-900">{calculation.rebarWeightKg} кг</strong> арматуры.
+                Отправьте PDF или ссылку прорабу / на РБУ сами — сервис ничего не
+                перезванивает и не хранит заявку на менеджера.
               </p>
-              <div className="my-4 space-y-1 rounded-xl border border-slate-200 bg-slate-50 p-3.5 text-left font-mono text-xs text-slate-700">
-                <div className="flex justify-between gap-2">
-                  <span className="text-slate-500">Ориентир сметы материалов</span>
-                  <span className="font-bold text-[#0F172A]">
-                    {formatCurrency(calculation.itemizedCosts.total, currency)}
-                  </span>
-                </div>
-                <p className="pt-1 font-sans text-[11px] text-slate-500">
-                  Без фиктивных купонов и «скидок от завода» — только ваш расчёт.
+              {shareUrl ? (
+                <p className="break-all rounded-lg bg-slate-50 p-2 font-mono text-[10px] text-slate-600">
+                  {shareUrl}
                 </p>
-              </div>
+              ) : null}
               <button
                 type="button"
                 onClick={onClose}
@@ -120,94 +236,87 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({
               </button>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-              <div className="space-y-1 rounded-xl border border-sky-200 bg-sky-50 p-3 text-sky-950">
-                <span className="flex items-center gap-1 text-xs font-extrabold">
-                  <Info className="h-4 w-4 text-[#1F5A8E]" /> Сводка из расчёта
-                </span>
-                <p className="font-mono text-[11px] text-sky-900">
-                  {concreteGrade} · {calculation.concreteVolumeM3} м³ · арматура{' '}
-                  {calculation.rebarWeightKg} кг · {regionLabel}
-                </p>
+            <>
+              <button
+                type="button"
+                disabled={busy !== null}
+                onClick={() => void runPackage()}
+                className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#1F5A8E] py-3.5 text-xs font-extrabold uppercase tracking-wide text-white shadow-lg transition hover:bg-[#174771] disabled:opacity-60"
+              >
+                {busy === 'pkg' ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4" />
+                )}
+                Скачать всё: PDF + .txt + ссылка
+              </button>
+
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  disabled={busy !== null}
+                  onClick={() => void runPdf()}
+                  className="inline-flex items-center justify-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2 py-2.5 font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-60"
+                >
+                  <FileText className="h-3.5 w-3.5 text-sky-600" />
+                  PDF
+                </button>
+                <button
+                  type="button"
+                  disabled={busy !== null}
+                  onClick={runTxt}
+                  className="inline-flex items-center justify-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2 py-2.5 font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-60"
+                >
+                  <Download className="h-3.5 w-3.5 text-emerald-600" />
+                  .txt
+                </button>
+                <button
+                  type="button"
+                  disabled={busy !== null}
+                  onClick={() => void runCopyLink()}
+                  className="inline-flex items-center justify-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2 py-2.5 font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-60"
+                >
+                  <Link2 className="h-3.5 w-3.5 text-violet-600" />
+                  Ссылка
+                </button>
               </div>
 
-              <div>
-                <label className="mb-1 block font-semibold text-slate-700">
-                  ФИО / организация
+              <form
+                onSubmit={(e) => void runMail(e)}
+                className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3"
+              >
+                <label className="flex items-center gap-1.5 font-semibold text-slate-700">
+                  <Mail className="h-3.5 w-3.5" />
+                  Отправить пакет себе на email (по желанию)
                 </label>
                 <input
-                  type="text"
-                  required
-                  placeholder="Иванов И.И. / ООО «…»"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full rounded-lg border border-slate-300 bg-[#F4F4F5] p-2.5 font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1F5A8E]"
+                  type="email"
+                  placeholder="you@mail.ru"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full rounded-lg border border-slate-300 bg-white p-2.5 font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1F5A8E]"
                 />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="mb-1 block font-semibold text-slate-700">Телефон</label>
-                  <input
-                    type="tel"
-                    required
-                    placeholder="+7 …"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full rounded-lg border border-slate-300 bg-[#F4F4F5] p-2.5 font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1F5A8E]"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block font-semibold text-slate-700">Email</label>
-                  <input
-                    type="email"
-                    required
-                    placeholder="mail@…"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full rounded-lg border border-slate-300 bg-[#F4F4F5] p-2.5 font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1F5A8E]"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="mb-1 block font-semibold text-slate-700">
-                    Адрес объекта
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Город / район"
-                    value={formData.location}
-                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                    className="w-full rounded-lg border border-slate-300 bg-[#F4F4F5] p-2.5 font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1F5A8E]"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block font-semibold text-slate-700">
-                    Дата заливки
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={formData.deliveryDate}
-                    onChange={(e) =>
-                      setFormData({ ...formData, deliveryDate: e.target.value })
-                    }
-                    className="w-full rounded-lg border border-slate-300 bg-[#F4F4F5] p-2.5 font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1F5A8E]"
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                className="mt-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#1F5A8E] py-3.5 text-xs font-extrabold uppercase tracking-wide text-white shadow-lg transition hover:bg-[#174771]"
-              >
-                <Download className="h-4 w-4" />
-                Скачать спецификацию .txt
-              </button>
-            </form>
+                {mailError ? (
+                  <p className="text-[11px] font-semibold text-rose-600">{mailError}</p>
+                ) : (
+                  <p className="text-[11px] text-slate-500">
+                    Одно письмо только вам: ссылка + текст спецификации. Без рассылок.
+                  </p>
+                )}
+                <button
+                  type="submit"
+                  disabled={busy !== null}
+                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#0F172A] py-2.5 font-bold text-white hover:bg-slate-800 disabled:opacity-60"
+                >
+                  {busy === 'mail' ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Mail className="h-3.5 w-3.5" />
+                  )}
+                  Прислать мне
+                </button>
+              </form>
+            </>
           )}
         </div>
       </div>

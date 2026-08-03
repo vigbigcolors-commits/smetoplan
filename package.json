@@ -12,6 +12,7 @@
     "db:down": "podman compose -f db/podman-compose.yml down",
     "db:migrate": "node --env-file=.env.local scripts/db-migrate.mjs",
     "db:generate-pseo": "node --env-file=.env.local scripts/generate-pseo-routes.mjs",
+    "pseo:quality-sync": "node --env-file=.env.local scripts/pseo-quality-sync.mjs",
     "pseo:drip": "npx tsx --env-file=.env.local scripts/pseo-drip-once.ts",
     "pseo:bootstrap": "node --env-file=.env.local scripts/pseo-bootstrap.mjs",
     "market:fetch": "node --env-file=.env.local scripts/fetch-market-prices.mjs",
@@ -21,6 +22,7 @@
   "dependencies": {
     "lucide-react": "^1.27.0",
     "next": "15.5.22",
+    "pdf-lib": "^1.17.1",
     "pg": "^8.22.0",
     "react": "19.1.0",
     "react-dom": "19.1.0"

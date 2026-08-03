@@ -154,7 +154,7 @@ export function RegionalSupplyPanel({
             Спецификация .txt
           </ToolButton>
           <ToolButton onClick={onRequestQuote} icon={FileText} variant="secondary">
-            Заявка с контактами
+            Пакет «Готово»
           </ToolButton>
         </>
       }

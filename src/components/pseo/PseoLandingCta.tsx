@@ -44,7 +44,7 @@ export function PseoLandingCta({ snapshot }: { snapshot: PseoSnapshot }) {
         className="inline-flex items-center gap-2 rounded-xl border border-slate-600 bg-slate-900 px-4 py-2.5 text-sm font-bold text-white hover:border-sky-500"
       >
         <Building2 className="h-4 w-4" />
-        Заявка РБУ
+        Пакет «Готово»
       </button>
     </div>
   );

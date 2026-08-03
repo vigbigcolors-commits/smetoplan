@@ -206,7 +206,7 @@ export function SitePipeline({
           className={outlineBtn}
         >
           <MapPin className="h-3.5 w-3.5" />
-          Заявка РБУ
+          Пакет «Готово»
         </button>
         <button
           type="button"
