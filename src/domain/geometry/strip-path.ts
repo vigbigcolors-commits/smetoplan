@@ -329,7 +329,7 @@ export function computeRectStripFootprint(
   const nL = Math.max(0, Math.min(6, Math.round(innerLong)));
   const nC = Math.max(0, Math.min(6, Math.round(innerCross)));
 
-  const stripLengthM = 2 * (L + W) + nL * L + nC * W;
+  const axisNetworkM = 2 * (L + W) + nL * L + nC * W;
   const junctionCount = nL * nC + 2 * nL + 2 * nC;
 
   const interiorL = L - 2 * w;
@@ -340,15 +340,18 @@ export function computeRectStripFootprint(
   const outerPerimeter = 2 * (L + W);
   const outerArea = L * W;
 
+  let stripLengthM: number;
   let concreteVolumeRawM3: number;
   let formworkAreaM2: number;
   let contactAreaM2: number;
 
   if (interiorL <= 0 || interiorW <= 0 || colW <= EPS || rowH <= EPS) {
-    // Стены съели весь просвет — сплошной массив.
+    // Стены съели весь просвет — сплошной массив (часто «траншея» L×w×H).
+    // Ось каркаса = длинная сторона призмы, НЕ фантомный замкнутый периметр 2×(L+W).
     contactAreaM2 = outerArea;
     concreteVolumeRawM3 = outerArea * H;
     formworkAreaM2 = outerPerimeter * H;
+    stripLengthM = Math.max(L, W);
   } else {
     const voidCount = (nL + 1) * (nC + 1);
     const voidArea = voidCount * colW * rowH;
@@ -356,10 +359,11 @@ export function computeRectStripFootprint(
     contactAreaM2 = Math.max(w * w * 4, outerArea - voidArea);
     concreteVolumeRawM3 = contactAreaM2 * H;
     formworkAreaM2 = (outerPerimeter + voidPerimeter) * H;
+    stripLengthM = axisNetworkM;
   }
 
   const notes = [
-    `Лента ${L}×${W} м (наружные), стенка ${w.toFixed(2)} м: площадь бетона ${contactAreaM2.toFixed(2)} м²; стыков ${junctionCount} (углы/крестовины не задвоены)`,
+    `Лента ${L}×${W} м (наружные), стенка ${w.toFixed(2)} м: площадь бетона ${contactAreaM2.toFixed(2)} м²; ось каркаса ${stripLengthM.toFixed(2)} м; стыков ${junctionCount} (углы/крестовины не задвоены)`,
   ];
 
   return {

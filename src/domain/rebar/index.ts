@@ -46,6 +46,11 @@ export interface RebarResult {
   stockByDiameter: Array<{ diameterMm: number; bars: number; weightKg: number }>;
   pieces: RebarPiece[];
   notes: string[];
+  /**
+   * Ось сети, по которой реально считался каркас (лента/балка).
+   * CalcIntegrity сверяет с geometry.stripLengthM — запрет тихих fallback.
+   */
+  axisLengthUsedM?: number;
 }
 
 function resolveLongitudinalBars(rebarSpec: RebarSpec): 4 | 6 | 8 {
@@ -108,6 +113,7 @@ export function computeRebar(
   const stockLengthM = Math.max(6, input.stockLengthM ?? REBAR_STOCK_LENGTH_MM / 1000);
   const notes: string[] = [];
   const pieces: RebarPiece[] = [];
+  let axisLengthUsedM: number | undefined;
 
   switch (structureType) {
     case 'slab': {
@@ -129,7 +135,10 @@ export function computeRebar(
     case 'strip': {
       const ribbonWidth =
         pW > 0 ? pW : Math.min(0.5, Math.max(0.3, W > 2 ? 0.4 : W));
-      const totalStripLen = Math.max(input.stripLengthM, 2 * (L + W));
+      // Только ось из геометрии. Запрещён fallback 2×(L+W) — он удваивал
+      // сплошную траншею (бетон по L×W×H, металл по фантомному периметру).
+      const totalStripLen = Math.max(0.5, input.stripLengthM);
+      axisLengthUsedM = totalStripLen;
       const longBars = resolveLongitudinalBars(rebarSpec);
       const stirrupStepM = Math.max(0.1, rebarSpec.spacingMm / 1000);
 
@@ -173,6 +182,7 @@ export function computeRebar(
     case 'beam': {
       const longBars = resolveLongitudinalBars(rebarSpec);
       const stirrupStepM = Math.max(0.1, rebarSpec.spacingMm / 1000);
+      axisLengthUsedM = L;
       const barMm = Math.max(500, Math.round((L + 2 * 0.15) * 1000));
       addPiece(pieces, 'А1', `Продольные (${longBars} шт)`, d, barMm, longBars);
       const stirrupD = Math.min(8, d);
@@ -333,6 +343,7 @@ export function computeRebar(
     stockByDiameter,
     pieces,
     notes,
+    axisLengthUsedM,
   };
 }
 

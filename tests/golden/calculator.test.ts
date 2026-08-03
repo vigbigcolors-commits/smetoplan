@@ -7,6 +7,7 @@ import {
   buildRectangleStripPlan,
   computeStripPlanMetrics,
 } from '../../src/domain/geometry';
+import { computeRectStripFootprint } from '../../src/domain/geometry/strip-path';
 import { nestPiecesToStock, stockBarsForPieces } from '../../src/domain/rebar/cutting';
 import { computeRebar } from '../../src/domain/rebar';
 import { rebarLinearDensityKgM } from '../../src/domain/norms/tables';
@@ -75,6 +76,7 @@ describe('golden: geometry', () => {
     // 40 + 2×(11.2+3.4)×2 = 40 + 58.4 = 98.4
     assert.equal(m.formworkAreaM2, 98.4);
     assert.ok(Math.abs(m.concreteVolumeRawM3 - 19.84) < 1e-9);
+    assert.equal(m.stripLengthM, 52);
 
     const g = buildGeometry('strip', {
       lengthM: 12,
@@ -87,6 +89,13 @@ describe('golden: geometry', () => {
     });
     assert.equal(g.formworkAreaM2, 98.4);
     assert.ok(Math.abs(g.concreteVolumeRawM3 - 19.84) < 1e-9);
+  });
+
+  it('solid strip footprint: axis = max(L,W), not closed perimeter', () => {
+    const m = computeRectStripFootprint(49, 0.5, 1.2, 0.5, 0, 0);
+    assert.equal(m.concreteVolumeRawM3, 29.4);
+    assert.equal(m.stripLengthM, 49);
+    assert.ok(m.stripLengthM < 2 * (49 + 0.5) - 1);
   });
 
   it('L-shape strip contour perimeter and area', () => {
@@ -408,6 +417,89 @@ describe('golden: calculateMaterials', () => {
     );
     assert.ok(Math.abs(r.rebarWeightKg - fromDia) < 1.5);
     assert.ok(r.rebarStockByDiameter.length >= 2);
+  });
+
+  it('solid strip trench 49×0.5: rebar axis = L, not phantom 2×(L+W)', () => {
+    // Регресс: бетон 49×0.5×1.2, металл раньше считал ~99 м контура.
+    const plan = buildRectangleStripPlan(49, 0.5, 0, 0);
+    const r = calculateMaterials(
+      'strip',
+      {
+        length: 49,
+        width: 0.5,
+        depth: 1.2,
+        perimeterThickeningWidth: 0.5,
+        perimeterThickeningDepth: 0,
+      },
+      { grade: 'M350', cementBagKg: 50, customPricePerM3: 6200 },
+      {
+        diameterMm: 14,
+        spacingMm: 250,
+        layers: 2,
+        longitudinalBars: 6,
+        customPricePerTon: 72000,
+      },
+      prices,
+      'metric',
+      1.0,
+      {
+        coverMm: 40,
+        stockLengthM: 11.7,
+        stripLayout: 'perimeter',
+        stripPlan: plan,
+      }
+    );
+    assert.equal(r.concreteVolumeM3, 29.4);
+    assert.equal(r.stripLengthM, 49);
+    const stirrup = r.rebarPieces.find((p) => p.mark === 'Х1')!;
+    const long = r.rebarPieces.find((p) => p.mark === 'А1')!;
+    // ceil(49/0.25)+1 = 197
+    assert.equal(stirrup.count, 197);
+    const covered = (stirrup.count - 1) * 0.25;
+    assert.ok(covered <= 49 * 1.01, `хомуты ${covered} м > оси 49 м`);
+    // 6 ниток × ceil(49/11.14) = 6×5 = 30, не 48
+    assert.equal(long.count, 30);
+    assert.ok(r.rebarWeightKg < 800, `масса ${r.rebarWeightKg} кг всё ещё завышена`);
+    const sync = r.checks.find((c) => c.id === 'integrity:strip-stirrup-span');
+    assert.ok(sync);
+    assert.equal(sync!.status, 'pass');
+    const contract = r.checks.find((c) => c.id === 'integrity:strip-axis-contract');
+    assert.ok(contract);
+    assert.equal(contract!.status, 'pass');
+    const solid = r.checks.find((c) => c.id === 'integrity:strip-solid-axis');
+    assert.ok(solid);
+    assert.equal(solid!.status, 'pass');
+  });
+
+  it('hollow strip perimeter keeps axis 2×(L+W) and passes sync check', () => {
+    const r = calculateMaterials(
+      'strip',
+      {
+        length: 12,
+        width: 8,
+        depth: 1.0,
+        perimeterThickeningWidth: 0.4,
+        perimeterThickeningDepth: 0,
+      },
+      concrete,
+      {
+        diameterMm: 12,
+        spacingMm: 250,
+        layers: 2,
+        longitudinalBars: 6,
+        customPricePerTon: 62000,
+      },
+      prices,
+      'metric',
+      1.0,
+      { coverMm: 40, stockLengthM: 11.7, stripLayout: 'perimeter' }
+    );
+    assert.equal(r.stripLengthM, 40);
+    const stirrup = r.rebarPieces.find((p) => p.mark === 'Х1')!;
+    assert.equal(stirrup.count, Math.ceil(40 / 0.25) + 1);
+    const sync = r.checks.find((c) => c.id === 'integrity:strip-stirrup-span');
+    assert.ok(sync);
+    assert.equal(sync!.status, 'pass');
   });
 
   it('pier pile-slab: slab+piles volume, perimeter formwork, mesh by spacing', () => {

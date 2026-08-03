@@ -5,6 +5,10 @@ import { computeLoads, type SnowRegionId } from '@/domain/loads';
 import { computeSoilPressure } from '@/domain/geotechnics';
 import { runEngineeringChecks, type EngineeringCheck } from '@/domain/checks';
 import {
+  auditCalculationIntegrity,
+  integrityToEngineeringChecks,
+} from '@/domain/integrity';
+import {
   COVER_DEFAULT_MM,
   DEFAULT_SOIL_RESISTANCE_KPA,
   type SoilTypeId,
@@ -162,6 +166,47 @@ export function calculateMaterials(
     soilStatus: geotech.status,
     lapMm: rebar.lapMm,
   });
+
+  const ribbonWidth =
+    structureType === 'strip'
+      ? pW > 0
+        ? pW
+        : Math.min(0.5, Math.max(0.3, W > 2 ? 0.4 : W))
+      : undefined;
+
+  const longInSection =
+    rebarSpec.longitudinalBars === 4 ||
+    rebarSpec.longitudinalBars === 6 ||
+    rebarSpec.longitudinalBars === 8
+      ? rebarSpec.longitudinalBars
+      : rebarSpec.layers >= 3
+        ? 8
+        : rebarSpec.layers >= 2
+          ? 6
+          : 4;
+
+  const integrity = auditCalculationIntegrity({
+    structureType,
+    lengthM: L,
+    widthM: W,
+    depthM: H,
+    ribbonWidthM: ribbonWidth,
+    stripLengthM: geometry.stripLengthM,
+    concreteVolumeM3: concrete.volumeM3,
+    formworkAreaM2: geometry.formworkAreaM2,
+    contactAreaM2: geometry.contactAreaM2,
+    rebarAxisLengthM: rebar.axisLengthUsedM,
+    stirrupStepMm: rebarSpec.spacingMm,
+    longitudinalBarsInSection: longInSection,
+    stockLengthM: rebar.stockLengthM,
+    lapMm: rebar.lapMm,
+    pieces: rebar.pieces,
+    rebarWeightKg: rebar.weightKg,
+    stockByDiameter: rebar.stockByDiameter,
+    safetyFactor,
+  });
+
+  checks.unshift(...integrityToEngineeringChecks(integrity));
 
   const concretePrice =
     concreteSpec.customPricePerM3 > 0
