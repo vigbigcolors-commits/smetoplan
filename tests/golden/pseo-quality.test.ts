@@ -75,15 +75,28 @@ describe('pseo quality gate — always', () => {
     if (!gate.ok) assert.equal(gate.reason, 'duplicate_fingerprint');
   });
 
-  it('rejects thin params', () => {
+  it('rejects doorway intent clusters', () => {
     const route = getDemoRouteBySlug(
       'kalkulyator-plitnogo-fundamenta-12x8-m300'
     );
     assert.ok(route);
     const input = routeToGateInput(route);
-    input.params = { ...input.params, length: 0 };
+    input.intent_cluster = 'raschet';
     const gate = evaluatePseoIndexability(input);
     assert.equal(gate.ok, false);
-    if (!gate.ok) assert.equal(gate.reason, 'thin_params');
+    if (!gate.ok) assert.equal(gate.reason, 'doorway_intent');
+  });
+
+  it('rejects doorway slug prefix even if intent mislabeled', () => {
+    const route = getDemoRouteBySlug(
+      'kalkulyator-plitnogo-fundamenta-12x8-m300'
+    );
+    assert.ok(route);
+    const input = routeToGateInput(route);
+    input.slug = 'smeta-plitnogo-fundamenta-12x8-m300-moskva';
+    input.intent_cluster = 'kalkulyator';
+    const gate = evaluatePseoIndexability(input);
+    assert.equal(gate.ok, false);
+    if (!gate.ok) assert.equal(gate.reason, 'doorway_intent');
   });
 });

@@ -1,0 +1,31 @@
+---
+description: PSEO long-tail safety — no thin content, no doorways
+alwaysApply: true
+---
+
+# PSEO / SEO safety (Smetoplan)
+
+Long-tail PSEO is a growth channel, but **safety beats volume**.
+
+## Forbidden
+- Thin / doorway pages (same calc, different intent verbs: raschet/smeta/online clones)
+- Phantom cities / missing `region_slug`
+- Pages without reinforcement params when structure needs rebar
+- Bulk `UPDATE … SET is_published = TRUE` bypassing the gate
+- Publishing without unique `paramsFingerprint` + safe SSR snapshot (FAQ ≥6, real volumes)
+- Cron bursts of 200–300+/day without explicit ops decision
+
+## Required
+- Single intent cluster: `kalkulyator` (gate rejects `doorway_intent`)
+- Canonical regions only (moskva, spb, krasnodar, ekaterinburg, novosibirsk)
+- Every indexable URL passes `evaluatePseoIndexability` (used by drip, sitemap, `[slug]`)
+- Live calc must yield `concreteVolumeM3 > 0` and useful rebar/BOM
+- Drip-feed only (`pseo:drip` / cron defaults 40–80/day) — never thousands overnight
+- After gate tighten: run `pseo:remediate` before growing the index
+
+## Commands
+- Dry-run gate+calc: `npm run pseo:verify-corpus`
+- Upsert drafts: `npm run db:generate-pseo`
+- Spot-check live index: `npm run pseo:spotcheck`
+- Unpublish unsafe: `npm run pseo:remediate`
+- Publish batch: `npm run pseo:drip` or `npm run pseo:publish-safe`

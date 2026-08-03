@@ -9,8 +9,9 @@ export const runtime = 'nodejs';
  * Auth: Authorization: Bearer $CRON_SECRET
  * Schedule (host/cron): 0 4 * * * curl -H "Authorization: Bearer ..." /api/cron/drip-feed
  *
- * Publishes exactly 200–300 routes/day and writes sitemap_builds audit row.
+ * Publishes 40–80 routes/day (override via DRIP_MIN/MAX) through the quality gate.
  * Unpublished routes keep returning 404 from /kalkulyator/[slug].
+ * Never raise defaults into the hundreds overnight — thin/doorway risk.
  */
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
@@ -26,8 +27,8 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const min = Number(process.env.DRIP_MIN || 200);
-  const max = Number(process.env.DRIP_MAX || 300);
+  const min = Number(process.env.DRIP_MIN || 40);
+  const max = Number(process.env.DRIP_MAX || 80);
 
   try {
     const result = await dripFeedPublish(min, max);

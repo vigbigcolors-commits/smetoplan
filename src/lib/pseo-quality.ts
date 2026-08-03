@@ -18,6 +18,7 @@ const NEEDS_REBAR = new Set<StructureType>(['slab', 'strip', 'pier', 'wall', 'be
 
 export type PseoGateReason =
   | 'hub_reserved'
+  | 'doorway_intent'
   | 'thin_params'
   | 'missing_region'
   | 'missing_region_and_rebar'
@@ -30,9 +31,13 @@ export type PseoGateReason =
   | 'weak_faq'
   | 'weak_snapshot';
 
+/** Only one intent cluster is indexable — raschet/smeta/online are doorway clones. */
+export const INDEXABLE_INTENT = 'kalkulyator' as const;
+
 export type PseoGateInput = {
   slug: string;
   structure_type: StructureType;
+  intent_cluster?: string | null;
   params: PseoRouteParams;
   region_slug: string | null;
   title_template: string;
@@ -112,6 +117,7 @@ export function routeToGateInput(route: PseoRoute): PseoGateInput {
   return {
     slug: route.slug,
     structure_type: route.structure_type,
+    intent_cluster: route.intent_cluster,
     params: route.params,
     region_slug: route.region_slug,
     title_template: route.title_template,
@@ -131,6 +137,18 @@ export function evaluatePseoStructureGate(
 ): { ok: true; fingerprint: string } | { ok: false; reason: PseoGateReason } {
   if (isReservedHubSlug(row.slug)) {
     return { ok: false, reason: 'hub_reserved' };
+  }
+
+  const intent = (row.intent_cluster || '').toLowerCase();
+  if (intent && intent !== INDEXABLE_INTENT) {
+    return { ok: false, reason: 'doorway_intent' };
+  }
+  // Slug-level doorway verbs even if DB intent was mislabeled.
+  if (
+    /^(raschet|smeta|online)(-|$)/i.test(row.slug) ||
+    /^online-kalkulyator-/i.test(row.slug)
+  ) {
+    return { ok: false, reason: 'doorway_intent' };
   }
 
   const p = row.params;
