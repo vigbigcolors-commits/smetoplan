@@ -224,7 +224,6 @@ export default function ConstructixApp({
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- boot once
   }, []);
 
   // Wall: если подошва не задана (старый черновик / 0) — синхронизируем state с верхом,

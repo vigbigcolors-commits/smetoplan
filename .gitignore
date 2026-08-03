@@ -21,4 +21,5 @@ next-env.d.ts
 
 tsconfig.tsbuildinfo
 .vercel
-.env*
+.env.production
+.env.development
