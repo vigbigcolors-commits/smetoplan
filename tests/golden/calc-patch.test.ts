@@ -169,13 +169,35 @@ describe('calc-patch extractor', () => {
     assert.equal(shouldAutoApplyParams(text, [], patch), true);
   });
 
-  it('rejects LLM-style 40×0.5×1.2 strip prism as closed perimeter', () => {
-    const text = `ленточный фундамент замкнутый периметр длина 40 м ширина 0.5 м высота 1.2 м`;
+  it('seismic column / pylon TZ → beam 6×0.4×0.4, 8 bars, stirrups Ø10', () => {
+    const text = `
+Сейсмическая колонна / Пилон
+Габариты (Д × Ш × В): 6.0 × 0.4 × 0.4 м
+Защитный слой: 40 мм
+Продольная арматура: Ø25 мм (A500C), 8 стержней по периметру сечения
+Поперечная: хомуты Ø10, шаг 100 мм
+Запас объёма: 0%. Хлыст 11.7 м.
+Поставь сам в калькулятор.
+`;
     const patch = extractCalcPatchFromText(text);
-    assert.equal(patch.structureType, 'strip');
-    assert.equal(patch.lengthM, 12);
-    assert.equal(patch.widthM, 8);
-    assert.equal(patch.ribWidthM, 0.5);
-    assert.equal(patch.depthM, 1.2);
+    assert.equal(patch.structureType, 'beam');
+    assert.equal(patch.lengthM, 6);
+    assert.equal(patch.widthM, 0.4);
+    assert.equal(patch.depthM, 0.4);
+    assert.equal(patch.ribWidthM, 0);
+    assert.equal(patch.ribDepthM, 0);
+    assert.equal(patch.coverMm, 40);
+    assert.equal(patch.diameterMm, 25);
+    assert.equal(patch.longitudinalBars, 8);
+    assert.equal(patch.stirrupDiameterMm, 10);
+    assert.equal(patch.spacingMm, 100);
+    assert.equal(patch.safetyFactor, 1);
+    assert.equal(patch.stockLengthM, 11.7);
+    assert.equal(shouldAutoApplyParams(text, [], patch), true);
+    const lines = describeCalcPatch(patch);
+    assert.ok(lines.some((l) => /8 прод/i.test(l)));
+    assert.ok(lines.some((l) => /хомуты Ø10/i.test(l)));
+    assert.ok(!lines.some((l) => /Рёбра/i.test(l)));
+    assert.ok(!lines.some((l) => /слоёв —/i.test(l)));
   });
 });

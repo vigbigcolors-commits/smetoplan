@@ -61,9 +61,10 @@ ${SMETOPLAN_PLATFORM_BRIEF}
    - ЗАПРЕЩЕНО говорить «я не могу вносить значения», «доступно только вам», «введите вручную».
    - Если пользователь дал габариты / рёбра / a / Ø / шаг / слои / запас / эталон — СРАЗУ заполни APPLY всеми полями.
    - Если просит «поставь / примени / сам / эталон» — тоже APPLY, без инструкций «кликните тут».
-   - В APPLY: lengthM, widthM, depthM, ribWidthM, ribDepthM, coverMm, diameterMm, spacingMm, layers, safetyFactor (1.0 = 0%), stockLengthM, structureType, concreteGrade.
-   - structureType: slab | strip | beam | pier | wall. «Свайно-плитный / сваи / ростверк» → pier (НЕ slab). «Монолитная плита» без свай → slab.
+   - В APPLY: lengthM, widthM, depthM, ribWidthM, ribDepthM, coverMm, diameterMm, spacingMm, layers, longitudinalBars, stirrupDiameterMm, safetyFactor (1.0 = 0%), stockLengthM, structureType, concreteGrade.
+   - structureType: slab | strip | beam | pier | wall. «Свайно-плитный / сваи / ростверк» → pier (НЕ slab). «Монолитная плита» без свай → slab. «Колонна / пилон / ригель / балка» → beam.
    - Для pier: depthM = глубина свай (м), ribWidthM = диаметр/сечение сваи (м), ribDepthM = толщина плиты/ростверка (м).
+   - Для beam/колонны: ribWidthM=0, ribDepthM=0. Продольные → longitudinalBars (4|6|8). Хомуты → stirrupDiameterMm + spacingMm.
    - Для wall: lengthM=длина, depthM=высота, widthM=толщина ВЕРХА, ribWidthM=толщина ПОДОШВЫ (трапеция), ribDepthM=0. НЕ путать с рёбрами плиты.
    - Пример wall APPLY: {"structureType":"wall","lengthM":12,"widthM":0.3,"depthM":2.5,"ribWidthM":0.5,"ribDepthM":0,"coverMm":40,"diameterMm":16,"spacingMm":200,"layers":2,"safetyFactor":1}
 6) В тексте ответа пиши: «Проставил в калькулятор: …» и кратко что изменилось. Не учи кликать.
@@ -94,6 +95,7 @@ function parseApplyBlock(text: string): AiCalcPatch | undefined {
       'spacingMm',
       'safetyFactor',
       'stockLengthM',
+      'stirrupDiameterMm',
     ];
     for (const k of numKeys) {
       const v = raw[k];
@@ -108,6 +110,16 @@ function parseApplyBlock(text: string): AiCalcPatch | undefined {
     } else if (raw.layers != null) {
       const n = Number(raw.layers);
       if (n === 1 || n === 2 || n === 3) patch.layers = n;
+    }
+    if (
+      raw.longitudinalBars === 4 ||
+      raw.longitudinalBars === 6 ||
+      raw.longitudinalBars === 8
+    ) {
+      patch.longitudinalBars = raw.longitudinalBars;
+    } else if (raw.longitudinalBars != null) {
+      const n = Number(raw.longitudinalBars);
+      if (n === 4 || n === 6 || n === 8) patch.longitudinalBars = n;
     }
     const st = String(raw.structureType || '');
     if (['slab', 'strip', 'beam', 'pier', 'wall'].includes(st)) {

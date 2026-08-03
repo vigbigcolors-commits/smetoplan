@@ -28,6 +28,8 @@ export interface RebarSpec {
   layers: 1 | 2 | 3;
   /** Продольные стержни каркаса ленты/балки (типично 4 / 6 / 8). */
   longitudinalBars?: 4 | 6 | 8;
+  /** Хомуты ленты/балки/колонны; иначе min(8, рабочий Ø). */
+  stirrupDiameterMm?: number;
   customPricePerTon: number;
 }
 

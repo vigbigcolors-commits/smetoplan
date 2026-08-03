@@ -11,7 +11,7 @@ const STRUCTURE_RE: Array<{ re: RegExp; type: StructureType }> = [
   // pier раньше slab: «свайно-плитный» содержит «плит» и иначе уезжает в монолит.
   { re: /свайн\w*|свайн[оа][-\s]?плит|ростверк|\bpier\b|свай/i, type: 'pier' },
   { re: /лент/i, type: 'strip' },
-  { re: /балк|колонн/i, type: 'beam' },
+  { re: /балк|колонн|пилон|ригел|стоечн/i, type: 'beam' },
   { re: /подпорн|стен/i, type: 'wall' },
   { re: /плит|монолит/i, type: 'slab' },
 ];
@@ -261,7 +261,7 @@ export function extractCalcPatchFromText(text: string): AiCalcPatch {
   // Рабочая / вертикальная Ø и шаг — приоритетнее первого попавшегося Ø.
   const workingDia = firstMatch(
     text,
-    /(?:рабоч\S{0,20}|вертикальн\S{0,20}|основн\S{0,20})[^Øø⌀\n]{0,60}[Øø⌀]\s*(\d+(?:[.,]\d+)?)/i
+    /(?:рабоч\S{0,20}|вертикальн\S{0,20}|основн\S{0,20}|продольн\S{0,20})[^Øø⌀\n]{0,60}[Øø⌀]\s*(\d+(?:[.,]\d+)?)/i
   );
   const dia = workingDia
     ? workingDia
@@ -296,16 +296,26 @@ export function extractCalcPatchFromText(text: string): AiCalcPatch {
   const longBars =
     firstMatch(
       text,
-      /(\d+)\s*(?:продольн\S{0,12}|стержн\S{0,8}\s*в\s*сечени)/i
+      /(\d+)\s*(?:продольн\S{0,12}|стержн\S{0,8}\s*(?:в\s*сечени|по\s*периметр))/i
     ) ||
     firstMatch(
       text,
-      /[Øø⌀]\s*\d+(?:[.,]\d+)?[^\n]{0,60}?(\d+)\s*стерж/i
+      /[Øø⌀]\s*\d+(?:[.,]\d+)?[^\n]{0,80}?(\d+)\s*стерж/i
     ) ||
-    firstMatch(text, /(\d+)\s*стержн\S{0,8}\s*\([^)]*(?:верх|низ|пояс)/i);
+    firstMatch(text, /(\d+)\s*стержн\S{0,8}\s*\([^)]*(?:верх|низ|пояс)/i) ||
+    firstMatch(text, /(\d+)\s*стержн/i);
   if (longBars) {
     const n = Number(longBars[1]);
     if (n === 4 || n === 6 || n === 8) patch.longitudinalBars = n;
+  }
+
+  const stirrupDia = firstMatch(
+    text,
+    /(?:хомут\S{0,16}|поперечн\S{0,20})[^Øø⌀\n]{0,40}[Øø⌀]\s*(\d+(?:[.,]\d+)?)/i
+  );
+  if (stirrupDia) {
+    const d = num(stirrupDia[1]);
+    if (d != null && d >= 6 && d <= 16) patch.stirrupDiameterMm = d;
   }
 
   const workingStep = firstMatch(
@@ -418,10 +428,10 @@ export function extractCalcPatchFromText(text: string): AiCalcPatch {
     }
   }
 
-  // Плита без рёбер в тексте — сбрасываем старые рёбра из UI (иначе 675 → 675+рёбра).
-  // Ленту / балку / стену / сваи не трогаем: ribWidthM = ширина ленты / Ø сваи / подошва.
+  // Плита / балка-колонна без рёбер в тексте — сбрасываем старые рёбра из UI.
+  // Ленту / стену / сваи не трогаем: ribWidthM = ширина ленты / Ø сваи / подошва.
   if (
-    patch.structureType === 'slab' &&
+    (patch.structureType === 'slab' || patch.structureType === 'beam') &&
     !/р[её]бр/i.test(text)
   ) {
     patch.ribWidthM = 0;
@@ -493,18 +503,36 @@ export function describeCalcPatch(patch: AiCalcPatch): string[] {
       `Габариты: ${patch.lengthM} × ${patch.widthM} × ${patch.depthM} м`
     );
   }
-  if (!isWall && (patch.ribWidthM != null || patch.ribDepthM != null)) {
+  if (!isWall && !isPier && (patch.ribWidthM != null || patch.ribDepthM != null)) {
+    const rw = patch.ribWidthM ?? 0;
+    const rd = patch.ribDepthM ?? 0;
+    if (rw > 0 || rd > 0) {
+      lines.push(`Рёбра: ${patch.ribWidthM ?? '—'} × ${patch.ribDepthM ?? '—'} м`);
+    }
+  }
+  if (isPier && (patch.ribWidthM != null || patch.ribDepthM != null)) {
     lines.push(
-      isPier
-        ? `Свая Ø/плита: ${patch.ribWidthM ?? '—'} / ${patch.ribDepthM ?? '—'} м`
-        : `Рёбра: ${patch.ribWidthM ?? '—'} × ${patch.ribDepthM ?? '—'} м`
+      `Свая Ø/плита: ${patch.ribWidthM ?? '—'} / ${patch.ribDepthM ?? '—'} м`
     );
   }
   if (patch.coverMm != null) lines.push(`Защитный слой: ${patch.coverMm} мм`);
-  if (patch.diameterMm != null || patch.spacingMm != null || patch.layers != null) {
-    lines.push(
-      `Арматура: Ø${patch.diameterMm ?? '—'}, шаг ${patch.spacingMm ?? '—'} мм, слоёв ${patch.layers ?? '—'}`
-    );
+  if (
+    patch.diameterMm != null ||
+    patch.spacingMm != null ||
+    patch.layers != null ||
+    patch.longitudinalBars != null ||
+    patch.stirrupDiameterMm != null
+  ) {
+    const parts = [
+      `Ø${patch.diameterMm ?? '—'}`,
+      patch.longitudinalBars != null ? `${patch.longitudinalBars} прод.` : null,
+      patch.stirrupDiameterMm != null
+        ? `хомуты Ø${patch.stirrupDiameterMm}`
+        : null,
+      `шаг ${patch.spacingMm ?? '—'} мм`,
+      patch.layers != null ? `слоёв ${patch.layers}` : null,
+    ].filter(Boolean);
+    lines.push(`Арматура: ${parts.join(', ')}`);
   }
   if (patch.safetyFactor != null) {
     const pct = Math.round((patch.safetyFactor - 1) * 1000) / 10;
@@ -553,7 +581,7 @@ export function patchToSuggestions(patch: AiCalcPatch): AiSuggestion[] {
       patch.depthM,
       'Из задания'
     );
-  if (patch.ribWidthM != null)
+  if (patch.ribWidthM != null && (isWall || patch.ribWidthM > 0))
     push(
       'ribW',
       isWall
@@ -563,7 +591,7 @@ export function patchToSuggestions(patch: AiCalcPatch): AiSuggestion[] {
       patch.ribWidthM,
       isWall ? 'Трапеция подпорной стены' : 'Рёбра жёсткости'
     );
-  if (patch.ribDepthM != null && !isWall)
+  if (patch.ribDepthM != null && !isWall && patch.ribDepthM > 0)
     push(
       'ribD',
       `Ребро высота: ${patch.ribDepthM} м`,

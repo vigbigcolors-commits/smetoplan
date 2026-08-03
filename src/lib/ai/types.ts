@@ -43,6 +43,7 @@ export interface AiCalcPatch {
   spacingMm?: number;
   layers?: 1 | 2 | 3;
   longitudinalBars?: 4 | 6 | 8;
+  stirrupDiameterMm?: number;
   safetyFactor?: number;
   stockLengthM?: number;
   concreteGrade?: 'M150' | 'M200' | 'M250' | 'M300' | 'M350' | 'M400';

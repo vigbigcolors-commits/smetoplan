@@ -145,14 +145,25 @@ export function buildGeometry(
       };
     }
     case 'beam': {
+      // Квадратное сечение (колонна/пилон): 4 грани. Прямоугольная балка: низ+2 бока.
+      const nearlySquare =
+        Math.abs(W - H) / Math.max(W, H, 1e-6) <= 0.08;
+      const formworkAreaM2 = nearlySquare
+        ? 4 * ((W + H) / 2) * L
+        : (2 * H + W) * L;
+      notes.push(
+        nearlySquare
+          ? 'Колонна/пилон: призматический объём, опалубка 4 грани'
+          : 'Балка/ригель: призматический объём, опалубка низ+2 бока'
+      );
       return {
         concreteVolumeRawM3: L * W * H,
-        formworkAreaM2: (2 * H + W) * L,
+        formworkAreaM2,
         contactAreaM2: L * W,
         stripLengthM: 0,
         pierCount: 0,
         ...emptyAxes,
-        notes: ['Балка/ригель: призматический объём'],
+        notes,
       };
     }
     case 'pier': {

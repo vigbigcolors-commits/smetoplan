@@ -106,12 +106,18 @@ function isRebar(v: unknown): v is RebarSpec {
     r.longitudinalBars === 4 ||
     r.longitudinalBars === 6 ||
     r.longitudinalBars === 8;
+  const stirrupOk =
+    r.stirrupDiameterMm == null ||
+    (isFiniteNumber(r.stirrupDiameterMm) &&
+      r.stirrupDiameterMm >= 6 &&
+      r.stirrupDiameterMm <= 16);
   return (
     isFiniteNumber(r.diameterMm) &&
     isFiniteNumber(r.spacingMm) &&
     (r.layers === 1 || r.layers === 2 || r.layers === 3) &&
     isFiniteNumber(r.customPricePerTon) &&
-    longOk
+    longOk &&
+    stirrupOk
   );
 }
 

@@ -62,6 +62,24 @@ function resolveLongitudinalBars(rebarSpec: RebarSpec): 4 | 6 | 8 {
   return 4;
 }
 
+function resolveStirrupDiameterMm(rebarSpec: RebarSpec, workingDiaMm: number): number {
+  const s = rebarSpec.stirrupDiameterMm;
+  if (typeof s === 'number' && Number.isFinite(s) && s >= 6 && s <= 16) {
+    return Math.round(s);
+  }
+  return Math.min(8, workingDiaMm);
+}
+
+function stirrupCountAlong(lengthM: number, stepM: number): number {
+  const step = Math.max(0.05, stepM);
+  // Точный кратный шаг: L/s (6 м / 0.1 → 60). Иначе floor(L/s)+1.
+  const exact = lengthM / step;
+  if (Math.abs(exact - Math.round(exact)) < 1e-6) {
+    return Math.max(2, Math.round(exact));
+  }
+  return Math.max(2, Math.floor(exact) + 1);
+}
+
 function stirrupPerimeterMm(
   sectionWidthM: number,
   sectionHeightM: number,
@@ -159,7 +177,7 @@ export function computeRebar(
       );
 
       // Хомуты: замкнутый прямоугольник по сечению ленты с учётом a и крюков.
-      const stirrupD = Math.min(8, d);
+      const stirrupD = resolveStirrupDiameterMm(rebarSpec, d);
       const stirrupMm = stirrupPerimeterMm(ribbonWidth, H, coverM, stirrupD);
       const stirrupsCount = Math.max(
         2,
@@ -185,9 +203,9 @@ export function computeRebar(
       axisLengthUsedM = L;
       const barMm = Math.max(500, Math.round((L + 2 * 0.15) * 1000));
       addPiece(pieces, 'А1', `Продольные (${longBars} шт)`, d, barMm, longBars);
-      const stirrupD = Math.min(8, d);
+      const stirrupD = resolveStirrupDiameterMm(rebarSpec, d);
       const stirrupMm = stirrupPerimeterMm(W, H, coverM, stirrupD);
-      const stirrupsCount = Math.max(2, Math.ceil(L / stirrupStepM) + 1);
+      const stirrupsCount = stirrupCountAlong(L, stirrupStepM);
       addPiece(
         pieces,
         'Х1',

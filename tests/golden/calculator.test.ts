@@ -623,6 +623,50 @@ describe('golden: formwork pour acceptance', () => {
   });
 });
 
+describe('golden: seismic column / pylon etalon', () => {
+  it('6×0.4×0.4 → 0.96 м³, 9.6 м² formwork, 8×Ø25 + 60×Ø10 stirrups', () => {
+    const geo = buildGeometry('beam', {
+      lengthM: 6,
+      widthM: 0.4,
+      depthM: 0.4,
+      auxWidthM: 0,
+      auxDepthM: 0,
+    });
+    assert.ok(Math.abs(geo.concreteVolumeRawM3 - 0.96) < 1e-9);
+    assert.ok(Math.abs(geo.formworkAreaM2 - 9.6) < 1e-9);
+
+    const rb = computeRebar(
+      'beam',
+      {
+        diameterMm: 25,
+        spacingMm: 100,
+        layers: 1,
+        longitudinalBars: 8,
+        stirrupDiameterMm: 10,
+        customPricePerTon: 62000,
+      },
+      {
+        lengthM: 6,
+        widthM: 0.4,
+        depthM: 0.4,
+        auxWidthM: 0,
+        auxDepthM: 0,
+        coverMm: 40,
+        stockLengthM: 11.7,
+      }
+    );
+    const long = rb.pieces.find((p) => /продольн/i.test(p.role));
+    const stirrup = rb.pieces.find((p) => /хомут/i.test(p.role));
+    assert.ok(long);
+    assert.equal(long!.count, 8);
+    assert.equal(long!.diameterMm, 25);
+    assert.ok(stirrup);
+    assert.equal(stirrup!.count, 60);
+    assert.equal(stirrup!.diameterMm, 10);
+    assert.ok(stirrup!.lengthMm >= 1400 && stirrup!.lengthMm <= 1500);
+  });
+});
+
 describe('golden: regional supply', () => {
   it('uses real regional unit prices × calc qty', async () => {
     const { buildRegionalSupplySnapshot } = await import('../../src/domain/markets');

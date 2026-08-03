@@ -796,7 +796,8 @@ export default function ConstructixApp({
       patch.diameterMm != null ||
       patch.spacingMm != null ||
       patch.layers != null ||
-      patch.longitudinalBars != null
+      patch.longitudinalBars != null ||
+      patch.stirrupDiameterMm != null
     ) {
       setRebarSpec((prev) => ({
         ...prev,
@@ -805,6 +806,9 @@ export default function ConstructixApp({
         ...(patch.layers != null ? { layers: patch.layers } : {}),
         ...(patch.longitudinalBars != null
           ? { longitudinalBars: patch.longitudinalBars }
+          : {}),
+        ...(patch.stirrupDiameterMm != null
+          ? { stirrupDiameterMm: patch.stirrupDiameterMm }
           : {}),
       }));
     }
