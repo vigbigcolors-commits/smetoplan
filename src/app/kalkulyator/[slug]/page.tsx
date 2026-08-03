@@ -202,6 +202,8 @@ export default async function PseoCalculatorPage({ params }: PageProps) {
           },
           prices: prices ?? undefined,
           priceRegionId: region?.priceId,
+          coverMm: state.coverMm,
+          stockLengthM: 11.7,
           deferHeavyUi: true,
           h1: undefined,
           description: undefined,

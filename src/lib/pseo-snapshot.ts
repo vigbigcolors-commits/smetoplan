@@ -1,3 +1,9 @@
+/**
+ * PSEO SSR snapshot — ALWAYS live from calculateMaterials.
+ * Never freeze volumes/rebar/formwork in DB: DB holds route params only.
+ * When the calc kernel changes, every indexable leaf picks it up on next request.
+ */
+
 import {
   calculateMaterials,
   formatCurrency,
@@ -11,6 +17,9 @@ import {
 } from '@/lib/pseo-content';
 import { DEFAULT_PSEO_PRICES, resolvePseoRegion } from '@/lib/pseo-region';
 import type { PseoRoute, StructureType } from '@/lib/types';
+
+/** Bump when snapshot contract changes; leaves stay live via calculateMaterials. */
+export const PSEO_CALC_BRIDGE = 'live-calculateMaterials' as const;
 
 const STRUCTURE_RU: Record<
   StructureType,
@@ -29,7 +38,7 @@ const STRUCTURE_RU: Record<
   beam: {
     nom: 'монолитная балка',
     gen: 'монолитной балки',
-    tip: 'Для балки важны пролёт, высота сечения и шаг хомутов у опор — сметный расчёт не заменяет КЖ.',
+    tip: 'Для балки/колонны важны сечение, продольные стержни и шаг хомутов. Квадратное сечение в модели — опалубка по 4 граням (колонна/пилон).',
   },
   pier: {
     nom: 'свайный фундамент',
@@ -68,7 +77,34 @@ export type PseoSnapshot = {
   disclaimer: string;
   calculation: ExtendedCalculationResult;
   guideNote: string;
+  /** Always live engine — not a DB-cached volume. */
+  calcBridge: typeof PSEO_CALC_BRIDGE;
 };
+
+function rebarFaqLine(
+  route: PseoRoute,
+  calculation: ExtendedCalculationResult
+): string {
+  const p = route.params;
+  const long =
+    p.long_bars === 4 || p.long_bars === 6 || p.long_bars === 8
+      ? p.long_bars
+      : p.layers >= 3
+        ? 8
+        : p.layers >= 2
+          ? 6
+          : 4;
+  const stirrup =
+    typeof p.stirrup_d === 'number' && p.stirrup_d >= 6
+      ? `хомуты Ø${p.stirrup_d} мм, `
+      : '';
+
+  if (route.structure_type === 'beam' || route.structure_type === 'strip') {
+    return `Каркас Ø${p.rebar_d} мм, ${long} продольных, ${stirrup}шаг хомутов ${p.rebar_step} мм. Масса ≈ ${calculation.rebarWeightKg} кг; ориентир по хлыстам 11,7 м: ${calculation.rebarStockBarsApprox} шт (отход ~${calculation.rebarWastePct}%). Защитный слой ≈ ${calculation.coverMm} мм.`;
+  }
+
+  return `Каркас Ø${p.rebar_d} мм, шаг ${p.rebar_step} мм, слоёв: ${p.layers}. Масса ≈ ${calculation.rebarWeightKg} кг; ориентир по хлыстам 11,7 м: ${calculation.rebarStockBarsApprox} шт (отход ~${calculation.rebarWastePct}%). Защитный слой ≈ ${calculation.coverMm} мм.`;
+}
 
 export function buildPseoSnapshot(route: PseoRoute): PseoSnapshot {
   const state = paramsToCalculatorState(route.params);
@@ -84,6 +120,7 @@ export function buildPseoSnapshot(route: PseoRoute): PseoSnapshot {
     customPricePerTon: prices.rebarPerTon,
   };
 
+  // Live kernel only — same path as /kalkulyator. No frozen DB volumes.
   const calculation = calculateMaterials(
     route.structure_type,
     state.dimensions,
@@ -93,8 +130,9 @@ export function buildPseoSnapshot(route: PseoRoute): PseoSnapshot {
     'metric',
     1.15,
     {
-      coverMm: 40,
+      coverMm: state.coverMm,
       soilResistanceKpa: 250,
+      stockLengthM: 11.7,
     }
   );
 
@@ -116,7 +154,7 @@ export function buildPseoSnapshot(route: PseoRoute): PseoSnapshot {
         ? `Какая арматура заложена для ${dimsLabel}?`
         : `Есть ли арматура в этом расчёте?`,
       a: hasRebar
-        ? `Каркас Ø${route.params.rebar_d} мм, шаг ${route.params.rebar_step} мм, слоёв: ${route.params.layers}. Масса ≈ ${calculation.rebarWeightKg} кг; ориентир по хлыстам 11,7 м: ${calculation.rebarStockBarsApprox} шт (отход ~${calculation.rebarWastePct}%). Защитный слой ≈ ${calculation.coverMm} мм.`
+        ? rebarFaqLine(route, calculation)
         : `В этой конфигурации армирование отключено (только бетон и опалубка). Для несущих конструкций включите диаметр и слои в калькуляторе.`,
     },
     {
@@ -163,10 +201,11 @@ export function buildPseoSnapshot(route: PseoRoute): PseoSnapshot {
     sections: [],
     longTail: { sections: [], extraFaqs: [], breadcrumbsLabel: '' },
     disclaimer: region
-      ? `Результат — сметная оценка для «${region.label}». Не заменяет раздел КЖ, расчёт оснований и коммерческое предложение поставщика.`
-      : 'Результат — сметная оценка материалов и ориентиры по нормам. Не заменяет раздел КЖ, расчёт оснований и коммерческое предложение поставщика.',
+      ? `Результат — сметная оценка для «${region.label}» (живой расчёт ядра калькулятора). Не заменяет раздел КЖ, расчёт оснований и коммерческое предложение поставщика.`
+      : 'Результат — сметная оценка материалов и ориентиры по нормам (живой расчёт ядра калькулятора). Не заменяет раздел КЖ, расчёт оснований и коммерческое предложение поставщика.',
     calculation,
     guideNote: st.tip,
+    calcBridge: PSEO_CALC_BRIDGE,
   };
 
   const longTail = buildLongTailPack({

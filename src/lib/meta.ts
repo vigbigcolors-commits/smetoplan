@@ -2,9 +2,16 @@ import type {
   ConcreteSpec,
   IntentCluster,
   PseoRouteParams,
+  RebarSpec,
   StructureType,
 } from './types';
 import { resolvePseoRegion } from '@/lib/pseo-region';
+
+function layersToLongBars(layers: 1 | 2 | 3): 4 | 6 | 8 {
+  if (layers >= 3) return 8;
+  if (layers >= 2) return 6;
+  return 4;
+}
 
 const INTENT_VERBS: Record<IntentCluster, string[]> = {
   kalkulyator: ['Калькулятор', 'Онлайн-калькулятор', 'Интерактивный расчёт'],
@@ -92,16 +99,31 @@ export function paramsToCalculatorState(params: PseoRouteParams): {
     perimeterThickeningDepth: number;
   };
   concreteSpec: ConcreteSpec;
-  rebarSpec: {
-    diameterMm: number;
-    spacingMm: number;
-    layers: 1 | 2 | 3;
-    customPricePerTon: number;
-  };
+  rebarSpec: RebarSpec;
+  coverMm: number;
 } {
   const rawLayers = params.layers > 0 ? params.layers : 1;
   const layers = Math.min(3, Math.max(1, rawLayers)) as 1 | 2 | 3;
   const diameterMm = params.rebar_d > 0 ? params.rebar_d : 12;
+  const longBars =
+    params.long_bars === 4 || params.long_bars === 6 || params.long_bars === 8
+      ? params.long_bars
+      : layersToLongBars(layers);
+  const stirrup =
+    typeof params.stirrup_d === 'number' &&
+    Number.isFinite(params.stirrup_d) &&
+    params.stirrup_d >= 6 &&
+    params.stirrup_d <= 16
+      ? Math.round(params.stirrup_d)
+      : undefined;
+  const coverMm =
+    typeof params.cover_mm === 'number' &&
+    Number.isFinite(params.cover_mm) &&
+    params.cover_mm >= 20 &&
+    params.cover_mm <= 80
+      ? params.cover_mm
+      : 40;
+
   return {
     dimensions: {
       length: params.length,
@@ -119,7 +141,10 @@ export function paramsToCalculatorState(params: PseoRouteParams): {
       diameterMm,
       spacingMm: params.rebar_step || 200,
       layers,
+      longitudinalBars: longBars,
+      ...(stirrup != null ? { stirrupDiameterMm: stirrup } : {}),
       customPricePerTon: 0,
     },
+    coverMm,
   };
 }

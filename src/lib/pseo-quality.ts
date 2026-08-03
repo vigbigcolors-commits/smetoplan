@@ -61,6 +61,8 @@ export function paramsFingerprint(row: {
     Number(p.rebar_d ?? 0),
     Number(p.rebar_step ?? 0),
     Number(p.layers ?? 0),
+    Number(p.long_bars ?? 0),
+    Number(p.stirrup_d ?? 0),
     region?.slug || '',
   ].join('|');
 }

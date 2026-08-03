@@ -103,6 +103,11 @@ export interface PseoRouteParams {
   rebar_d: number;
   rebar_step: number;
   layers: number;
+  /** Лента/балка/колонна: число продольных в сечении (иначе из layers). */
+  long_bars?: 4 | 6 | 8;
+  /** Лента/балка: Ø хомутов мм. */
+  stirrup_d?: number;
+  cover_mm?: number;
   pW?: number;
   pH?: number;
   ribbon_w?: number;
@@ -140,6 +145,8 @@ export interface ConstructixInitialState {
   prices?: MaterialPrices;
   priceRegionId?: string;
   safetyFactor?: number;
+  coverMm?: number;
+  stockLengthM?: number;
   h1?: string;
   description?: string;
   /** PSEO landing: defer 3D + disable sticky CAD for LCP */

@@ -133,8 +133,12 @@ export default function ConstructixApp({
   );
   const [stripPlanCustom, setStripPlanCustom] = useState(false);
   const [pierSpacingM, setPierSpacingM] = useState(2.5);
-  const [coverMm, setCoverMm] = useState(COVER_DEFAULT_MM);
-  const [stockLengthM, setStockLengthM] = useState(11.7);
+  const [coverMm, setCoverMm] = useState(
+    boot.coverMm != null && boot.coverMm >= 20 ? boot.coverMm : COVER_DEFAULT_MM
+  );
+  const [stockLengthM, setStockLengthM] = useState(
+    boot.stockLengthM != null && boot.stockLengthM >= 6 ? boot.stockLengthM : 11.7
+  );
   const [buildingDeadLoadKpa, setBuildingDeadLoadKpa] = useState(0);
   const [liveLoadKpa, setLiveLoadKpa] = useState(0);
   const [priceRegionId, setPriceRegionId] = useState<PriceRegionId>(() => {

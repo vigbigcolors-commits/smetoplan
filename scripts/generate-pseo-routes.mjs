@@ -133,6 +133,19 @@ async function main() {
                 `${rb.layers} слоя: объём бетона, опалубка и смета ${region.locative}. ` +
                 `Справочные цены Smetoplan, не оферта РБУ. Методика и disclaimer на сайте.`;
 
+              const longBars =
+                st.type === 'beam' || st.type === 'strip'
+                  ? rb.layers >= 3
+                    ? 8
+                    : rb.layers >= 2
+                      ? 6
+                      : 4
+                  : undefined;
+              const stirrupD =
+                st.type === 'beam' || st.type === 'strip'
+                  ? Math.min(10, Math.max(6, rb.d - 4))
+                  : undefined;
+
               const params = {
                 length: L,
                 width: W,
@@ -141,6 +154,9 @@ async function main() {
                 rebar_d: rb.d,
                 rebar_step: rb.step,
                 layers: rb.layers,
+                ...(longBars != null ? { long_bars: longBars } : {}),
+                ...(stirrupD != null ? { stirrup_d: stirrupD } : {}),
+                cover_mm: 40,
                 pW: st.type === 'slab' ? 0.5 : st.type === 'strip' ? 0.4 : st.type === 'pier' ? 0.4 : 0,
                 pH: st.type === 'slab' ? 0.3 : st.type === 'pier' ? 0.4 : 0,
               };
