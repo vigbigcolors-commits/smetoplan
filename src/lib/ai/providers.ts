@@ -1,7 +1,7 @@
 /**
  * AI provider chain for Smetoplan:
- * 1) Gemini Pro (GEMINI_API_KEY)
- * 2) DeepSeek Reasoner / R1-class (DEEPSEEK_API_KEY)
+ * 1) DeepSeek Chat (DEEPSEEK_API_KEY) — fast, never Reasoner by default
+ * 2) Gemini (GEMINI_API_KEY)
  * 3) Local deterministic advisor from calcContext (always available)
  */
 
@@ -52,9 +52,10 @@ ${SMETOPLAN_PLATFORM_BRIEF}
 
 Правила:
 1) Опирайся на calcContext + карту страницы. Не выдумывай объёмы, заводы, скидки, «соответствует СП».
+1b) ЛЕНТА: в Smetoplan объём = площадь бетона×H (углы БЕЗ двойного счёта), НЕ «ось×ширина×H». Опалубка = (наружный периметр + периметры пустот)×H. Если в calcContext уже есть м³/м² — цитируй ИХ, не пересчитывай «эталон 40×0.5×1.2=24».
 2) Если спрашивают «где / как открыть / найди» — назови блок и дай scrollTo на якорь.
 3) Если вопрос про расчёт — используй цифры из calcContext (м³, кг, σ, R%, a, раскрой).
-4) Предлагай конкретные действия в калькуляторе, не общие лекции.
+4) Предлагай конкретные действия в калькуляторе, не общие лекции. Ответ — короткий (до ~12 предложений), без длинных рассуждений.
 5) ЗАПИСЬ В КАЛЬКУЛЯТОР — ТВОЯ ОСНОВНАЯ СУПЕРСИЛА:
    - Ты УМЕЕШЬ сам проставлять параметры. Клиент читает блок APPLY и сразу пишет числа в поля.
    - ЗАПРЕЩЕНО говорить «я не могу вносить значения», «доступно только вам», «введите вручную».
@@ -300,58 +301,61 @@ async function callDeepSeekR1(
   const apiKey = process.env.DEEPSEEK_API_KEY;
   if (!apiKey) return null;
 
-  const models = [
-    process.env.DEEPSEEK_MODEL || 'deepseek-chat',
-    'deepseek-chat',
-    'deepseek-reasoner',
-  ];
-  // Prefer chat over reasoner — reasoner is slow for simple calculator Q&A
-  const uniqueModels = [...new Set(models)];
+  // Только быстрый chat. Reasoner — только если явно DEEPSEEK_MODEL=deepseek-reasoner.
+  const configured = (process.env.DEEPSEEK_MODEL || 'deepseek-chat').trim();
+  const model =
+    configured === 'deepseek-reasoner' ? 'deepseek-reasoner' : 'deepseek-chat';
 
-  for (const model of uniqueModels) {
-    try {
-      const res = await fetch('https://api.deepseek.com/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model,
-          temperature: 0.3,
-          messages: [
-            {
-              role: 'system',
-              content: `${SYSTEM_RU}\n\ncalcContext:\n${JSON.stringify(calcContext)}`,
-            },
-            ...messages
-              .filter((m) => m.role !== 'system')
-              .map((m) => ({ role: m.role, content: m.content })),
-          ],
-        }),
-      });
-      if (!res.ok) {
-        console.error('DeepSeek HTTP', model, res.status, await res.text());
-        continue;
-      }
-      const raw = await res.json();
-      const text = raw?.choices?.[0]?.message?.content;
-      if (!text || typeof text !== 'string') continue;
-      const { prose, suggestions, patch } = extractJsonBlock(text);
-      return {
-        answer: prose,
-        provider: 'deepseek-r1',
+  const ctrl = new AbortController();
+  const timeoutMs = Number(process.env.DEEPSEEK_TIMEOUT_MS || 14_000);
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+
+  try {
+    const res = await fetch('https://api.deepseek.com/chat/completions', {
+      method: 'POST',
+      signal: ctrl.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
         model,
-        suggestions,
-        patch,
-        disclaimer:
-          'Ответ DeepSeek. Ориентир по цифрам калькулятора Smetoplan — не проект КЖ/ИГИ.',
-      };
-    } catch (err) {
-      console.error('DeepSeek failed', model, err);
+        temperature: 0.2,
+        max_tokens: 1200,
+        messages: [
+          {
+            role: 'system',
+            content: `${SYSTEM_RU}\n\ncalcContext:\n${JSON.stringify(calcContext)}`,
+          },
+          ...messages
+            .filter((m) => m.role !== 'system')
+            .map((m) => ({ role: m.role, content: m.content })),
+        ],
+      }),
+    });
+    if (!res.ok) {
+      console.error('DeepSeek HTTP', model, res.status, await res.text());
+      return null;
     }
+    const raw = await res.json();
+    const text = raw?.choices?.[0]?.message?.content;
+    if (!text || typeof text !== 'string') return null;
+    const { prose, suggestions, patch } = extractJsonBlock(text);
+    return {
+      answer: prose,
+      provider: 'deepseek-r1',
+      model,
+      suggestions,
+      patch,
+      disclaimer:
+        'Ответ DeepSeek. Ориентир по цифрам калькулятора Smetoplan — не проект КЖ/ИГИ.',
+    };
+  } catch (err) {
+    console.error('DeepSeek failed', model, err);
+    return null;
+  } finally {
+    clearTimeout(timer);
   }
-  return null;
 }
 
 /** Always-on brain from real calc numbers — no invented plants or SP stamps. */

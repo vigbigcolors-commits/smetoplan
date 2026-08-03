@@ -151,15 +151,53 @@ export function extractCalcPatchFromText(text: string): AiCalcPatch {
   }
 
   // Именованные габариты (стена / общее) — приоритетнее L×W×H из «плиты».
+  // НЕ трогаем «длина ленты (периметр)» — это ось сети, не пятно L.
   const labeledLen = firstMatch(
     text,
     /длин[аы]\s*(?:стен\S{0,10})?[^0-9]{0,20}(\d+(?:[.,]\d+)?)\s*м/i
   );
   const labeledH = firstMatch(
     text,
-    /высот[аы]\s*(?:стен\S{0,10})?[^0-9]{0,20}(\d+(?:[.,]\d+)?)\s*м/i
+    /высот[аы]\s*(?:стен\S{0,10}|лент\S{0,10})?[^0-9]{0,20}(\d+(?:[.,]\d+)?)\s*м/i
   );
-  if (labeledLen) {
+
+  // Замкнутая лента: «периметр / длина ленты (общий периметр): 40 м»
+  const stripAxis = firstMatch(
+    text,
+    /(?:общ\S{0,10}\s*)?периметр(?:\s*лент\S{0,8})?[^0-9]{0,28}(\d+(?:[.,]\d+)?)\s*м|длин[аы]\s*лент\S{0,40}(?:периметр|ось|сети)?[^0-9]{0,28}(\d+(?:[.,]\d+)?)\s*м/i
+  );
+  const stripRibbon = firstMatch(
+    text,
+    /ширин[аы]\s*лент\S{0,12}[^0-9]{0,24}(\d+(?:[.,]\d+)?)\s*м/i
+  );
+  if (stripAxis || stripRibbon || /ленточн|замкнут\S{0,8}\s*периметр|контур\s*=\s*1/i.test(text)) {
+    if (!patch.structureType) patch.structureType = 'strip';
+  }
+  if (stripRibbon) {
+    const w = num(stripRibbon[1]);
+    if (w != null && w > 0 && w <= 2) patch.ribWidthM = w;
+  }
+  if (stripAxis) {
+    const P = num(stripAxis[1] || stripAxis[2]);
+    if (P != null && P >= 8) {
+      // 2×(L+W)=P → типичный прямоугольник ~3:2 (для 40 м → 12×8)
+      const half = P / 2;
+      patch.lengthM = Math.round(half * 0.6 * 10) / 10;
+      patch.widthM = Math.round(half * 0.4 * 10) / 10;
+      // страховка суммы
+      const sum = (patch.lengthM ?? 0) + (patch.widthM ?? 0);
+      if (Math.abs(2 * sum - P) > 0.15) {
+        patch.lengthM = Math.round((half - 4) * 10) / 10;
+        patch.widthM = Math.round((P / 2 - (patch.lengthM ?? 0)) * 10) / 10;
+      }
+    }
+  }
+
+  if (
+    labeledLen &&
+    !stripAxis &&
+    !/длин[аы]\s*лент/i.test(text)
+  ) {
     const v = num(labeledLen[1]);
     if (v != null) patch.lengthM = v;
   }
@@ -242,10 +280,16 @@ export function extractCalcPatchFromText(text: string): AiCalcPatch {
     if (layersN === 1 || layersN === 2 || layersN === 3) patch.layers = layersN;
   }
 
-  const longBars = firstMatch(
-    text,
-    /(\d+)\s*(?:продольн\S{0,12}|стержн\S{0,8}\s*в\s*сечени)/i
-  );
+  const longBars =
+    firstMatch(
+      text,
+      /(\d+)\s*(?:продольн\S{0,12}|стержн\S{0,8}\s*в\s*сечени)/i
+    ) ||
+    firstMatch(
+      text,
+      /[Øø⌀]\s*\d+(?:[.,]\d+)?[^\n]{0,60}?(\d+)\s*стерж/i
+    ) ||
+    firstMatch(text, /(\d+)\s*стержн\S{0,8}\s*\([^)]*(?:верх|низ|пояс)/i);
   if (longBars) {
     const n = Number(longBars[1]);
     if (n === 4 || n === 6 || n === 8) patch.longitudinalBars = n;
@@ -362,17 +406,11 @@ export function extractCalcPatchFromText(text: string): AiCalcPatch {
   }
 
   // Плита без рёбер в тексте — сбрасываем старые рёбра из UI (иначе 675 → 675+рёбра).
+  // Ленту / балку / стену / сваи не трогаем: ribWidthM = ширина ленты / Ø сваи / подошва.
   if (
-    (patch.structureType === 'slab' ||
-      (patch.lengthM != null &&
-        patch.widthM != null &&
-        patch.depthM != null &&
-        patch.lengthM >= 5)) &&
-    patch.structureType !== 'wall' &&
-    patch.structureType !== 'pier' &&
+    patch.structureType === 'slab' &&
     !/р[её]бр/i.test(text)
   ) {
-    patch.structureType = patch.structureType ?? 'slab';
     patch.ribWidthM = 0;
     patch.ribDepthM = 0;
   }

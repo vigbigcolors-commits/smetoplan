@@ -145,4 +145,27 @@ describe('calc-patch extractor', () => {
     assert.equal(patch.coverMm, 40);
     assert.equal(shouldAutoApplyParams(text, [], patch), true);
   });
+
+  it('closed strip perimeter TZ → 12×8 footprint, not length=40', () => {
+    const text = `
+Параметры геометрии (Замкнутый периметр)
+Длина ленты (общий периметр): 40.0 м
+Ширина ленты: 0.5 м
+Высота ленты: 1.2 м
+Защитный слой: 50 мм
+Продольная арматура: Ø14 мм, 6 стержней
+Поперечная арматура (хомуты): Ø8 мм, шаг 250 мм
+`;
+    const patch = extractCalcPatchFromText(text);
+    assert.equal(patch.structureType, 'strip');
+    assert.equal(patch.lengthM, 12);
+    assert.equal(patch.widthM, 8);
+    assert.equal(patch.depthM, 1.2);
+    assert.equal(patch.ribWidthM, 0.5);
+    assert.equal(patch.coverMm, 50);
+    assert.equal(patch.diameterMm, 14);
+    assert.equal(patch.spacingMm, 250);
+    assert.equal(patch.longitudinalBars, 6);
+    assert.equal(shouldAutoApplyParams(text, [], patch), true);
+  });
 });
