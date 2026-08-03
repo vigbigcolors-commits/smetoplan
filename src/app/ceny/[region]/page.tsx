@@ -58,7 +58,17 @@ export default async function CenyRegionPage({ params, searchParams }: PageProps
   const quotes = await loadMarketQuotes(meta.regionId);
   const site = process.env.NEXT_PUBLIC_SITE_URL || 'https://smetoplan.ru';
 
-  const jsonLd =
+  const faqJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: meta.faqs.map((f) => ({
+      '@type': 'Question',
+      name: f.q,
+      acceptedAnswer: { '@type': 'Answer', text: f.a },
+    })),
+  };
+
+  const listJsonLd =
     !quotes.empty && quotes.suppliers.length > 0
       ? {
           '@context': 'https://schema.org',
@@ -85,10 +95,14 @@ export default async function CenyRegionPage({ params, searchParams }: PageProps
     <div className="min-h-screen bg-[#F8FAFC]">
       <SiteHeader />
       <main>
-        {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+        />
+        {listJsonLd && (
           <script
             type="application/ld+json"
-            dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(listJsonLd) }}
           />
         )}
         <CenyClient
@@ -104,10 +118,32 @@ export default async function CenyRegionPage({ params, searchParams }: PageProps
           <h2 className="text-xl font-bold text-[#0B132B]">
             Бетон и арматура — {meta.label}
           </h2>
-          <p className="mt-3 max-w-3xl text-[15px] leading-relaxed text-slate-700">
-            {meta.seoBody}
-          </p>
-          <p className="mt-4 text-sm text-slate-600">
+          <div className="mt-3 max-w-3xl space-y-4 text-[15px] leading-relaxed text-slate-700">
+            {meta.seoParagraphs.map((para) => (
+              <p key={para.slice(0, 40)}>{para}</p>
+            ))}
+          </div>
+
+          <h2 className="mt-10 text-xl font-bold text-[#0B132B]">{meta.howH2}</h2>
+          <div className="mt-3 max-w-3xl space-y-3 text-[15px] leading-relaxed text-slate-700">
+            {meta.howParagraphs.map((para) => (
+              <p key={para.slice(0, 40)}>{para}</p>
+            ))}
+          </div>
+
+          <h2 className="mt-10 text-xl font-bold text-[#0B132B]">
+            Частые вопросы — цены {meta.label}
+          </h2>
+          <dl className="mt-4 max-w-3xl space-y-4">
+            {meta.faqs.map((f) => (
+              <div key={f.q}>
+                <dt className="text-[15px] font-bold text-slate-800">{f.q}</dt>
+                <dd className="mt-1.5 text-[15px] leading-relaxed text-slate-600">{f.a}</dd>
+              </div>
+            ))}
+          </dl>
+
+          <p className="mt-8 text-sm text-slate-600">
             <Link
               href={calculatorHref()}
               className="font-semibold text-[#1F5A8E] hover:underline"

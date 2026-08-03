@@ -1,10 +1,11 @@
 /**
  * Single source of truth: a PSEO URL may enter the index ONLY if
- * unique calc fingerprint + safe SSR snapshot (FAQ + prices) pass this gate.
+ * unique calc fingerprint + safe SSR snapshot (FAQ + regional prices) pass.
  * Never bypass. Drip, sitemap, and [slug] all call these helpers.
  */
 
 import { buildPseoSnapshot, type PseoSnapshot } from '@/lib/pseo-snapshot';
+import { isRichLongTail } from '@/lib/pseo-content';
 import { resolvePseoRegion } from '@/lib/pseo-region';
 import { isReservedHubSlug } from '@/lib/pseo-hubs';
 import type { PseoRoute, PseoRouteParams, StructureType } from '@/lib/types';
@@ -12,11 +13,17 @@ import type { PseoRoute, PseoRouteParams, StructureType } from '@/lib/types';
 /** Default ON — set PSEO_REQUIRE_REGION=0 only for emergency backfill. */
 export const PSEO_REQUIRE_REGION = process.env.PSEO_REQUIRE_REGION !== '0';
 
+/** Indexable leaves must include reinforcement — bare concrete shells are thin. */
+const NEEDS_REBAR = new Set<StructureType>(['slab', 'strip', 'pier', 'wall', 'beam']);
+
 export type PseoGateReason =
   | 'hub_reserved'
   | 'thin_params'
   | 'missing_region'
   | 'missing_region_and_rebar'
+  | 'thin_description'
+  | 'thin_title'
+  | 'missing_rebar'
   | 'duplicate_fingerprint'
   | 'clone_title'
   | 'zero_volume'
@@ -39,6 +46,7 @@ export function paramsFingerprint(row: {
   region_slug: string | null;
 }): string {
   const p = row.params as PseoRouteParams;
+  const region = resolvePseoRegion(row.region_slug);
   return [
     row.structure_type,
     Number(p.length),
@@ -48,7 +56,7 @@ export function paramsFingerprint(row: {
     Number(p.rebar_d ?? 0),
     Number(p.rebar_step ?? 0),
     Number(p.layers ?? 0),
-    row.region_slug || '',
+    region?.slug || '',
   ].join('|');
 }
 
@@ -61,21 +69,43 @@ export function normalizeTitle(t: string): string {
     .trim();
 }
 
+function hasCyrillic(s: string): boolean {
+  return /[а-яё]/i.test(s);
+}
+
+function titleMentionsRegion(title: string, label: string, locative: string): boolean {
+  const t = title.toLowerCase();
+  const tokens = new Set<string>();
+  for (const raw of [label, locative.replace(/^в\s+/i, '')]) {
+    for (const part of raw.toLowerCase().split(/[\s/,]+/)) {
+      if (part.length >= 4) tokens.add(part.slice(0, 6));
+    }
+  }
+  return [...tokens].some((tok) => t.includes(tok));
+}
+
 /** Snapshot must be unique useful content for bots — not a shell. */
 export function isSafePseoSnapshot(snapshot: PseoSnapshot): boolean {
   if (!(snapshot.concreteVolumeM3 > 0)) return false;
   if (!snapshot.totalRub || snapshot.totalRub.length < 2) return false;
   if (!snapshot.disclaimer || snapshot.disclaimer.length < 40) return false;
-  if (snapshot.faqs.length < 4) return false;
+  if (!snapshot.regionLabel) return false;
+  if (snapshot.faqs.length < 6) return false;
   for (const f of snapshot.faqs) {
-    if (f.q.length < 12 || f.a.length < 40) return false;
+    if (f.q.length < 12 || f.a.length < 50) return false;
+  }
+  if (
+    !isRichLongTail(snapshot.longTail, snapshot.dimsLabel, snapshot.regionLabel)
+  ) {
+    return false;
   }
   const joined = snapshot.faqs.map((f) => f.a).join(' ');
   const hasNumber = /\d/.test(joined);
   const hasDims =
     joined.includes(snapshot.dimsLabel) ||
     joined.includes(String(snapshot.concreteVolumeM3));
-  return hasNumber && hasDims;
+  const hasRegion = joined.includes(snapshot.regionLabel);
+  return hasNumber && hasDims && hasRegion;
 }
 
 export function routeToGateInput(route: PseoRoute): PseoGateInput {
@@ -120,6 +150,23 @@ export function evaluatePseoStructureGate(
   }
   if (!region && !(layers > 0 && rebarD > 0)) {
     return { ok: false, reason: 'missing_region_and_rebar' };
+  }
+
+  if (NEEDS_REBAR.has(row.structure_type) && !(layers > 0 && rebarD > 0)) {
+    return { ok: false, reason: 'missing_rebar' };
+  }
+
+  const title = row.title_template || row.h1_template || '';
+  if (title.length < 24 || !hasCyrillic(title)) {
+    return { ok: false, reason: 'thin_title' };
+  }
+  if (region && !titleMentionsRegion(title, region.label, region.locative)) {
+    return { ok: false, reason: 'thin_title' };
+  }
+
+  const desc = row.description || '';
+  if (desc.length < 80 || !hasCyrillic(desc)) {
+    return { ok: false, reason: 'thin_description' };
   }
 
   const fingerprint = paramsFingerprint({
@@ -187,7 +234,7 @@ export function evaluatePseoIndexability(
   if (!isSafePseoSnapshot(snapshot)) {
     return { ok: false, reason: 'weak_snapshot' };
   }
-  if (snapshot.faqs.length < 4) {
+  if (snapshot.faqs.length < 6) {
     return { ok: false, reason: 'weak_faq' };
   }
 

@@ -18,9 +18,11 @@ describe('pseo quality gate — always', () => {
     assert.equal(gate.ok, true);
     if (gate.ok) {
       assert.ok(gate.snapshot.concreteVolumeM3 > 0);
-      assert.ok(gate.snapshot.faqs.length >= 4);
+      assert.ok(gate.snapshot.faqs.length >= 6);
+      assert.ok(gate.snapshot.sections.length >= 4);
       assert.ok(gate.snapshot.regionLabel);
       assert.ok(isSafePseoSnapshot(gate.snapshot));
+      assert.match(route.title_template, /Москв/i);
     }
   });
 
@@ -31,6 +33,31 @@ describe('pseo quality gate — always', () => {
     assert.ok(route);
     const input = routeToGateInput(route);
     input.region_slug = null;
+    const gate = evaluatePseoIndexability(input);
+    assert.equal(gate.ok, false);
+    if (!gate.ok) assert.equal(gate.reason, 'missing_region');
+  });
+
+  it('rejects title without region mention', () => {
+    const route = getDemoRouteBySlug(
+      'kalkulyator-plitnogo-fundamenta-12x8-m300'
+    );
+    assert.ok(route);
+    const input = routeToGateInput(route);
+    input.title_template = 'Калькулятор плиты 12×8 м бетон М300 | Smetoplan';
+    input.h1_template = 'Калькулятор плиты 12×8 м';
+    const gate = evaluatePseoIndexability(input);
+    assert.equal(gate.ok, false);
+    if (!gate.ok) assert.equal(gate.reason, 'thin_title');
+  });
+
+  it('rejects phantom region kazan', () => {
+    const route = getDemoRouteBySlug(
+      'kalkulyator-plitnogo-fundamenta-12x8-m300'
+    );
+    assert.ok(route);
+    const input = routeToGateInput(route);
+    input.region_slug = 'kazan';
     const gate = evaluatePseoIndexability(input);
     assert.equal(gate.ok, false);
     if (!gate.ok) assert.equal(gate.reason, 'missing_region');

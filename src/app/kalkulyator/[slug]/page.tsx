@@ -185,6 +185,7 @@ export default async function PseoCalculatorPage({ params }: PageProps) {
           snapshot={snapshot}
           structureType={route.structure_type}
           related={related}
+          regionSlug={route.region_slug}
         />
       </div>
       <ConstructixApp

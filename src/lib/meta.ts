@@ -4,6 +4,7 @@ import type {
   PseoRouteParams,
   StructureType,
 } from './types';
+import { resolvePseoRegion } from '@/lib/pseo-region';
 
 const INTENT_VERBS: Record<IntentCluster, string[]> = {
   kalkulyator: ['Калькулятор', 'Онлайн-калькулятор', 'Интерактивный расчёт'],
@@ -56,9 +57,9 @@ export function buildMetaFromRoute(input: {
   const structure = pick(STRUCTURE_LABELS[input.structureType], seed, 7);
   const dims = `${input.params.length}×${input.params.width}`;
   const grade = input.params.grade;
-  const region = input.regionSlug
-    ? ` — ${input.regionSlug.replace(/-/g, ' ')}`
-    : '';
+  const regionMeta = resolvePseoRegion(input.regionSlug);
+  const regionTitle = regionMeta ? ` — ${regionMeta.label}` : '';
+  const regionLoc = regionMeta ? regionMeta.locative : 'по справочнику Smetoplan';
 
   const rebarPart =
     input.params.layers > 0 && input.params.rebar_d > 0
@@ -67,17 +68,17 @@ export function buildMetaFromRoute(input: {
 
   const title =
     input.titleOverride ??
-    `${verb} ${structure} ${dims} м бетон ${grade}${rebarPart}${region} | Smetoplan`;
+    `${verb} ${structure} ${dims} м бетон ${grade}${rebarPart}${regionTitle} | Smetoplan`;
 
   const h1 =
     input.h1Override ??
-    `${verb} ${structure} ${dims} м`;
+    `${verb} ${structure} ${dims} м${regionTitle}`;
 
   const description =
     input.descriptionOverride ??
     `${verb} ${structure} ${dims}×${input.params.depth} м (${grade}): объём бетона,${
       input.params.layers > 0 ? ` арматура Ø${input.params.rebar_d},` : ''
-    } опалубка и смета в рублях. Чертёж и BOM онлайн по СП 63.13330.`;
+    } опалубка и смета ${regionLoc}. Справочные цены, не оферта РБУ.`;
 
   return { title, h1, description };
 }
