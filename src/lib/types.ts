@@ -149,6 +149,8 @@ export interface ConstructixInitialState {
   stockLengthM?: number;
   h1?: string;
   description?: string;
+  /** SSR SEO/EEAT strip above the workspace (main /kalkulyator). */
+  showSeoStrip?: boolean;
   /** PSEO landing: defer 3D + disable sticky CAD for LCP */
   deferHeavyUi?: boolean;
 }

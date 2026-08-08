@@ -38,6 +38,7 @@ import { WorkStatusPanel } from '@/components/calculator/WorkStatusPanel';
 import { SitePipeline } from '@/components/calculator/SitePipeline';
 import { ResultsReveal } from '@/components/calculator/ResultsReveal';
 import type { AiCalcPatch, AiSuggestion } from '@/lib/ai/types';
+import { CalculatorSeoStrip } from '@/components/calculator/CalculatorSeoStrip';
 import { OPEN_QUOTE_EVENT } from '@/lib/rbu-spec';
 import { DOWNLOAD_BOM_CSV_EVENT } from '@/lib/site-events';
 import {
@@ -870,7 +871,13 @@ export default function ConstructixApp({
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
         <HelperPromoBanner onOpenHelper={() => setHelperOpen(true)} />
 
-        {(boot.h1 || boot.description) && (
+        {boot.showSeoStrip && boot.h1 ? (
+          <CalculatorSeoStrip
+            structureType={structureType}
+            h1={boot.h1}
+            description={boot.description || ''}
+          />
+        ) : (boot.h1 || boot.description) ? (
           <header className="mb-6">
             {boot.h1 && (
               <h1 className="text-2xl font-extrabold tracking-tight text-[#0F172A] sm:text-3xl">
@@ -883,7 +890,7 @@ export default function ConstructixApp({
               </p>
             )}
           </header>
-        )}
+        ) : null}
         {/* Preset Selector */}
         <PresetSelector
           selectedType={structureType}

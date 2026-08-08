@@ -4,6 +4,7 @@ import {
   getStructurePreset,
   isStructureType,
 } from '@/lib/calculator-routes';
+import { getSiteUrl } from '@/lib/site-url';
 
 interface PageProps {
   searchParams: Promise<{ type?: string }>;
@@ -17,13 +18,14 @@ export async function generateMetadata({
   const { type } = await searchParams;
   const structureType = isStructureType(type) ? type : 'slab';
   const preset = getStructurePreset(structureType);
-  const site = process.env.NEXT_PUBLIC_SITE_URL || 'https://smetoplan.ru';
+  const site = getSiteUrl();
 
   return {
     title: `${preset.h1} — смета онлайн | Smetoplan`,
     description: preset.description,
+    // Always clean canonical — ?type= is UI state, not a separate document.
     alternates: {
-      canonical: `${site}/kalkulyator${type && isStructureType(type) ? `?type=${type}` : ''}`,
+      canonical: `${site}/kalkulyator`,
     },
     openGraph: {
       title: preset.h1,
@@ -50,6 +52,7 @@ export default async function CalculatorPage({ searchParams }: PageProps) {
         rebarSpec: preset.rebarSpec,
         h1: preset.h1,
         description: preset.description,
+        showSeoStrip: true,
       }}
     />
   );
