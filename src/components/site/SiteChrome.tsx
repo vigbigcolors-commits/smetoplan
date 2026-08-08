@@ -3,12 +3,12 @@
 import Link from 'next/link';
 import { ArrowRight, Ruler } from 'lucide-react';
 import { calculatorHref } from '@/lib/calculator-routes';
-import { CENY_REGIONS } from '@/lib/ceny-regions';
 
 const NAV = [
   { href: '/kalkulyator', label: 'Калькулятор' },
   { href: '/ceny', label: 'Цены' },
   { href: '/metodika', label: 'Методика' },
+  { href: '/opyt', label: 'Опыт' },
   { href: '/o-nas', label: 'О нас' },
 ];
 
@@ -16,14 +16,12 @@ const FOOTER_COLS = [
   {
     title: 'Продукт',
     links: [
-      { href: calculatorHref('slab'), label: 'Плитный фундамент' },
-      { href: calculatorHref('strip'), label: 'Ленточный фундамент' },
+      { href: '/kalkulyator/plitnyy-fundament', label: 'Хаб: плитный фундамент' },
+      { href: '/kalkulyator/lentochnyy-fundament', label: 'Хаб: ленточный фундамент' },
+      { href: calculatorHref('slab'), label: 'Калькулятор плиты' },
+      { href: calculatorHref('strip'), label: 'Калькулятор ленты' },
       { href: calculatorHref(), label: 'Все расчёты' },
       { href: '/ceny', label: 'Цены по регионам' },
-      ...CENY_REGIONS.slice(0, 2).map((r) => ({
-        href: `/ceny/${r.slug}`,
-        label: r.label,
-      })),
     ],
   },
   {
@@ -31,6 +29,7 @@ const FOOTER_COLS = [
     links: [
       { href: '/o-nas', label: 'О нас' },
       { href: '/metodika', label: 'Методика и источники' },
+      { href: '/opyt', label: 'Опыт ядра' },
       { href: '/disclaimer', label: 'Отказ от ответственности' },
       { href: '/privacy', label: 'Конфиденциальность' },
     ],
@@ -40,7 +39,7 @@ const FOOTER_COLS = [
     links: [
       { href: '/kontakty', label: 'Контакты' },
       { href: 'mailto:hello@smetoplan.ru', label: 'hello@smetoplan.ru' },
-      { href: calculatorHref(), label: 'Открыть калькулятор' },
+      { href: calculatorHref(), label: 'Пакет «Готово» в калькуляторе' },
     ],
   },
 ];

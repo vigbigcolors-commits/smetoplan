@@ -12,6 +12,6 @@ export default function robots(): MetadataRoute.Robots {
       },
     ],
     sitemap: `${site}/sitemap.xml`,
-    host: site,
+    host: site.replace(/^https?:\/\//, ''),
   };
 }

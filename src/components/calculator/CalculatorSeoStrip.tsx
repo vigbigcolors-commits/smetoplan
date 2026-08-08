@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { JsonLd } from '@/components/seo/JsonLd';
+import { FreshnessMeta } from '@/components/seo/FreshnessMeta';
 import { TrustSourcesNote } from '@/components/pseo/TrustSourcesNote';
 import {
   CALCULATOR_FAQS,
@@ -56,10 +57,11 @@ export function CalculatorSeoStrip({
       >
         Методика, эталон и вопросы
       </h2>
-      <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600">
+      <p className="mt-2 text-sm leading-relaxed text-slate-600">
         Результат сразу на экране: объёмы, чертёж и ориентир сметы без заявки. Не
-        заменяет раздел КЖ. Ниже — эталон ядра, источники и FAQ.
+        заменяет раздел КЖ. Пакет «Готово» вверху сметы: PDF + .txt + ссылка.
       </p>
+      <FreshnessMeta className="mt-2" />
 
       {benchmark ? (
         <div className="mt-5 overflow-hidden rounded-2xl border border-slate-800 bg-[#0F172A] text-white">
@@ -116,16 +118,19 @@ export function CalculatorSeoStrip({
         <Link href="/metodika" className="hover:underline">
           Методика
         </Link>
+        <Link href="/opyt" className="hover:underline">
+          Опыт ядра
+        </Link>
         <Link href="/o-nas" className="hover:underline">
           О нас
         </Link>
       </nav>
 
-      <div className="mt-4 max-w-3xl">
+      <div className="mt-4">
         <TrustSourcesNote compact />
       </div>
 
-      <div className="mt-5 max-w-3xl">
+      <div className="mt-5">
         <h3 className="text-sm font-extrabold text-[#0F172A]">
           Частые вопросы по калькулятору
         </h3>

@@ -24,7 +24,7 @@ export const HOME_FAQS: SiteFaq[] = [
   },
   {
     q: 'Нужна ли заявка, чтобы увидеть результат?',
-    a: 'Нет. Расчёт, чертёж и смета доступны сразу на странице — без ожидания менеджера. Можно сохранить ссылку на расчёт или выгрузить PDF/ведомость для себя.',
+    a: 'Нет. Расчёт, чертёж и смета доступны сразу на странице — без ожидания менеджера. Пакет «Готово» в калькуляторе: PDF, .txt для РБУ и ссылка на расчёт — уносите сами.',
   },
   {
     q: 'Какие нормы использует методика?',
@@ -53,6 +53,10 @@ export const CALCULATOR_FAQS: SiteFaq[] = [
     q: 'Результат — коммерческое КП завода?',
     a: 'Нет. Это ориентир для спецификации. Финальный прайс, доставку и минимальную партию подтверждает РБУ или база.',
   },
+  {
+    q: 'Как забрать расчёт с собой?',
+    a: 'Кнопка «Готово» / PDF: скачайте PDF-смету, .txt для РБУ и скопируйте ссылку на те же параметры. Без заявки и звонка.',
+  },
 ];
 
 export function buildFaqJsonLd(faqs: SiteFaq[]) {
@@ -72,13 +76,40 @@ export function buildOrganizationJsonLd() {
   return {
     '@context': 'https://schema.org',
     '@type': 'Organization',
+    '@id': `${site}/#organization`,
     name: 'Smetoplan',
+    alternateName: ['Сметоплан', 'Smetoplan.ru'],
     url: site,
-    logo: `${site}/Images/smetoplan-logo.png`,
+    logo: {
+      '@type': 'ImageObject',
+      url: `${site}/Images/smetoplan-logo.png`,
+    },
+    image: `${site}/Images/smetoplan-logo.png`,
     description:
-      'Онлайн-калькуляторы фундаментов и конструкций: живой чертёж, объёмы материалов и ориентировочная смета.',
-    areaServed: 'RU',
-    sameAs: [],
+      'Онлайн-калькуляторы фундаментов и конструкций: живой чертёж, объёмы материалов и ориентировочная смета без заявки.',
+    email: 'hello@smetoplan.ru',
+    foundingDate: '2025',
+    slogan: 'Смета на месте — без заявки',
+    brand: { '@type': 'Brand', name: 'Smetoplan' },
+    knowsAbout: [
+      'Расчёт плитного фундамента',
+      'Расчёт ленточного фундамента',
+      'Смета бетона и арматуры',
+      'Опалубка монолитных конструкций',
+      'Региональные цены на бетон',
+    ],
+    areaServed: {
+      '@type': 'Country',
+      name: 'Russia',
+    },
+    contactPoint: {
+      '@type': 'ContactPoint',
+      email: 'hello@smetoplan.ru',
+      contactType: 'customer support',
+      availableLanguage: ['Russian'],
+      url: `${site}/kontakty`,
+    },
+    sameAs: [`${site}/o-nas`, `${site}/metodika`, `${site}/opyt`],
   };
 }
 
@@ -87,10 +118,12 @@ export function buildWebSiteJsonLd() {
   return {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
+    '@id': `${site}/#website`,
     name: 'Smetoplan',
     url: site,
     inLanguage: 'ru-RU',
-    publisher: { '@type': 'Organization', name: 'Smetoplan', url: site },
+    publisher: { '@id': `${site}/#organization` },
+    about: { '@id': `${site}/#organization` },
   };
 }
 

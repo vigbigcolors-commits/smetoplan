@@ -5,6 +5,10 @@ import {
   PRICE_TABLE_AS_OF,
 } from '@/lib/trust-sources';
 import { PRICE_BAND_DISCLAIMER } from '@/lib/region-medians';
+import {
+  ENGINE_UPDATED_AT,
+  formatEngineUpdated,
+} from '@/lib/seo-freshness';
 
 export function TrustSourcesNote({
   regionLabel,
@@ -25,7 +29,8 @@ export function TrustSourcesNote({
         <span className="font-bold text-slate-700">Источники. </span>
         Цены: {PRICE_SOURCE_NOTE} {PRICE_BAND_DISCLAIMER}
         {regionLabel ? ` Регион отображения: «${regionLabel}».` : ''} Дата таблицы:{' '}
-        <time dateTime={PRICE_TABLE_AS_OF}>{formatPriceAsOf()}</time>.
+        <time dateTime={PRICE_TABLE_AS_OF}>{formatPriceAsOf()}</time>. Ядро:{' '}
+        <time dateTime={ENGINE_UPDATED_AT}>{formatEngineUpdated()}</time>.
       </p>
       <p className={compact ? 'mt-1' : 'mt-2'}>
         <span className="font-bold text-slate-700">Нормы (ориентир). </span>

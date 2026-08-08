@@ -4,6 +4,7 @@ import { STRUCTURE_HUBS, REGION_HUBS } from '@/lib/pseo-hubs';
 import { calculatorHref } from '@/lib/calculator-routes';
 import type { HubLink } from '@/lib/pseo-demo-hub';
 import { getStructureHubBenchmark } from '@/lib/hub-benchmarks';
+import { FreshnessMeta } from '@/components/seo/FreshnessMeta';
 
 export function PseoHubView({
   hub,
@@ -32,6 +33,10 @@ export function PseoHubView({
       ? benchmark?.calcHref || calculatorHref(hub.structureType)
       : calculatorHref();
 
+  const siblingHubs = STRUCTURE_HUBS.filter(
+    (h) => !(hub.kind === 'structure' && h.slug === hub.slug)
+  );
+
   return (
     <article className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
       <script
@@ -47,6 +52,7 @@ export function PseoHubView({
           {hub.h1}
         </h1>
         <p className="mt-3 text-base leading-relaxed text-slate-600">{hub.intro}</p>
+        <FreshnessMeta className="mt-3" />
       </header>
 
       {benchmark ? (
@@ -109,10 +115,10 @@ export function PseoHubView({
                 {benchmark.calcCta}
               </Link>
               <Link
-                href="/ceny/moskva"
+                href="/ceny"
                 className="inline-flex rounded-xl border border-slate-600 bg-slate-900 px-4 py-3 text-sm font-bold text-white hover:border-sky-500"
               >
-                Цены Москва
+                Сравнить регионы ₽
               </Link>
             </div>
           </div>
@@ -169,11 +175,11 @@ export function PseoHubView({
       {benchmark ? (
         <section className="mt-10 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-5 sm:px-5">
           <h2 className="text-lg font-extrabold tracking-tight text-[#0F172A]">
-            Дальше — ваш размер
+            Забрать результат с собой
           </h2>
           <p className="mt-2 max-w-2xl text-sm text-slate-700">
-            Эталон выше — точка входа. В калькуляторе задайте своё пятно, скачайте PDF и
-            ссылку на расчёт. Сервис работает без заявок и звонков.
+            В калькуляторе пакет «Готово»: PDF-смета, .txt для РБУ и ссылка на те же
+            параметры. Без заявки и звонка — унесите цифры в переписку сами.
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
             <Link
@@ -225,13 +231,35 @@ export function PseoHubView({
         </section>
       ) : null}
 
-      <section className="mt-10 grid gap-6 border-t border-slate-200 pt-8 sm:grid-cols-2">
+      <section className="mt-10 grid gap-6 border-t border-slate-200 pt-8 sm:grid-cols-3">
         <div>
           <h2 className="text-sm font-extrabold uppercase tracking-wide text-slate-500">
-            Типы конструкций
+            Хабы конструкций
           </h2>
           <ul className="mt-3 space-y-1.5">
-            {STRUCTURE_HUBS.map((h) => (
+            {siblingHubs.map((h) => (
+              <li key={h.slug}>
+                <Link
+                  href={`/kalkulyator/${h.slug}`}
+                  className="text-sm font-semibold text-[#1F5A8E] hover:underline"
+                >
+                  {h.h1.replace(/^Калькулятор\s+/i, '')}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div>
+          <h2 className="text-sm font-extrabold uppercase tracking-wide text-slate-500">
+            Регионы и цены
+          </h2>
+          <ul className="mt-3 space-y-1.5">
+            <li>
+              <Link href="/ceny" className="text-sm font-semibold text-[#1F5A8E] hover:underline">
+                Сравнение одной плиты по регионам
+              </Link>
+            </li>
+            {REGION_HUBS.slice(0, 5).map((h) => (
               <li key={h.slug}>
                 <Link
                   href={`/kalkulyator/${h.slug}`}
@@ -245,19 +273,29 @@ export function PseoHubView({
         </div>
         <div>
           <h2 className="text-sm font-extrabold uppercase tracking-wide text-slate-500">
-            Регионы
+            Доверие
           </h2>
           <ul className="mt-3 space-y-1.5">
-            {REGION_HUBS.map((h) => (
-              <li key={h.slug}>
-                <Link
-                  href={`/kalkulyator/${h.slug}`}
-                  className="text-sm font-semibold text-[#1F5A8E] hover:underline"
-                >
-                  {h.h1}
-                </Link>
-              </li>
-            ))}
+            <li>
+              <Link href="/metodika" className="text-sm font-semibold text-[#1F5A8E] hover:underline">
+                Методика и источники
+              </Link>
+            </li>
+            <li>
+              <Link href="/opyt" className="text-sm font-semibold text-[#1F5A8E] hover:underline">
+                Опыт ядра
+              </Link>
+            </li>
+            <li>
+              <Link href="/kalkulyator" className="text-sm font-semibold text-[#1F5A8E] hover:underline">
+                Рабочий калькулятор
+              </Link>
+            </li>
+            <li>
+              <Link href="/o-nas" className="text-sm font-semibold text-[#1F5A8E] hover:underline">
+                О нас
+              </Link>
+            </li>
           </ul>
         </div>
       </section>

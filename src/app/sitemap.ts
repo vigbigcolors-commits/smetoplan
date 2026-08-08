@@ -39,9 +39,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'daily' as const,
       priority: 0.85,
     })),
+    {
+      url: `${site}/metodika`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.75,
+    },
+    {
+      url: `${site}/opyt`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly' as const,
+      priority: 0.72,
+    },
     ...[
       '/o-nas',
-      '/metodika',
       '/disclaimer',
       '/privacy',
       '/kontakty',

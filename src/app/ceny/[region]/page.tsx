@@ -9,6 +9,7 @@ import {
 } from '@/lib/ceny-regions';
 import { loadMarketQuotes } from '@/lib/market-quotes';
 import { calculatorHref } from '@/lib/calculator-routes';
+import { getSiteUrl } from '@/lib/site-url';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,7 +26,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { region } = await params;
   const meta = getCenyRegionBySlug(region);
   if (!meta) return { title: 'Цены | Smetoplan' };
-  const site = process.env.NEXT_PUBLIC_SITE_URL || 'https://smetoplan.ru';
+  const site = getSiteUrl();
   return {
     title: meta.title,
     description: meta.description,
@@ -56,7 +57,7 @@ export default async function CenyRegionPage({ params, searchParams }: PageProps
   const form = parseNum(sp.form, 40);
 
   const quotes = await loadMarketQuotes(meta.regionId);
-  const site = process.env.NEXT_PUBLIC_SITE_URL || 'https://smetoplan.ru';
+  const site = getSiteUrl();
 
   const faqJsonLd = {
     '@context': 'https://schema.org',

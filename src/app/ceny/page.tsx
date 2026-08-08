@@ -4,6 +4,9 @@ import { redirect } from 'next/navigation';
 import { SiteHeader, SiteFooter } from '@/components/site/SiteChrome';
 import { CENY_REGIONS, legacyRegionParamToSlug } from '@/lib/ceny-regions';
 import { calculatorHref } from '@/lib/calculator-routes';
+import { RegionalEtalonCompare } from '@/components/ceny/RegionalEtalonCompare';
+import { formatPriceAsOf, PRICE_TABLE_AS_OF } from '@/lib/trust-sources';
+import { getSiteUrl } from '@/lib/site-url';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,15 +15,15 @@ interface PageProps {
 }
 
 export async function generateMetadata(): Promise<Metadata> {
-  const site = process.env.NEXT_PUBLIC_SITE_URL || 'https://smetoplan.ru';
+  const site = getSiteUrl();
   return {
     title: 'Цены на бетон и арматуру по регионам — сравнение поставщиков | Smetoplan',
     description:
-      'Хабы цен по Москве, СПб, Краснодару, Екатеринбургу и Новосибирску. Ориентир Smetoplan и котировки РБУ/магазинов.',
+      'Сравнение сметы одной плиты по Москве, СПб, Краснодару, Екатеринбургу и Новосибирску. Ориентир Smetoplan и котировки РБУ.',
     alternates: { canonical: `${site}/ceny` },
     openGraph: {
       title: 'Цены на бетон и арматуру | Smetoplan',
-      description: 'Выберите регион и сравните поставщиков по вашему объёму.',
+      description: `Одна геометрия — разные ₽ по регионам. Прайс на ${formatPriceAsOf(PRICE_TABLE_AS_OF)}.`,
       url: `${site}/ceny`,
       type: 'website',
       locale: 'ru_RU',
@@ -51,11 +54,17 @@ export default async function CenyHubPage({ searchParams }: PageProps) {
           Цены на бетон и арматуру по регионам
         </h1>
         <p className="mt-3 max-w-2xl text-base leading-relaxed text-slate-600">
-          Реальные РБУ и металлобазы с публичными прайсами. Выберите регион —
-          сравните по объёму из калькулятора и напишите поставщику напрямую.
+          Реальные РБУ и металлобазы с публичными прайсами. Ниже — одна эталонная
+          плита в разных регионах (живое ядро), затем хабы поставщиков. Прайс-ориентир
+          на {formatPriceAsOf(PRICE_TABLE_AS_OF)}.
         </p>
 
-        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-10">
+          <RegionalEtalonCompare />
+        </div>
+
+        <h2 className="mt-14 text-xl font-bold text-[#0B132B]">Хабы регионов</h2>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {CENY_REGIONS.map((r) => (
             <Link
               key={r.slug}
@@ -93,6 +102,14 @@ export default async function CenyHubPage({ searchParams }: PageProps) {
             См. также:{' '}
             <Link href="/metodika" className="font-semibold text-[#1F5A8E] hover:underline">
               методика
+            </Link>
+            {' · '}
+            <Link href="/opyt" className="font-semibold text-[#1F5A8E] hover:underline">
+              опыт ядра
+            </Link>
+            {' · '}
+            <Link href="/kalkulyator/plitnyy-fundament" className="font-semibold text-[#1F5A8E] hover:underline">
+              хаб плиты
             </Link>
             {' · '}
             <Link href="/disclaimer" className="font-semibold text-[#1F5A8E] hover:underline">

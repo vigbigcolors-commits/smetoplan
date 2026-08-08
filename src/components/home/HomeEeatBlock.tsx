@@ -66,6 +66,9 @@ export function HomeEeatBlock() {
           <Link href="/metodika" className="text-[#1F5A8E] hover:underline">
             Методика и источники
           </Link>
+          <Link href="/opyt" className="text-[#1F5A8E] hover:underline">
+            Опыт ядра
+          </Link>
           <Link href="/ceny" className="text-[#1F5A8E] hover:underline">
             Цены по регионам
           </Link>
@@ -123,13 +126,13 @@ export function HomeEeatBlock() {
             </h3>
             <p className="mt-3 text-sm leading-relaxed text-slate-300">
               Не ждите обратного звонка, чтобы узнать кубы бетона. Откройте
-              калькулятор, задайте размеры и заберите ориентир для РБУ.
+              калькулятор и заберите пакет «Готово»: PDF, .txt и ссылку.
             </p>
             <Link
               href={calculatorHref()}
               className="mt-5 inline-flex rounded-xl bg-[#3D6494] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-[#4A76AB]"
             >
-              Открыть калькулятор
+              Открыть и забрать пакет
             </Link>
           </aside>
         </div>

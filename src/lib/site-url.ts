@@ -1,3 +1,21 @@
+const CANONICAL_ORIGIN = 'https://smetoplan.ru';
+
+/** Prefer apex host; strip www so canonicals stay one host. */
+function normalizeOrigin(origin: string): string {
+  try {
+    const url = new URL(origin);
+    if (url.hostname === 'www.smetoplan.ru') {
+      return CANONICAL_ORIGIN;
+    }
+    if (url.hostname === 'smetoplan.ru') {
+      return CANONICAL_ORIGIN;
+    }
+    return url.origin;
+  } catch {
+    return CANONICAL_ORIGIN;
+  }
+}
+
 /** Safe public site origin for metadata / sitemap / canonicals. */
 export function getSiteUrl(): string {
   const candidates = [
@@ -6,7 +24,7 @@ export function getSiteUrl(): string {
       ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
       : undefined,
     process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined,
-    'https://smetoplan.ru',
+    CANONICAL_ORIGIN,
   ];
 
   for (const raw of candidates) {
@@ -15,12 +33,12 @@ export function getSiteUrl(): string {
     try {
       const url = new URL(value.includes('://') ? value : `https://${value}`);
       if (url.protocol === 'http:' || url.protocol === 'https:') {
-        return url.origin;
+        return normalizeOrigin(url.origin);
       }
     } catch {
       // try next candidate
     }
   }
 
-  return 'https://smetoplan.ru';
+  return CANONICAL_ORIGIN;
 }

@@ -35,6 +35,11 @@ export const metadata: Metadata = {
     siteName: 'Smetoplan',
     locale: 'ru_RU',
     type: 'website',
+    url: getSiteUrl(),
+  },
+  robots: {
+    index: true,
+    follow: true,
   },
 };
 

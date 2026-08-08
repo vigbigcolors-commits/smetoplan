@@ -6,25 +6,34 @@ import { MidVisualStory } from '@/components/home/MidVisualStory';
 import { HowItWorks } from '@/components/home/HowItWorks';
 import { HomeCta, SmetaShowcase } from '@/components/home/SmetaShowcase';
 import { HomeEeatBlock } from '@/components/home/HomeEeatBlock';
+import { HomeAnswerFirst } from '@/components/home/HomeAnswerFirst';
+import { HomeExperienceTeaser } from '@/components/home/HomeExperienceTeaser';
+import { HomeSeoCluster } from '@/components/home/HomeSeoCluster';
 import { getSiteUrl } from '@/lib/site-url';
+import { formatEngineUpdated } from '@/lib/seo-freshness';
+import { formatPriceAsOf, PRICE_TABLE_AS_OF } from '@/lib/trust-sources';
 
 const site = getSiteUrl();
 
 export const metadata: Metadata = {
   title: 'Smetoplan — калькуляторы фундамента, чертежи и сметы онлайн',
   description:
-    'Онлайн-расчёт плитного и ленточного фундамента, свай, балок и стен: живой чертёж, расход материалов и смета в рублях. Без заявки — результат сразу на экране.',
+    'Онлайн-расчёт плитного и ленточного фундамента: живые эталоны в HTML, чертёж, смета в ₽. Без заявки. Методика и опыт ядра открыты.',
   alternates: { canonical: site },
   openGraph: {
     title: 'Smetoplan — калькуляторы фундамента и сметы',
     description:
-      'Живой чертёж, объёмы бетона и арматуры, ориентир сметы. Методика и источники открыты.',
+      'Эталоны из живого ядра, региональные цены, PDF и ссылка на расчёт. Не КЖ и не оферта РБУ.',
     url: site,
     type: 'website',
     locale: 'ru_RU',
     siteName: 'Smetoplan',
   },
   robots: { index: true, follow: true },
+  other: {
+    'smetoplan:engine': formatEngineUpdated(),
+    'smetoplan:prices': formatPriceAsOf(PRICE_TABLE_AS_OF),
+  },
 };
 
 export default function HomePage() {
@@ -32,12 +41,15 @@ export default function HomePage() {
     <div className="bg-[#0E1624]">
       <SiteHeader />
       <HomeHero />
+      <HomeAnswerFirst />
       <CalculatorCatalog />
       <MidVisualStory />
       <HowItWorks />
       <SmetaShowcase />
+      <HomeExperienceTeaser />
       <HomeEeatBlock />
       <HomeCta />
+      <HomeSeoCluster />
       <SiteFooter />
     </div>
   );

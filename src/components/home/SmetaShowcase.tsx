@@ -126,18 +126,34 @@ export function HomeCta() {
       <div className="pointer-events-none absolute inset-y-0 right-0 w-1/2 bg-gradient-to-l from-[#3D6494]/25 to-transparent" />
       <div className="relative mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
         <h2 className="font-[family-name:var(--font-display)] text-2xl font-bold leading-snug text-white sm:text-3xl">
-          Готовы посчитать{' '}
-          <span className="text-[#A2C8E8]">свой фундамент?</span>
+          Посчитали —{' '}
+          <span className="text-[#A2C8E8]">унесите результат с собой</span>
         </h2>
         <p className="mx-auto mt-3 max-w-2xl text-base text-slate-300 sm:text-lg">
-          Откройте калькулятор, подвигайте размеры и посмотрите, как оживает чертёж.
+          Пакет «Готово» в калькуляторе: PDF-смета, спецификация .txt для РБУ и
+          ссылка на расчёт. Без заявки, звонка и ожидания менеджера.
         </p>
-        <Link
-          href={calculatorHref()}
-          className="mt-5 inline-flex rounded-xl bg-[#3D6494] px-5 py-2.5 text-sm font-bold text-white shadow-[0_12px_30px_rgba(61,100,148,0.35)] transition hover:bg-[#4A76AB]"
-        >
-          Начать расчёт бесплатно
-        </Link>
+        <ul className="mx-auto mt-4 flex max-w-xl flex-wrap justify-center gap-x-5 gap-y-1 text-sm font-semibold text-slate-400">
+          <li>PDF</li>
+          <li>·</li>
+          <li>.txt для РБУ</li>
+          <li>·</li>
+          <li>Share-ссылка</li>
+        </ul>
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+          <Link
+            href={calculatorHref()}
+            className="inline-flex rounded-xl bg-[#3D6494] px-5 py-2.5 text-sm font-bold text-white shadow-[0_12px_30px_rgba(61,100,148,0.35)] transition hover:bg-[#4A76AB]"
+          >
+            Открыть и забрать пакет
+          </Link>
+          <Link
+            href="/ceny"
+            className="inline-flex rounded-xl border border-white/25 bg-transparent px-5 py-2.5 text-sm font-bold text-white hover:border-white/50"
+          >
+            Сравнить цены регионов
+          </Link>
+        </div>
       </div>
       <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-12 brick-band opacity-80" />
     </section>
