@@ -9,37 +9,56 @@ import {
 import { getStructureHubBenchmark } from '@/lib/hub-benchmarks';
 import type { StructureType } from '@/lib/types';
 
-export function CalculatorSeoStrip({
-  structureType,
+/** Compact title under header — tools stay first. */
+export function CalculatorSeoTitle({
   h1,
   description,
 }: {
-  structureType: StructureType;
   h1: string;
   description: string;
+}) {
+  return (
+    <header className="mb-4">
+      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
+        Smetoplan · рабочий калькулятор
+      </p>
+      <h1 className="mt-1 text-xl font-extrabold tracking-tight text-[#0F172A] sm:text-2xl">
+        {h1}
+      </h1>
+      {description ? (
+        <p className="mt-1 max-w-3xl text-sm leading-snug text-slate-600">
+          {description}
+        </p>
+      ) : null}
+    </header>
+  );
+}
+
+/** Full EEAT/FAQ block — render at the bottom, after the workspace. */
+export function CalculatorSeoStrip({
+  structureType,
+}: {
+  structureType: StructureType;
 }) {
   const benchmark = getStructureHubBenchmark(structureType);
 
   return (
     <section
-      className="mb-8 border-b border-slate-200 pb-8"
-      aria-labelledby="calc-seo-h1"
+      className="mt-10 border-t border-slate-200 pt-8"
+      aria-labelledby="calc-seo-footer"
     >
       <JsonLd data={buildSoftwareAppJsonLd()} />
       <JsonLd data={buildFaqJsonLd(CALCULATOR_FAQS)} />
 
-      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
-        Smetoplan · рабочий калькулятор
-      </p>
-      <h1
-        id="calc-seo-h1"
-        className="mt-2 text-2xl font-extrabold tracking-tight text-[#0F172A] sm:text-3xl"
+      <h2
+        id="calc-seo-footer"
+        className="text-lg font-extrabold tracking-tight text-[#0F172A]"
       >
-        {h1}
-      </h1>
-      <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600 sm:text-[15px]">
-        {description} Результат сразу на экране: объёмы, чертёж и ориентир сметы
-        без заявки. Не заменяет раздел КЖ.
+        Методика, эталон и вопросы
+      </h2>
+      <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600">
+        Результат сразу на экране: объёмы, чертёж и ориентир сметы без заявки. Не
+        заменяет раздел КЖ. Ниже — эталон ядра, источники и FAQ.
       </p>
 
       {benchmark ? (
@@ -107,7 +126,9 @@ export function CalculatorSeoStrip({
       </div>
 
       <div className="mt-5 max-w-3xl">
-        <h2 className="text-sm font-extrabold text-[#0F172A]">Частые вопросы по калькулятору</h2>
+        <h3 className="text-sm font-extrabold text-[#0F172A]">
+          Частые вопросы по калькулятору
+        </h3>
         <div className="mt-2 divide-y divide-slate-200 border-y border-slate-200">
           {CALCULATOR_FAQS.map((f) => (
             <details key={f.q} className="group py-2.5">

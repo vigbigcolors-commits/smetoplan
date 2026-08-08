@@ -38,7 +38,10 @@ import { WorkStatusPanel } from '@/components/calculator/WorkStatusPanel';
 import { SitePipeline } from '@/components/calculator/SitePipeline';
 import { ResultsReveal } from '@/components/calculator/ResultsReveal';
 import type { AiCalcPatch, AiSuggestion } from '@/lib/ai/types';
-import { CalculatorSeoStrip } from '@/components/calculator/CalculatorSeoStrip';
+import {
+  CalculatorSeoStrip,
+  CalculatorSeoTitle,
+} from '@/components/calculator/CalculatorSeoStrip';
 import { OPEN_QUOTE_EVENT } from '@/lib/rbu-spec';
 import { DOWNLOAD_BOM_CSV_EVENT } from '@/lib/site-events';
 import {
@@ -872,12 +875,11 @@ export default function ConstructixApp({
         <HelperPromoBanner onOpenHelper={() => setHelperOpen(true)} />
 
         {boot.showSeoStrip && boot.h1 ? (
-          <CalculatorSeoStrip
-            structureType={structureType}
+          <CalculatorSeoTitle
             h1={boot.h1}
             description={boot.description || ''}
           />
-        ) : (boot.h1 || boot.description) ? (
+        ) : boot.h1 || boot.description ? (
           <header className="mb-6">
             {boot.h1 && (
               <h1 className="text-2xl font-extrabold tracking-tight text-[#0F172A] sm:text-3xl">
@@ -891,7 +893,7 @@ export default function ConstructixApp({
             )}
           </header>
         ) : null}
-        {/* Preset Selector */}
+        {/* Preset Selector — tools first */}
         <PresetSelector
           selectedType={structureType}
           onSelectType={handleSelectPreset}
@@ -1170,6 +1172,10 @@ export default function ConstructixApp({
             <TrustSourcesNote regionLabel={PRICE_REGIONS[priceRegionId].label} />
           </div>
         </ResultsReveal>
+
+        {boot.showSeoStrip ? (
+          <CalculatorSeoStrip structureType={structureType} />
+        ) : null}
       </main>
 
       <SiteFooter />
