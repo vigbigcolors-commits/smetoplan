@@ -8,7 +8,6 @@ import { HomeCta, SmetaShowcase } from '@/components/home/SmetaShowcase';
 import { HomeEeatBlock } from '@/components/home/HomeEeatBlock';
 import { HomeAnswerFirst } from '@/components/home/HomeAnswerFirst';
 import { HomeExperienceTeaser } from '@/components/home/HomeExperienceTeaser';
-import { HomeSeoCluster } from '@/components/home/HomeSeoCluster';
 import { getSiteUrl } from '@/lib/site-url';
 import { formatEngineUpdated } from '@/lib/seo-freshness';
 import { formatPriceAsOf, PRICE_TABLE_AS_OF } from '@/lib/trust-sources';
@@ -49,7 +48,6 @@ export default function HomePage() {
       <HomeExperienceTeaser />
       <HomeEeatBlock />
       <HomeCta />
-      <HomeSeoCluster />
       <SiteFooter />
     </div>
   );
