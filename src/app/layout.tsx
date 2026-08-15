@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Manrope, Unbounded, IBM_Plex_Mono } from 'next/font/google';
 import { getSiteUrl } from '@/lib/site-url';
+import { YandexMetrika } from '@/components/seo/YandexMetrika';
 import './globals.css';
 import './constructix.css';
 
@@ -54,6 +55,7 @@ export default function RootLayout({
         className={`${manrope.variable} ${unbounded.variable} ${plexMono.variable} min-h-screen bg-white text-slate-900 antialiased selection:bg-[#3D6494] selection:text-white`}
       >
         {children}
+        <YandexMetrika />
       </body>
     </html>
   );
