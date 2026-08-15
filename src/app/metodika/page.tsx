@@ -13,6 +13,7 @@ import {
   KERNEL_CHANGELOG,
   formatEngineUpdated,
 } from '@/lib/seo-freshness';
+import { SITE_AUTHOR, buildAuthorRef } from '@/lib/author';
 import { getSiteUrl } from '@/lib/site-url';
 
 const site = getSiteUrl();
@@ -20,7 +21,7 @@ const site = getSiteUrl();
 export const metadata: Metadata = {
   title: 'Методика и источники — как Smetoplan считает бетон и смету',
   description:
-    'Белая книга расчёта: геометрия, арматура, опалубка, СП/ГОСТ, региональный прайс, границы КЖ. Дата ядра и прайса открыты.',
+    'Белая книга расчёта: геометрия, арматура, опалубка, СП/ГОСТ, региональный прайс, границы КЖ. Автор метода — Vigen G.',
   alternates: { canonical: `${site}/metodika` },
   openGraph: {
     title: 'Методика Smetoplan',
@@ -38,7 +39,7 @@ export default function MetodikaPage() {
     headline: 'Методика и источники Smetoplan',
     dateModified: ENGINE_UPDATED_AT,
     datePublished: '2025-01-01',
-    author: { '@type': 'Organization', name: 'Smetoplan', url: site },
+    author: buildAuthorRef(),
     publisher: { '@type': 'Organization', name: 'Smetoplan', url: site },
     mainEntityOfPage: `${site}/metodika`,
     inLanguage: 'ru-RU',
@@ -52,7 +53,7 @@ export default function MetodikaPage() {
   return (
     <LegalPageShell
       title="Методика и источники"
-      lead={`Прозрачность расчёта — основа доверия. Ядро обновлено ${formatEngineUpdated()}. Прайс-ориентир на ${formatPriceAsOf(PRICE_TABLE_AS_OF)}.`}
+      lead={`Метод ${SITE_AUTHOR.name}: ядро обновлено ${formatEngineUpdated()}. Прайс-ориентир на ${formatPriceAsOf(PRICE_TABLE_AS_OF)}.`}
     >
       <JsonLd data={articleLd} />
 
@@ -63,8 +64,13 @@ export default function MetodikaPage() {
         Прайс:{' '}
         <time dateTime={PRICE_TABLE_AS_OF}>{PRICE_TABLE_AS_OF}</time>
         {' · '}
+        Автор:{' '}
+        <Link href="/o-nas" className="font-semibold text-[#1F5A8E] hover:underline">
+          {SITE_AUTHOR.name}
+        </Link>
+        {' · '}
         <Link href="/opyt" className="font-semibold text-[#1F5A8E] hover:underline">
-          журнал опыта ядра
+          заметки ядра
         </Link>
       </p>
 
@@ -145,10 +151,12 @@ export default function MetodikaPage() {
       </section>
 
       <section>
-        <h2 className="text-lg font-bold text-[#0B132B]">PSEO и хабы</h2>
+        <h2 className="text-lg font-bold text-[#0B132B]">PSEO и качество индекса</h2>
         <p className="mt-2">
           Long-tail и хабы не хранят замороженный объём в базе: SSR вызывает то же
-          ядро. Индекс и калькулятор не разъезжаются после правок геометрии.
+          ядро. В индекс — только URL с уникальной логикой/данными и quality-gate;
+          thin и doorway-клоны не публикуем. Лучше 0 слабых страниц, чем тысяча
+          одинаковых.
         </p>
       </section>
 
@@ -157,7 +165,7 @@ export default function MetodikaPage() {
         <p className="mt-2">
           Сервис не выполняет МКЭ, не штампует соответствие СП и не подбирает
           завод под объект. HELPER помогает с параметрами интерфейса — это не
-          заключение конструктора. Юридически см.{' '}
+          заключение конструктора и не лицо сайта. Юридически см.{' '}
           <Link href="/disclaimer" className="font-semibold text-[#1F5A8E] hover:underline">
             disclaimer
           </Link>

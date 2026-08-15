@@ -8,7 +8,7 @@ const NAV = [
   { href: '/kalkulyator', label: 'Калькулятор' },
   { href: '/ceny', label: 'Цены' },
   { href: '/metodika', label: 'Методика' },
-  { href: '/opyt', label: 'Опыт' },
+  { href: '/opyt', label: 'Заметки' },
   { href: '/o-nas', label: 'О нас' },
 ];
 
@@ -40,8 +40,8 @@ const FOOTER_COLS = [
     title: 'Доверие',
     links: [
       { href: '/metodika', label: 'Методика и источники' },
-      { href: '/opyt', label: 'Опыт ядра' },
-      { href: '/o-nas', label: 'О нас' },
+      { href: '/opyt', label: 'Заметки ядра · Lab Notes' },
+      { href: '/o-nas', label: 'О нас · Vigen G.' },
       { href: '/kontakty', label: 'Контакты' },
       { href: 'mailto:hello@smetoplan.ru', label: 'hello@smetoplan.ru' },
       { href: calculatorHref(), label: 'Пакет «Готово»' },

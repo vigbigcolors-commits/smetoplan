@@ -34,6 +34,10 @@ export const HOME_FAQS: SiteFaq[] = [
     q: 'Чем главная отличается от хабов конструкций?',
     a: 'Главная — вход в продукт. Хабы вроде /kalkulyator/plitnyy-fundament дают ответ по типовому запросу с эталоном и FAQ; калькулятор /kalkulyator — рабочий инструмент уточнения размеров.',
   },
+  {
+    q: 'Кто стоит за Smetoplan?',
+    a: 'Основатель — Vigen G. Метод: живой калькулятор геометрии и сметы, заметки опыта ядра (/opyt), открытая методика. HELPER — помощник полей внутри инструмента, не лицо сайта и не заключение конструктора.',
+  },
 ];
 
 export const CALCULATOR_FAQS: SiteFaq[] = [
@@ -91,6 +95,13 @@ export function buildOrganizationJsonLd() {
     foundingDate: '2025',
     slogan: 'Смета на месте — без заявки',
     brand: { '@type': 'Brand', name: 'Smetoplan' },
+    founder: {
+      '@type': 'Person',
+      '@id': `${site}/#author`,
+      name: 'Vigen G.',
+      jobTitle: 'Основатель Smetoplan',
+      url: `${site}/o-nas`,
+    },
     knowsAbout: [
       'Расчёт плитного фундамента',
       'Расчёт ленточного фундамента',

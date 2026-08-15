@@ -7,6 +7,7 @@ import {
   buildOrganizationJsonLd,
   buildWebSiteJsonLd,
 } from '@/lib/site-seo';
+import { buildPersonJsonLd, SITE_AUTHOR } from '@/lib/author';
 import { calculatorHref } from '@/lib/calculator-routes';
 
 const CHAIN = [
@@ -24,6 +25,7 @@ export function HomeEeatBlock() {
       aria-labelledby="eeat-h2"
     >
       <JsonLd data={buildOrganizationJsonLd()} />
+      <JsonLd data={buildPersonJsonLd()} />
       <JsonLd data={buildWebSiteJsonLd()} />
       <JsonLd data={buildFaqJsonLd(HOME_FAQS)} />
 
@@ -31,7 +33,7 @@ export function HomeEeatBlock() {
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="max-w-3xl">
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#3D6494]">
-            Доверие · E-E-A-T
+            Доверие · E-E-A-T · {SITE_AUTHOR.name}
           </p>
           <h2
             id="eeat-h2"
@@ -41,9 +43,9 @@ export function HomeEeatBlock() {
             <span className="text-[#3D6494]">прозрачно и сразу</span>
           </h2>
           <p className="mt-4 text-base leading-relaxed text-slate-600 sm:text-lg">
-            Результат на экране без заявки и ожидания менеджера. Одна цепочка:
-            геометрия → материалы → региональный ориентир цен. Это сметный
-            инструмент, не штамп КЖ и не коммерческое КП завода.
+            Результат на экране без заявки. Одна цепочка: геометрия → материалы →
+            региональный ориентир цен. Метод основателя {SITE_AUTHOR.name} — сметный
+            инструмент, не штамп КЖ и не AI-блог под ключи.
           </p>
         </div>
 
@@ -67,7 +69,7 @@ export function HomeEeatBlock() {
             Методика и источники
           </Link>
           <Link href="/opyt" className="text-[#1F5A8E] hover:underline">
-            Опыт ядра
+            Заметки ядра
           </Link>
           <Link href="/ceny" className="text-[#1F5A8E] hover:underline">
             Цены по регионам

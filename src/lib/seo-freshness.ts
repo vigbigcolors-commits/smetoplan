@@ -34,8 +34,8 @@ export const KERNEL_CHANGELOG: KernelChangelogEntry[] = [
   },
   {
     date: '2026-07-28',
-    title: 'PSEO только live из ядра',
-    body: 'Long-tail страницы не хранят замороженные м³ в БД: SSR каждый раз вызывает calculateMaterials. Правка ядра = те же цифры в индексе после деплоя.',
+    title: 'PSEO только live из ядра + quality-gate',
+    body: 'Long-tail не хранят замороженные м³ в БД: SSR каждый раз вызывает calculateMaterials. В индекс — только слой с уникальной логикой/регионом/арматурой; thin и doorway-клоны режем. Лучше 0 слабых URL, чем тысяча одинаковых.',
     href: '/metodika',
   },
 ];

@@ -1,10 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { LegalPageShell } from '@/components/site/LegalPageShell';
+import { SITE_AUTHOR } from '@/lib/author';
 
 export const metadata: Metadata = {
   title: 'Контакты — Smetoplan',
-  description: 'Связаться с командой Smetoplan: e-mail и форма обратной связи.',
+  description: `Связаться с ${SITE_AUTHOR.name}, основателем Smetoplan: e-mail по сервису и методике.`,
   alternates: { canonical: '/kontakty' },
 };
 
@@ -12,22 +13,22 @@ export default function ContactsPage() {
   return (
     <LegalPageShell
       title="Контакты"
-      lead="Вопросы по сервису, партнёрству и уточнению методик — пишите напрямую."
+      lead={`${SITE_AUTHOR.name} · ${SITE_AUTHOR.role}. Вопросы по сервису и методике — пишите напрямую.`}
     >
       <section>
         <h2 className="text-lg font-bold text-[#0B132B]">E-mail</h2>
         <p className="mt-2">
           <a
-            href="mailto:hello@smetoplan.ru"
+            href={`mailto:${SITE_AUTHOR.email}`}
             className="text-lg font-bold text-[#1F5A8E] hover:underline"
           >
-            hello@smetoplan.ru
+            {SITE_AUTHOR.email}
           </a>
         </p>
         <p className="mt-2 text-slate-600">
-          Обычно отвечаем в рабочие дни по сервису и партнёрству. Смету и
-          спецификацию для РБУ сайт отдаёт сам: в калькуляторе кнопка «Пакет
-          Готово» (PDF + .txt + ссылка) — без ожидания ответа.
+          Обычно отвечаем в рабочие дни. Смету и спецификацию для РБУ сайт отдаёт
+          сам: в калькуляторе «Пакет Готово» (PDF + .txt + ссылка) — без ожидания
+          ответа.
         </p>
       </section>
       <section>
@@ -39,8 +40,13 @@ export default function ContactsPage() {
             </Link>
           </li>
           <li>
-            <Link href="/ceny/moskva" className="font-semibold text-[#1F5A8E] hover:underline">
-              Цены Москва
+            <Link href="/o-nas" className="font-semibold text-[#1F5A8E] hover:underline">
+              Об авторе · {SITE_AUTHOR.name}
+            </Link>
+          </li>
+          <li>
+            <Link href="/opyt" className="font-semibold text-[#1F5A8E] hover:underline">
+              Заметки ядра
             </Link>
           </li>
           <li>

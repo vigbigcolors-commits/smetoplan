@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { KERNEL_CHANGELOG, formatEngineUpdated } from '@/lib/seo-freshness';
+import { SITE_AUTHOR } from '@/lib/author';
 
-/** Idea 2: original Experience teaser → /opyt */
+/** Lab Notes teaser → /opyt (Experience, not blog farm) */
 export function HomeExperienceTeaser() {
   const top = KERNEL_CHANGELOG.slice(0, 2);
 
@@ -16,7 +17,7 @@ export function HomeExperienceTeaser() {
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-300/90">
-              Опыт · Experience
+              Lab Notes · {SITE_AUTHOR.name}
             </p>
             <h2
               id="opyt-h2"
@@ -25,15 +26,16 @@ export function HomeExperienceTeaser() {
               Как мы чинили ядро — не маркетинговые обещания
             </h2>
             <p className="mt-3 text-base leading-relaxed text-slate-300">
-              Уникальный опыт продукта: реальные баги геометрии и Helper, из‑за
-              которых смета врала. Ядро обновлено {formatEngineUpdated()}.
+              Заметки основателя: реальные баги геометрии и Helper, из‑за которых
+              смета врала. Ядро обновлено {formatEngineUpdated()}. Не AI-блог под
+              ключи.
             </p>
           </div>
           <Link
             href="/opyt"
             className="inline-flex shrink-0 rounded-xl bg-white px-5 py-2.5 text-sm font-bold text-[#0B132B] hover:bg-slate-100"
           >
-            Весь журнал опыта →
+            Все заметки опыта →
           </Link>
         </div>
 
