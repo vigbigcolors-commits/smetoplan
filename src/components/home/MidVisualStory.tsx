@@ -34,7 +34,7 @@ export function MidVisualStory() {
           {/* Full image visible — object-contain, no crop of baked-in text */}
           <Link
             href={CALC_HREF}
-            className="group relative block overflow-hidden rounded-[1.5rem] border border-[#3D6494]/20 bg-[#0E1624] shadow-2xl outline-none ring-[#3D6494] transition focus-visible:ring-2"
+            className="group relative block aspect-[4/3] overflow-hidden rounded-[1.5rem] border border-[#3D6494]/20 bg-[#0E1624] shadow-2xl outline-none ring-[#3D6494] transition focus-visible:ring-2"
             aria-label="Открыть модуль визуализации — калькулятор"
           >
             <Image
@@ -42,7 +42,7 @@ export function MidVisualStory() {
               alt="Модуль визуализации: от параметра к чертежу"
               width={1200}
               height={900}
-              className="h-auto w-full object-contain object-center"
+              className="h-full w-full object-contain object-center"
               sizes="(max-width: 1024px) 100vw, 50vw"
             />
             <span className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-lg bg-[#3D6494] px-3 py-1.5 text-xs font-bold text-white opacity-90 transition group-hover:opacity-100">
