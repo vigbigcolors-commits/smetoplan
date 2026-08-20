@@ -11,6 +11,7 @@ import { HomeExperienceTeaser } from '@/components/home/HomeExperienceTeaser';
 import { getSiteUrl } from '@/lib/site-url';
 import { formatEngineUpdated } from '@/lib/seo-freshness';
 import { formatPriceAsOf, PRICE_TABLE_AS_OF } from '@/lib/trust-sources';
+import { HERO_SIZES, HERO_SRCSET } from '@/lib/home-critical';
 
 const site = getSiteUrl();
 
@@ -38,21 +39,15 @@ export const metadata: Metadata = {
 export default function HomePage() {
   return (
     <div className="bg-[#0E1624]">
+      {/* Hoisted to <head>: DPR-aware preload matching HomeHero <picture>. */}
       <link
         rel="preload"
         as="image"
-        href="/Images/smetoplan-hero-hologram-1080.webp"
+        // React maps imageSrcSet → imagesrcset
+        imageSrcSet={HERO_SRCSET}
+        imageSizes={HERO_SIZES}
         type="image/webp"
         fetchPriority="high"
-        media="(min-width: 641px)"
-      />
-      <link
-        rel="preload"
-        as="image"
-        href="/Images/smetoplan-hero-hologram-640.webp"
-        type="image/webp"
-        fetchPriority="high"
-        media="(max-width: 640px)"
       />
       <SiteHeader />
       <HomeHero />

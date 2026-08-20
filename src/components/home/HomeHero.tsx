@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { calculatorHref } from '@/lib/calculator-routes';
+import { HERO_SIZES, HERO_SRC, HERO_SRCSET } from '@/lib/home-critical';
 
 const CALC_HREF = calculatorHref();
 
@@ -49,28 +50,24 @@ function IconArrow({ className }: { className?: string }) {
 }
 
 /**
- * LCP: static WebP via <picture>, no /_next/image roundtrip.
- * Mobile PSI gets 640w (~16KB) first.
+ * LCP: hero photo. Critical CSS (.sp-hero*) paints before Tailwind.
+ * Root layout preloads the same srcset via imagesrcset (DPR-aware).
+ * Mark is inline SVG — no logo network race against LCP.
  */
 export function HomeHero() {
   return (
-    <section className="relative isolate min-h-[34rem] overflow-hidden bg-[#E8EEF4] sm:min-h-[36rem] lg:min-h-[38rem]">
-      <div className="absolute inset-0">
+    <section className="sp-hero relative isolate min-h-[34rem] overflow-hidden bg-[#E8EEF4] sm:min-h-[36rem] lg:min-h-[38rem]">
+      <div className="sp-hero-media absolute inset-0">
         <picture>
-          <source
-            type="image/webp"
-            srcSet="/Images/smetoplan-hero-hologram-640.webp 640w, /Images/smetoplan-hero-hologram-1080.webp 1080w, /Images/smetoplan-hero-hologram-1600.webp 1600w"
-            sizes="100vw"
-          />
-          {/* eslint-disable-next-line @next/next/no-img-element -- static LCP <picture>, no optimizer */}
+          <source type="image/webp" srcSet={HERO_SRCSET} sizes={HERO_SIZES} />
           <img
-            src="/Images/smetoplan-hero-hologram-640.webp"
+            src={HERO_SRC}
             alt="Голографическая модель фундамента над чертежом"
-            width={960}
-            height={640}
+            width={1080}
+            height={720}
             decoding="async"
             fetchPriority="high"
-            className="absolute inset-0 h-full w-full object-cover object-[center_42%]"
+            className="sp-hero-img absolute inset-0 h-full w-full object-cover object-[center_42%]"
           />
         </picture>
       </div>
@@ -78,16 +75,21 @@ export function HomeHero() {
       <div className="relative mx-auto grid max-w-7xl items-center gap-8 px-5 py-8 sm:px-6 sm:py-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(300px,0.9fr)] lg:gap-12 lg:px-8 lg:py-12">
         <div className="max-w-xl">
           <div className="flex items-center gap-4">
-            <span className="relative flex h-[5.25rem] w-[5.25rem] shrink-0 items-center justify-center overflow-hidden rounded-[1.35rem] border border-[#0E1624]/10 bg-white shadow-[0_14px_36px_rgba(14,22,36,0.12)] sm:h-24 sm:w-24">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/Images/smetoplan-logo-v3-192.webp"
-                alt="Smetoplan"
-                width={96}
-                height={96}
-                decoding="async"
-                className="h-full w-full object-cover"
-              />
+            <span
+              className="relative flex h-[5.25rem] w-[5.25rem] shrink-0 items-center justify-center overflow-hidden rounded-[1.35rem] bg-gradient-to-br from-[#3D6494] to-[#1F5A8E] shadow-[0_14px_36px_rgba(14,22,36,0.12)] sm:h-24 sm:w-24"
+              aria-hidden
+            >
+              <svg
+                className="h-10 w-10 text-white sm:h-11 sm:w-11"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                aria-hidden
+              >
+                <path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z" />
+                <path d="m14.5 12.5 2-2M11.5 9.5 2-2M8.5 6.5 2-2M17.5 15.5 2-2" />
+              </svg>
             </span>
             <div className="min-h-[2.75rem]">
               <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.22em] text-[#3D6494] sm:text-xs">
@@ -99,7 +101,7 @@ export function HomeHero() {
             </div>
           </div>
 
-          <h1 className="mt-6 max-w-[14ch] font-[family-name:var(--font-display)] text-[2.2rem] font-bold leading-[1.1] tracking-[-0.03em] text-[#0E1624] sm:text-[2.55rem] lg:min-h-[5.5rem] lg:text-[2.75rem]">
+          <h1 className="mt-6 max-w-[14ch] min-h-[4.8rem] font-[family-name:var(--font-display)] text-[2.2rem] font-bold leading-[1.1] tracking-[-0.03em] text-[#0E1624] sm:min-h-[5.2rem] sm:text-[2.55rem] lg:min-h-[5.5rem] lg:text-[2.75rem]">
             Умные калькуляторы
             <span className="mt-2 block font-semibold tracking-[-0.02em] text-[#3D6494]">
               для строительства
@@ -112,7 +114,6 @@ export function HomeHero() {
             {FEATURES.map(({ src, title, subtitle }) => (
               <li key={title} className="min-w-0">
                 <span className="relative flex h-[4.75rem] w-[4.75rem] overflow-hidden rounded-[1.25rem] border border-[#0E1624]/08 bg-white shadow-[0_10px_28px_rgba(14,22,36,0.1)] sm:h-20 sm:w-20 sm:rounded-[1.35rem]">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={src}
                     alt=""

@@ -87,7 +87,7 @@ function IconArrow({ className }: { className?: string }) {
 /** Server component — no client JS on homepage chrome. */
 export function SiteHeader() {
   return (
-    <header className="sticky top-0 z-40 h-[4.25rem] w-full border-b border-white/10 bg-[#0B132B] md:bg-[#0B132B]/92 md:backdrop-blur-md">
+    <header className="sp-header sticky top-0 z-40 h-[4.25rem] w-full border-b border-white/10 bg-[#0B132B] md:bg-[#0B132B]/92 md:backdrop-blur-md">
       <div className="mx-auto flex h-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link href="/" className="group flex items-center gap-3">
           <span className="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-[#3D6494] to-[#1F5A8E] shadow-lg shadow-[#3D6494]/30">

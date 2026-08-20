@@ -2,19 +2,21 @@ import type { Metadata } from 'next';
 import { Unbounded } from 'next/font/google';
 import { getSiteUrl } from '@/lib/site-url';
 import { YandexMetrika } from '@/components/seo/YandexMetrika';
+import { CRITICAL_HOME_CSS } from '@/lib/home-critical';
 import './globals.css';
 
 /**
- * Mobile FCP: one display font only. Body uses system stack (no Manrope/Plex CSS).
- * Unbounded preload keeps H1 CLS stable (display:swap).
+ * LCP is the hero photo on mobile. Do NOT preload Unbounded — two woff2
+ * (latin+cyrillic) steal 4G bandwidth from the hologram. H1 has min-height;
+ * display:optional avoids late swap CLS.
  */
 const unbounded = Unbounded({
   variable: '--font-display',
   subsets: ['latin', 'cyrillic'],
-  display: 'swap',
+  display: 'optional',
   weight: ['700'],
   adjustFontFallback: true,
-  preload: true,
+  preload: false,
 });
 
 export const metadata: Metadata = {
@@ -44,6 +46,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ru" className={unbounded.variable}>
+      <head>
+        <style dangerouslySetInnerHTML={{ __html: CRITICAL_HOME_CSS }} />
+      </head>
       <body className="min-h-screen bg-white font-sans text-slate-900 antialiased selection:bg-[#3D6494] selection:text-white">
         {children}
         <YandexMetrika />
