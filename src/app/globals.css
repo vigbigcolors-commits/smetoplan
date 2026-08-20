@@ -27,7 +27,6 @@ body {
     linear-gradient(rgba(61, 100, 148, 0.28) 1px, transparent 1px),
     linear-gradient(90deg, rgba(61, 100, 148, 0.28) 1px, transparent 1px);
   background-size: 42px 42px;
-  animation: blueprintDrift 32s linear infinite;
 }
 
 .blueprint-grid-violet {
@@ -35,7 +34,14 @@ body {
     linear-gradient(rgba(122, 168, 214, 0.32) 1px, transparent 1px),
     linear-gradient(90deg, rgba(122, 168, 214, 0.32) 1px, transparent 1px);
   background-size: 42px 42px;
-  animation: blueprintDrift 32s linear infinite;
+}
+
+/* Desktop only — background-position anim is non-composited (hurts mobile CWV) */
+@media (prefers-reduced-motion: no-preference) and (min-width: 768px) {
+  .blueprint-grid-steel,
+  .blueprint-grid-violet {
+    animation: blueprintDrift 32s linear infinite;
+  }
 }
 
 @keyframes blueprintDrift {

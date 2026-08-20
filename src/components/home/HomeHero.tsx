@@ -7,46 +7,49 @@ const CALC_HREF = calculatorHref();
 
 const FEATURES = [
   {
-    src: '/Images/icon-sizes.png',
+    src: '/Images/icon-sizes-160.webp',
     title: 'Размеры',
     subtitle: '→ схема',
   },
   {
-    src: '/Images/icon-materials.png',
+    src: '/Images/icon-materials-160.webp',
     title: 'Материалы',
     subtitle: 'и объёмы',
   },
   {
-    src: '/Images/icon-estimate.png',
+    src: '/Images/icon-estimate-160.webp',
     title: 'Смета',
     subtitle: 'за минуту',
   },
 ] as const;
 
+/** LCP: single prioritized hero WebP (~40KB), not multi-MB PNG. */
 export function HomeHero() {
   return (
     <section className="relative isolate overflow-hidden bg-[#E8EEF4]">
       <div className="absolute inset-0">
         <Image
-          src="/Images/smetoplan-hero-hologram.png"
+          src="/Images/smetoplan-hero-hologram-1080.webp"
           alt="Голографическая модель фундамента над чертежом"
           fill
           priority
+          fetchPriority="high"
+          quality={74}
           className="object-cover object-[center_42%]"
-          sizes="100vw"
+          sizes="(max-width: 640px) 100vw, (max-width: 1080px) 100vw, 1600px"
+          placeholder="empty"
         />
       </div>
 
       <div className="relative mx-auto grid max-w-7xl items-start gap-8 px-5 py-8 sm:px-6 sm:py-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(300px,0.9fr)] lg:items-center lg:gap-12 lg:px-8 lg:py-12">
         <div className="max-w-xl">
           <div className="flex items-center gap-4">
-            <span className="flex h-[5.25rem] w-[5.25rem] shrink-0 items-center justify-center overflow-hidden rounded-[1.35rem] border border-[#0E1624]/10 bg-white shadow-[0_14px_36px_rgba(14,22,36,0.12)] sm:h-24 sm:w-24">
+            <span className="relative flex h-[5.25rem] w-[5.25rem] shrink-0 items-center justify-center overflow-hidden rounded-[1.35rem] border border-[#0E1624]/10 bg-white shadow-[0_14px_36px_rgba(14,22,36,0.12)] sm:h-24 sm:w-24">
               <Image
-                src="/Images/smetoplan-logo-v3.png"
+                src="/Images/smetoplan-logo-v3-192.webp"
                 alt="Smetoplan"
-                width={192}
-                height={192}
-                priority
+                width={96}
+                height={96}
                 className="h-full w-full object-cover"
               />
             </span>
@@ -76,8 +79,9 @@ export function HomeHero() {
                   <Image
                     src={src}
                     alt=""
-                    width={160}
-                    height={160}
+                    width={80}
+                    height={80}
+                    loading="lazy"
                     className="h-full w-full object-cover"
                   />
                 </span>

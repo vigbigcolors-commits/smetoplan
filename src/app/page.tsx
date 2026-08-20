@@ -38,6 +38,14 @@ export const metadata: Metadata = {
 export default function HomePage() {
   return (
     <div className="bg-[#0E1624]">
+      {/* Hoisted to <head> — mobile LCP candidate (~16KB) */}
+      <link
+        rel="preload"
+        as="image"
+        href="/Images/smetoplan-hero-hologram-1080.webp"
+        type="image/webp"
+        fetchPriority="high"
+      />
       <SiteHeader />
       <HomeHero />
       <HomeAnswerFirst />
