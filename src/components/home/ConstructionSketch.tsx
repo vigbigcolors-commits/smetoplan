@@ -1,8 +1,6 @@
-'use client';
-
 /**
  * Symbolic construction calc → elegant slab foundation.
- * Loop: numbers → formula → result → structure.
+ * Server SVG — no client JS on homepage catalog.
  */
 export function ConstructionSketch({ className }: { className?: string }) {
   return (
@@ -33,7 +31,7 @@ export function ConstructionSketch({ className }: { className?: string }) {
       </defs>
 
       {/* —— PHASE 1: INPUT NUMBERS —— */}
-      <g className="fx-nums" fontFamily="var(--font-plex-mono), ui-monospace, monospace">
+      <g className="fx-nums" fontFamily="ui-monospace, Cascadia Code, SF Mono, Consolas, monospace">
         <text className="fx-fade fx-d1" x="40" y="58" fill="#8FCB8F" fontSize="11" letterSpacing="1.5">
           ВВОД
         </text>
@@ -52,7 +50,7 @@ export function ConstructionSketch({ className }: { className?: string }) {
       </g>
 
       {/* —— PHASE 2: FORMULA / CALC —— */}
-      <g className="fx-calc" fontFamily="var(--font-plex-mono), ui-monospace, monospace">
+      <g className="fx-calc" fontFamily="ui-monospace, Cascadia Code, SF Mono, Consolas, monospace">
         <text className="fx-fade fx-d6" x="230" y="58" fill="#A2C8E8" fontSize="11" letterSpacing="1.5">
           РАСЧЁТ
         </text>
@@ -105,7 +103,7 @@ export function ConstructionSketch({ className }: { className?: string }) {
       </g>
 
       {/* —— PHASE 3: RESULT —— */}
-      <g className="fx-result" fontFamily="var(--font-plex-mono), ui-monospace, monospace">
+      <g className="fx-result" fontFamily="ui-monospace, Cascadia Code, SF Mono, Consolas, monospace">
         <text className="fx-fade fx-fade-early fx-d11" x="40" y="210" fill="#8FCB8F" fontSize="11" letterSpacing="1.5">
           РЕЗУЛЬТАТ
         </text>
@@ -190,7 +188,7 @@ export function ConstructionSketch({ className }: { className?: string }) {
           textAnchor="middle"
           fill="#A2C8E8"
           fontSize="10"
-          fontFamily="var(--font-plex-mono), ui-monospace, monospace"
+          fontFamily="ui-monospace, Cascadia Code, SF Mono, Consolas, monospace"
         >
           12.0 × 8.0 м
         </text>

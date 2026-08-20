@@ -62,12 +62,12 @@ export function HomeHero() {
             srcSet="/Images/smetoplan-hero-hologram-640.webp 640w, /Images/smetoplan-hero-hologram-1080.webp 1080w, /Images/smetoplan-hero-hologram-1600.webp 1600w"
             sizes="100vw"
           />
-          {/* eslint-disable-next-line @next/next/no-img-element */}
+          {/* eslint-disable-next-line @next/next/no-img-element -- static LCP <picture>, no optimizer */}
           <img
-            src="/Images/smetoplan-hero-hologram-1080.webp"
+            src="/Images/smetoplan-hero-hologram-640.webp"
             alt="Голографическая модель фундамента над чертежом"
-            width={1536}
-            height={1024}
+            width={960}
+            height={640}
             decoding="async"
             fetchPriority="high"
             className="absolute inset-0 h-full w-full object-cover object-[center_42%]"
@@ -90,7 +90,7 @@ export function HomeHero() {
               />
             </span>
             <div className="min-h-[2.75rem]">
-              <p className="font-[family-name:var(--font-plex-mono)] text-[11px] font-semibold uppercase tracking-[0.22em] text-[#3D6494] sm:text-xs">
+              <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.22em] text-[#3D6494] sm:text-xs">
                 Инженерный расчёт
               </p>
               <p className="mt-0.5 text-sm font-semibold text-[#0E1624]/75 sm:text-base">
@@ -126,7 +126,7 @@ export function HomeHero() {
                 <p className="mt-3 font-[family-name:var(--font-display)] text-[15px] font-bold leading-none tracking-[-0.02em] text-[#0E1624] sm:text-base">
                   {title}
                 </p>
-                <p className="mt-1.5 font-[family-name:var(--font-plex-mono)] text-[11px] font-medium uppercase tracking-[0.12em] text-[#3D6494] sm:text-xs">
+                <p className="mt-1.5 font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-[#3D6494] sm:text-xs">
                   {subtitle}
                 </p>
               </li>
@@ -182,7 +182,7 @@ export function HomeHero() {
             <span className="block font-[family-name:var(--font-display)] text-[15px] font-semibold leading-snug tracking-[-0.015em] text-[#0E1624] sm:text-base">
               Расчёт смет, материалов, работ и сроков за секунды.
             </span>
-            <span className="mt-1.5 block font-[family-name:var(--font-plex-mono)] text-[11px] font-medium uppercase tracking-[0.14em] text-[#3D6494] sm:text-xs">
+            <span className="mt-1.5 block font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-[#3D6494] sm:text-xs">
               Точность, проверенная в реальных проектах.
             </span>
           </p>

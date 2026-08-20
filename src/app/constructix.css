@@ -43,3 +43,89 @@
 .animate-fade-in {
   animation: fade-in 0.2s ease-out both;
 }
+
+/* —— Calculator tool panels (home-critical CSS stays in globals) —— */
+@keyframes toolPanelIn {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tool-panel {
+  animation: toolPanelIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.metric-tile {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.tool-btn {
+  transition: transform 0.15s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.tools-rail {
+  box-shadow: 0 8px 24px -20px rgba(15, 23, 42, 0.45);
+}
+
+.live-kpi {
+  animation: toolPanelIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.strip-plan-canvas {
+  background-image:
+    linear-gradient(rgba(56, 189, 248, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(56, 189, 248, 0.06) 1px, transparent 1px),
+    radial-gradient(ellipse at 30% 20%, rgba(56, 189, 248, 0.12), transparent 50%),
+    linear-gradient(160deg, #0B132B 0%, #111827 100%);
+  background-size: 24px 24px, 24px 24px, auto, auto;
+}
+
+.pour-gauge {
+  background: conic-gradient(var(--gauge-color) var(--gauge-pct), rgba(148, 163, 184, 0.25) 0);
+}
+
+.risk-bar {
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.2);
+}
+
+.risk-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.assistant-fab {
+  animation: toolPanelIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 0.4s;
+}
+
+@keyframes helperPromoIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.helper-promo {
+  animation: helperPromoIn 0.45s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .assistant-fab {
+    animation: none;
+  }
+
+  .helper-promo {
+    animation: none;
+  }
+}

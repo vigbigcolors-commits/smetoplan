@@ -1,38 +1,20 @@
 import type { Metadata } from 'next';
-import { Manrope, Unbounded, IBM_Plex_Mono } from 'next/font/google';
+import { Unbounded } from 'next/font/google';
 import { getSiteUrl } from '@/lib/site-url';
 import { YandexMetrika } from '@/components/seo/YandexMetrika';
 import './globals.css';
 
 /**
- * CLS strategy:
- * - Preload Unbounded (hero H1) — swap without metric match caused CLS ~0.4
- * - Body/mono: display optional — no late reflow if font arrives late
+ * Mobile FCP: one display font only. Body uses system stack (no Manrope/Plex CSS).
+ * Unbounded preload keeps H1 CLS stable (display:swap).
  */
-const manrope = Manrope({
-  variable: '--font-manrope',
-  subsets: ['latin', 'cyrillic'],
-  display: 'optional',
-  adjustFontFallback: true,
-  preload: false,
-});
-
 const unbounded = Unbounded({
   variable: '--font-display',
   subsets: ['latin', 'cyrillic'],
   display: 'swap',
-  weight: ['600', '700'],
+  weight: ['700'],
   adjustFontFallback: true,
   preload: true,
-});
-
-const plexMono = IBM_Plex_Mono({
-  variable: '--font-plex-mono',
-  weight: ['500', '600'],
-  subsets: ['latin', 'cyrillic'],
-  display: 'optional',
-  adjustFontFallback: true,
-  preload: false,
 });
 
 export const metadata: Metadata = {
@@ -61,8 +43,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ru" className={`${manrope.variable} ${unbounded.variable} ${plexMono.variable}`}>
-      <body className="min-h-screen bg-white font-[family-name:var(--font-manrope)] text-slate-900 antialiased selection:bg-[#3D6494] selection:text-white">
+    <html lang="ru" className={unbounded.variable}>
+      <body className="min-h-screen bg-white font-sans text-slate-900 antialiased selection:bg-[#3D6494] selection:text-white">
         {children}
         <YandexMetrika />
       </body>
