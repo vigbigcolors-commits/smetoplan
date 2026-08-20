@@ -41,9 +41,18 @@ export default function HomePage() {
       <link
         rel="preload"
         as="image"
+        href="/Images/smetoplan-hero-hologram-1080.webp"
+        type="image/webp"
+        fetchPriority="high"
+        media="(min-width: 641px)"
+      />
+      <link
+        rel="preload"
+        as="image"
         href="/Images/smetoplan-hero-hologram-640.webp"
         type="image/webp"
         fetchPriority="high"
+        media="(max-width: 640px)"
       />
       <SiteHeader />
       <HomeHero />

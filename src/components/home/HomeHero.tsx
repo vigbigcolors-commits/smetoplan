@@ -54,7 +54,7 @@ function IconArrow({ className }: { className?: string }) {
  */
 export function HomeHero() {
   return (
-    <section className="relative isolate overflow-hidden bg-[#E8EEF4]">
+    <section className="relative isolate min-h-[34rem] overflow-hidden bg-[#E8EEF4] sm:min-h-[36rem] lg:min-h-[38rem]">
       <div className="absolute inset-0">
         <picture>
           <source
@@ -64,10 +64,10 @@ export function HomeHero() {
           />
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/Images/smetoplan-hero-hologram-640.webp"
+            src="/Images/smetoplan-hero-hologram-1080.webp"
             alt="Голографическая модель фундамента над чертежом"
-            width={1080}
-            height={720}
+            width={1536}
+            height={1024}
             decoding="async"
             fetchPriority="high"
             className="absolute inset-0 h-full w-full object-cover object-[center_42%]"
@@ -75,7 +75,7 @@ export function HomeHero() {
         </picture>
       </div>
 
-      <div className="relative mx-auto grid max-w-7xl items-start gap-8 px-5 py-8 sm:px-6 sm:py-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(300px,0.9fr)] lg:items-center lg:gap-12 lg:px-8 lg:py-12">
+      <div className="relative mx-auto grid max-w-7xl items-center gap-8 px-5 py-8 sm:px-6 sm:py-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(300px,0.9fr)] lg:gap-12 lg:px-8 lg:py-12">
         <div className="max-w-xl">
           <div className="flex items-center gap-4">
             <span className="relative flex h-[5.25rem] w-[5.25rem] shrink-0 items-center justify-center overflow-hidden rounded-[1.35rem] border border-[#0E1624]/10 bg-white shadow-[0_14px_36px_rgba(14,22,36,0.12)] sm:h-24 sm:w-24">
@@ -89,7 +89,7 @@ export function HomeHero() {
                 className="h-full w-full object-cover"
               />
             </span>
-            <div>
+            <div className="min-h-[2.75rem]">
               <p className="font-[family-name:var(--font-plex-mono)] text-[11px] font-semibold uppercase tracking-[0.22em] text-[#3D6494] sm:text-xs">
                 Инженерный расчёт
               </p>
@@ -99,7 +99,7 @@ export function HomeHero() {
             </div>
           </div>
 
-          <h1 className="mt-6 max-w-[14ch] font-[family-name:var(--font-display)] text-[2.2rem] font-bold leading-[1.1] tracking-[-0.03em] text-[#0E1624] sm:text-[2.55rem] lg:text-[2.75rem]">
+          <h1 className="mt-6 max-w-[14ch] font-[family-name:var(--font-display)] text-[2.2rem] font-bold leading-[1.1] tracking-[-0.03em] text-[#0E1624] sm:text-[2.55rem] lg:min-h-[5.5rem] lg:text-[2.75rem]">
             Умные калькуляторы
             <span className="mt-2 block font-semibold tracking-[-0.02em] text-[#3D6494]">
               для строительства
