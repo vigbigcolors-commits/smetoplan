@@ -7,6 +7,9 @@ const nextConfig: NextConfig = {
     imageSizes: [64, 96, 128, 160, 256],
     minimumCacheTTL: 60 * 60 * 24 * 30,
   },
+  experimental: {
+    optimizePackageImports: ['lucide-react'],
+  },
   async headers() {
     return [
       {
@@ -20,15 +23,6 @@ const nextConfig: NextConfig = {
       },
       {
         source: '/_next/static/:path*',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-        ],
-      },
-      {
-        source: '/:path*.webp',
         headers: [
           {
             key: 'Cache-Control',

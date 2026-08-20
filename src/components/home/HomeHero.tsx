@@ -1,6 +1,4 @@
 import Link from 'next/link';
-import Image from 'next/image';
-import { ArrowRight, Calculator, FileSpreadsheet } from 'lucide-react';
 import { calculatorHref } from '@/lib/calculator-routes';
 
 const CALC_HREF = calculatorHref();
@@ -23,33 +21,71 @@ const FEATURES = [
   },
 ] as const;
 
-/** LCP: single prioritized hero WebP (~40KB), not multi-MB PNG. */
+function IconCalc({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+      <rect x="4" y="2" width="16" height="20" rx="2" />
+      <path d="M8 6h8M8 10h8M8 14h2M12 14h2M16 14h2M8 18h2M12 18h2M16 18h2" />
+    </svg>
+  );
+}
+
+function IconSheet({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+      <path d="M14 2v6h6M8 13h8M8 17h8M8 9h2" />
+    </svg>
+  );
+}
+
+function IconArrow({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden>
+      <path d="M5 12h14" />
+      <path d="m12 5 7 7-7 7" />
+    </svg>
+  );
+}
+
+/**
+ * LCP: static WebP via <picture>, no /_next/image roundtrip.
+ * Mobile PSI gets 640w (~16KB) first.
+ */
 export function HomeHero() {
   return (
     <section className="relative isolate overflow-hidden bg-[#E8EEF4]">
       <div className="absolute inset-0">
-        <Image
-          src="/Images/smetoplan-hero-hologram-1080.webp"
-          alt="Голографическая модель фундамента над чертежом"
-          fill
-          priority
-          fetchPriority="high"
-          quality={74}
-          className="object-cover object-[center_42%]"
-          sizes="(max-width: 640px) 100vw, (max-width: 1080px) 100vw, 1600px"
-          placeholder="empty"
-        />
+        <picture>
+          <source
+            type="image/webp"
+            srcSet="/Images/smetoplan-hero-hologram-640.webp 640w, /Images/smetoplan-hero-hologram-1080.webp 1080w, /Images/smetoplan-hero-hologram-1600.webp 1600w"
+            sizes="100vw"
+          />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/Images/smetoplan-hero-hologram-640.webp"
+            alt="Голографическая модель фундамента над чертежом"
+            width={1080}
+            height={720}
+            decoding="async"
+            fetchPriority="high"
+            className="absolute inset-0 h-full w-full object-cover object-[center_42%]"
+          />
+        </picture>
       </div>
 
       <div className="relative mx-auto grid max-w-7xl items-start gap-8 px-5 py-8 sm:px-6 sm:py-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(300px,0.9fr)] lg:items-center lg:gap-12 lg:px-8 lg:py-12">
         <div className="max-w-xl">
           <div className="flex items-center gap-4">
             <span className="relative flex h-[5.25rem] w-[5.25rem] shrink-0 items-center justify-center overflow-hidden rounded-[1.35rem] border border-[#0E1624]/10 bg-white shadow-[0_14px_36px_rgba(14,22,36,0.12)] sm:h-24 sm:w-24">
-              <Image
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
                 src="/Images/smetoplan-logo-v3-192.webp"
                 alt="Smetoplan"
                 width={96}
                 height={96}
+                decoding="async"
                 className="h-full w-full object-cover"
               />
             </span>
@@ -76,12 +112,14 @@ export function HomeHero() {
             {FEATURES.map(({ src, title, subtitle }) => (
               <li key={title} className="min-w-0">
                 <span className="relative flex h-[4.75rem] w-[4.75rem] overflow-hidden rounded-[1.25rem] border border-[#0E1624]/08 bg-white shadow-[0_10px_28px_rgba(14,22,36,0.1)] sm:h-20 sm:w-20 sm:rounded-[1.35rem]">
-                  <Image
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
                     src={src}
                     alt=""
                     width={80}
                     height={80}
                     loading="lazy"
+                    decoding="async"
                     className="h-full w-full object-cover"
                   />
                 </span>
@@ -113,11 +151,11 @@ export function HomeHero() {
 
               <ul className="mt-4 space-y-2 text-sm text-slate-200">
                 <li className="flex items-center gap-2.5">
-                  <Calculator className="h-4 w-4 shrink-0 text-[#6B93C4]" />
+                  <IconCalc className="h-4 w-4 shrink-0 text-[#6B93C4]" />
                   Живой чертёж и CAD при смене параметров
                 </li>
                 <li className="flex items-center gap-2.5">
-                  <FileSpreadsheet className="h-4 w-4 shrink-0 text-[#6B93C4]" />
+                  <IconSheet className="h-4 w-4 shrink-0 text-[#6B93C4]" />
                   Смета в ₽ и выгрузка для прораба
                 </li>
               </ul>
@@ -128,7 +166,7 @@ export function HomeHero() {
                   className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#6E916E] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#7FA37F]"
                 >
                   Рассчитать плиту
-                  <ArrowRight className="h-4 w-4" />
+                  <IconArrow className="h-4 w-4" />
                 </Link>
                 <a
                   href="#calculators"
@@ -140,7 +178,7 @@ export function HomeHero() {
             </div>
           </aside>
 
-          <p className="rounded-xl border border-[#0E1624]/08 bg-white/75 px-5 py-4 shadow-[0_8px_24px_rgba(14,22,36,0.06)] backdrop-blur-sm">
+          <p className="rounded-xl border border-[#0E1624]/08 bg-white/80 px-5 py-4 shadow-[0_8px_24px_rgba(14,22,36,0.06)]">
             <span className="block font-[family-name:var(--font-display)] text-[15px] font-semibold leading-snug tracking-[-0.015em] text-[#0E1624] sm:text-base">
               Расчёт смет, материалов, работ и сроков за секунды.
             </span>

@@ -4,11 +4,16 @@ import { getSiteUrl } from '@/lib/site-url';
 import { YandexMetrika } from '@/components/seo/YandexMetrika';
 import './globals.css';
 
+/**
+ * No font preloads on critical path — free bandwidth for LCP image.
+ * display: swap keeps text visible with fallback.
+ */
 const manrope = Manrope({
   variable: '--font-manrope',
   subsets: ['latin', 'cyrillic'],
   display: 'swap',
   adjustFontFallback: true,
+  preload: false,
 });
 
 const unbounded = Unbounded({
@@ -17,12 +22,12 @@ const unbounded = Unbounded({
   display: 'swap',
   weight: ['600', '700'],
   adjustFontFallback: true,
-  preload: true,
+  preload: false,
 });
 
 const plexMono = IBM_Plex_Mono({
   variable: '--font-plex-mono',
-  weight: ['400', '500', '600'],
+  weight: ['500', '600'],
   subsets: ['latin', 'cyrillic'],
   display: 'swap',
   adjustFontFallback: true,
