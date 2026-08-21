@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Unbounded } from 'next/font/google';
 import { getSiteUrl } from '@/lib/site-url';
+import { CloudflareWebAnalytics } from '@/components/seo/CloudflareWebAnalytics';
 import { YandexMetrika } from '@/components/seo/YandexMetrika';
 import { CRITICAL_HOME_CSS } from '@/lib/home-critical';
 import './globals.css';
@@ -52,6 +53,7 @@ export default function RootLayout({
       <body className="min-h-screen bg-white font-sans text-slate-900 antialiased selection:bg-[#3D6494] selection:text-white">
         {children}
         <YandexMetrika />
+        <CloudflareWebAnalytics />
       </body>
     </html>
   );
