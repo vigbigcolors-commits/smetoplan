@@ -5,6 +5,10 @@ import { calculatorHref } from '@/lib/calculator-routes';
 import type { HubLink } from '@/lib/pseo-demo-hub';
 import { getStructureHubBenchmark } from '@/lib/hub-benchmarks';
 import { FreshnessMeta } from '@/components/seo/FreshnessMeta';
+import { Breadcrumbs } from '@/components/seo/Breadcrumbs';
+
+/** Cap outbound leaf equity — hubs must outrank parametric grid. */
+const HUB_LEAF_LINK_CAP = 6;
 
 export function PseoHubView({
   hub,
@@ -37,12 +41,33 @@ export function PseoHubView({
     (h) => !(hub.kind === 'structure' && h.slug === hub.slug)
   );
 
+  const catalogLinks = links.slice(0, HUB_LEAF_LINK_CAP);
+
+  const crumbs =
+    hub.kind === 'structure'
+      ? [
+          { name: 'Главная', href: '/' },
+          { name: 'Калькуляторы', href: '/kalkulyator' },
+          { name: hub.h1.replace(/^Калькулятор\s+/i, '').split(':')[0].trim() },
+        ]
+      : [
+          { name: 'Главная', href: '/' },
+          { name: 'Калькуляторы', href: '/kalkulyator' },
+          { name: hub.h1 },
+        ];
+
+  const shortHubLabel = hub.h1.replace(/^Калькулятор\s+/i, '').split(':')[0].trim();
+
   return (
     <article className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
       />
+
+      <div className="mb-5">
+        <Breadcrumbs items={crumbs} />
+      </div>
 
       <header className="max-w-3xl">
         <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
@@ -145,6 +170,55 @@ export function PseoHubView({
         </div>
       ) : null}
 
+      <section
+        className="mt-10 max-w-3xl rounded-2xl border border-slate-200 bg-[#F8FAFC] px-4 py-5 sm:px-5"
+        aria-labelledby="hub-how-read-h2"
+      >
+        <h2
+          id="hub-how-read-h2"
+          className="text-lg font-extrabold tracking-tight text-[#0F172A]"
+        >
+          Как читать результат
+        </h2>
+        <ul className="mt-3 space-y-2 text-sm leading-relaxed text-slate-700">
+          <li>
+            <span className="font-semibold text-slate-800">Что считается:</span> объём
+            бетона, масса и раскрой арматуры, площадь опалубки и ориентир сметы материалов
+            в ₽ — тем же движком, что{' '}
+            <Link href="/kalkulyator" className="font-semibold text-[#1F5A8E] hover:underline">
+              рабочий калькулятор
+            </Link>
+            .
+          </li>
+          <li>
+            <span className="font-semibold text-slate-800">Что сильнее всего влияет:</span>{' '}
+            габариты (длина×ширина×толщина/глубина), схема армирования и запас объёма.
+            Марка бетона меняет класс и цену куба, но не «придумывает» геометрию.
+          </li>
+          <li>
+            <span className="font-semibold text-slate-800">Почему факт может отличаться:</span>{' '}
+            потери при укладке, местный прайс РБУ, доставка, реальная схема осей/рёбер.
+            Сверьте ориентир с{' '}
+            <Link href="/ceny" className="font-semibold text-[#1F5A8E] hover:underline">
+              /ceny
+            </Link>{' '}
+            и заводом.
+          </li>
+          <li>
+            <span className="font-semibold text-slate-800">Когда этого мало:</span> нужны КЖ,
+            расчёт оснований, геотехника или ответственность по СП — к проектировщику. См.{' '}
+            <Link href="/metodika" className="font-semibold text-[#1F5A8E] hover:underline">
+              методику
+            </Link>{' '}
+            и{' '}
+            <Link href="/disclaimer" className="font-semibold text-[#1F5A8E] hover:underline">
+              disclaimer
+            </Link>
+            .
+          </li>
+        </ul>
+      </section>
+
       {hub.sections.map((section) => (
         <section key={section.h2} className="mt-10 max-w-3xl">
           <h2 className="text-lg font-extrabold tracking-tight text-[#0F172A]">
@@ -198,20 +272,23 @@ export function PseoHubView({
         </section>
       ) : null}
 
-      {links.length > 0 ? (
+      {catalogLinks.length > 0 ? (
         <section className="mt-10" aria-labelledby="hub-catalog-h2">
           <h2
             id="hub-catalog-h2"
             className="text-lg font-extrabold tracking-tight text-[#0F172A]"
           >
-            Другие готовые размеры
+            Примеры готовых размеров
           </h2>
           <p className="mt-2 max-w-3xl text-sm text-slate-600">
-            Дополнительные URL с фиксированными габаритами — если нужен конкретный long-tail.
-            Основной путь: эталон → калькулятор со своими цифрами.
+            Несколько фиксированных габаритов для ориентира. Основной путь — эталон выше и{' '}
+            <Link href={primaryCalcHref} className="font-semibold text-[#1F5A8E] hover:underline">
+              калькулятор со своими цифрами
+            </Link>
+            . Полная сетка марок и Ø не дублируется здесь намеренно.
           </p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            {links.map((l) => {
+            {catalogLinks.map((l) => {
               const href =
                 l.href || (l.slug ? `/kalkulyator/${l.slug}` : calculatorHref());
               return (
@@ -251,21 +328,21 @@ export function PseoHubView({
         </div>
         <div>
           <h2 className="text-sm font-extrabold uppercase tracking-wide text-slate-500">
-            Регионы и цены
+            Цены материалов
           </h2>
           <ul className="mt-3 space-y-1.5">
             <li>
               <Link href="/ceny" className="text-sm font-semibold text-[#1F5A8E] hover:underline">
-                Сравнение одной плиты по регионам
+                Сравнение регионов · /ceny
               </Link>
             </li>
             {REGION_HUBS.slice(0, 5).map((h) => (
               <li key={h.slug}>
                 <Link
-                  href={`/kalkulyator/${h.slug}`}
+                  href={`/ceny/${h.slug === 'spb' ? 'sankt-peterburg' : h.slug}`}
                   className="text-sm font-semibold text-[#1F5A8E] hover:underline"
                 >
-                  {h.h1}
+                  Цены · {h.slug === 'spb' ? 'Санкт-Петербург' : h.slug}
                 </Link>
               </li>
             ))}
@@ -279,6 +356,11 @@ export function PseoHubView({
             <li>
               <Link href="/metodika" className="text-sm font-semibold text-[#1F5A8E] hover:underline">
                 Методика и источники
+              </Link>
+            </li>
+            <li>
+              <Link href="/disclaimer" className="text-sm font-semibold text-[#1F5A8E] hover:underline">
+                Ограничения расчёта
               </Link>
             </li>
             <li>
@@ -299,6 +381,11 @@ export function PseoHubView({
           </ul>
         </div>
       </section>
+
+      <p className="mt-8 text-xs leading-relaxed text-slate-500">
+        Страница «{shortHubLabel}» — сметный ориентир Smetoplan, не проект КЖ и не заключение
+        конструктора.
+      </p>
     </article>
   );
 }

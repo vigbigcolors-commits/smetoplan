@@ -107,15 +107,16 @@ export default async function PseoCalculatorPage({ params }: PageProps) {
   if (hub) {
     let links: HubLink[] = [];
     try {
+      // Cap at 6 — do not pass hub equity equally to the parametric M250/Ø16 grid.
       if (hub.kind === 'structure') {
-        const rows = await listPublishedByStructure(hub.structureType, 36);
+        const rows = await listPublishedByStructure(hub.structureType, 6);
         links = rows.map((r) => ({
           slug: r.slug,
           label: r.h1,
           hint: r.dims,
         }));
       } else {
-        const rows = await listPublishedByRegion(hub.slug, 36);
+        const rows = await listPublishedByRegion(hub.slug, 6);
         links = rows.map((r) => ({
           slug: r.slug,
           label: r.h1,
@@ -134,6 +135,7 @@ export default async function PseoCalculatorPage({ params }: PageProps) {
       seen.add(key);
       links.push(s);
     }
+    links = links.slice(0, 6);
     return <PseoHubView hub={hub} links={links} />;
   }
 

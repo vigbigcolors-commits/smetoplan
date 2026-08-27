@@ -99,7 +99,27 @@ export default function MetodikaPage() {
           <Link href="/kalkulyator" className="font-semibold text-[#1F5A8E] hover:underline">
             калькулятора
           </Link>
-          ; школьная «ось×ширина×высота» может расходиться с моделью углов.
+          ; школьная «ось×ширина×высота» может расходиться с моделью углов. Хабы с эталоном:{' '}
+          <Link href="/kalkulyator/plitnyy-fundament" className="font-semibold text-[#1F5A8E] hover:underline">
+            плита
+          </Link>
+          {' · '}
+          <Link href="/kalkulyator/lentochnyy-fundament" className="font-semibold text-[#1F5A8E] hover:underline">
+            лента
+          </Link>
+          {' · '}
+          <Link href="/kalkulyator/svaynyy-fundament" className="font-semibold text-[#1F5A8E] hover:underline">
+            сваи
+          </Link>
+          {' · '}
+          <Link href="/kalkulyator/monolitnaya-balka" className="font-semibold text-[#1F5A8E] hover:underline">
+            балка
+          </Link>
+          {' · '}
+          <Link href="/kalkulyator/podpornaya-stena" className="font-semibold text-[#1F5A8E] hover:underline">
+            стена
+          </Link>
+          .
         </p>
       </section>
 

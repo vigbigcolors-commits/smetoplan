@@ -112,6 +112,18 @@ export default async function CenyHubPage({ searchParams }: PageProps) {
               хаб плиты
             </Link>
             {' · '}
+            <Link href="/kalkulyator/lentochnyy-fundament" className="font-semibold text-[#1F5A8E] hover:underline">
+              хаб ленты
+            </Link>
+            {' · '}
+            <Link href="/kalkulyator/svaynyy-fundament" className="font-semibold text-[#1F5A8E] hover:underline">
+              хаб свай
+            </Link>
+            {' · '}
+            <Link href={calculatorHref()} className="font-semibold text-[#1F5A8E] hover:underline">
+              калькулятор
+            </Link>
+            {' · '}
             <Link href="/disclaimer" className="font-semibold text-[#1F5A8E] hover:underline">
               disclaimer
             </Link>

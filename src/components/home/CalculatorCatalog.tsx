@@ -78,35 +78,35 @@ function IconBom() {
 
 const ITEMS: CalcItem[] = [
   {
-    href: calculatorHref('slab'),
+    href: '/kalkulyator/plitnyy-fundament',
     title: 'Плитный фундамент',
-    subtitle: 'Объём бетона, сетка арматуры, рёбра жёсткости',
+    subtitle: 'Эталон бетона и арматуры → свой расчёт в калькуляторе',
     accent: 'from-[#3D6494]/20 to-transparent',
     icon: <IconSlab />,
   },
   {
-    href: calculatorHref('strip'),
+    href: '/kalkulyator/lentochnyy-fundament',
     title: 'Ленточный фундамент',
-    subtitle: 'Периметр, внутренние оси, каркас и хомуты',
+    subtitle: 'Контур, каркас, смета — хаб с эталоном и FAQ',
     accent: 'from-[#1F5A8E]/25 to-transparent',
     icon: <IconStrip />,
   },
   {
-    href: calculatorHref('pier'),
+    href: '/kalkulyator/svaynyy-fundament',
     title: 'Сваи и ростверк',
-    subtitle: 'Число свай, каркасы оголовков, объём ростверка',
+    subtitle: 'Поле свай и ростверк: ориентир объёмов и ₽',
     accent: 'from-[#3D6494]/20 to-transparent',
     icon: <IconPier />,
   },
   {
-    href: calculatorHref('beam'),
+    href: '/kalkulyator/monolitnaya-balka',
     title: 'Балка / колонна',
     subtitle: 'Пролёт, продольная арматура, шаг хомутов',
     accent: 'from-[#2563EB]/20 to-transparent',
     icon: <IconBeam />,
   },
   {
-    href: calculatorHref('wall'),
+    href: '/kalkulyator/podpornaya-stena',
     title: 'Подпорная стена',
     subtitle: 'Толщина, двойная сетка, опалубка двух сторон',
     accent: 'from-[#3D6494]/20 to-transparent',
@@ -114,8 +114,8 @@ const ITEMS: CalcItem[] = [
   },
   {
     href: calculatorHref(),
-    title: 'Смета и ведомость',
-    subtitle: 'Бетон, арматура, песок, щебень, опалубка — в ₽',
+    title: 'Рабочий калькулятор',
+    subtitle: 'Свои размеры сразу: чертёж, BOM и смета в ₽',
     accent: 'from-[#3D6494]/25 to-transparent',
     icon: <IconBom />,
   },
@@ -136,11 +136,11 @@ export function CalculatorCatalog() {
             </p>
             <h2 className="mt-2.5 font-[family-name:var(--font-display)] text-2xl font-bold leading-snug tracking-tight text-white sm:text-3xl">
               Выберите конструкцию —{' '}
-              <span className="text-[#A2C8E8]">откроется калькулятор</span>
+              <span className="text-[#A2C8E8]">эталон и калькулятор</span>
             </h2>
             <p className="mt-3 text-base leading-relaxed text-slate-300 sm:text-lg">
-              Один калькулятор: тип конструкции выбираете сами, размеры и марку
-              меняете в панели. Смета и чертёж пересчитываются сразу.
+              Хаб даёт ответ по типовому запросу; рабочий калькулятор — свои размеры,
+              марку и арматуру. Смета и чертёж пересчитываются сразу.
             </p>
           </div>
 
@@ -166,7 +166,7 @@ export function CalculatorCatalog() {
                 <h3 className="mt-6 text-2xl font-bold text-white">{item.title}</h3>
                 <p className="mt-2 text-base leading-relaxed text-slate-300">{item.subtitle}</p>
                 <span className="mt-6 inline-flex items-center gap-2 text-base font-bold text-[#6B93C4] transition group-hover:gap-3 group-hover:text-white">
-                  Открыть расчёт
+                  {item.href === calculatorHref() ? 'Открыть калькулятор' : 'Открыть хаб'}
                   <span aria-hidden>→</span>
                 </span>
               </div>

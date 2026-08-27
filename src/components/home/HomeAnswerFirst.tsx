@@ -83,16 +83,16 @@ export function HomeAnswerFirst() {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <Link
-                    href={b.calcHref}
+                    href={hub}
                     className="rounded-xl bg-sky-500 px-4 py-2 text-sm font-extrabold text-[#0B132B] hover:bg-sky-400"
                   >
-                    {b.calcCta}
+                    Открыть хаб
                   </Link>
                   <Link
-                    href={hub}
+                    href={b.calcHref}
                     className="rounded-xl border border-slate-600 px-4 py-2 text-sm font-bold text-white hover:border-sky-500"
                   >
-                    Хаб
+                    {b.calcCta}
                   </Link>
                 </div>
               </div>

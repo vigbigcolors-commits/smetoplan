@@ -144,22 +144,58 @@ export default async function CenyRegionPage({ params, searchParams }: PageProps
             ))}
           </dl>
 
-          <p className="mt-8 text-sm text-slate-600">
-            <Link
-              href={calculatorHref()}
-              className="font-semibold text-[#1F5A8E] hover:underline"
-            >
-              Рассчитать объёмы
-            </Link>
-            {' · '}
-            <Link href="/metodika" className="font-semibold text-[#1F5A8E] hover:underline">
-              Методика и источники
-            </Link>
-            {' · '}
-            <Link href="/disclaimer" className="font-semibold text-[#1F5A8E] hover:underline">
-              Disclaimer
-            </Link>
-          </p>
+          <div className="mt-8 rounded-2xl border border-slate-200 bg-[#F8FAFC] px-4 py-5 sm:px-5">
+            <h2 className="text-base font-extrabold text-[#0B132B]">
+              Посчитать фундамент с этими ценами
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
+              /ceny — рынок материалов (медианы и котировки). Объёмы и арматуру считайте в
+              хабах конструкций или рабочем калькуляторе; регион прайса можно сменить в панели.
+            </p>
+            <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-sm">
+              <li>
+                <Link
+                  href="/kalkulyator/plitnyy-fundament"
+                  className="font-semibold text-[#1F5A8E] hover:underline"
+                >
+                  Плитный фундамент
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/kalkulyator/lentochnyy-fundament"
+                  className="font-semibold text-[#1F5A8E] hover:underline"
+                >
+                  Ленточный фундамент
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/kalkulyator/svaynyy-fundament"
+                  className="font-semibold text-[#1F5A8E] hover:underline"
+                >
+                  Сваи и ростверк
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href={calculatorHref()}
+                  className="font-semibold text-[#1F5A8E] hover:underline"
+                >
+                  Рабочий калькулятор
+                </Link>
+              </li>
+            </ul>
+            <p className="mt-3 text-sm text-slate-600">
+              <Link href="/metodika" className="font-semibold text-[#1F5A8E] hover:underline">
+                Методика и источники
+              </Link>
+              {' · '}
+              <Link href="/disclaimer" className="font-semibold text-[#1F5A8E] hover:underline">
+                Disclaimer
+              </Link>
+            </p>
+          </div>
         </section>
       </main>
       <SiteFooter />
