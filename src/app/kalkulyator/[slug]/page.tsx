@@ -19,6 +19,7 @@ import {
   evaluatePseoIndexability,
   routeToGateInput,
 } from '@/lib/pseo-quality';
+import { getSiteUrl } from '@/lib/site-url';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -41,7 +42,7 @@ const NOINDEX: Metadata['robots'] = { index: false, follow: false };
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const site = process.env.NEXT_PUBLIC_SITE_URL || 'https://smetoplan.ru';
+  const site = getSiteUrl();
 
   const hub = getHubBySlug(slug);
   if (hub) {

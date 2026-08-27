@@ -30,6 +30,7 @@ type PseoRow = {
   is_published: boolean;
   publish_date: Date | string | null;
   quality_status?: string | null;
+  priority?: number;
 };
 
 function mapRow(row: PseoRow): PseoRoute {
@@ -82,26 +83,38 @@ export async function getPublishedRouteBySlug(
   return rows[0] ? mapRow(rows[0]) : null;
 }
 
+/**
+ * Sitemap source of truth: published+ok AND live evaluatePseoIndexability.
+ * Prevents doorway/thin URLs from appearing in sitemap while runtime 404s them.
+ */
 export async function listPublishedSlugs(limit = 50_000): Promise<
   Array<{ slug: string; publish_date: string; priority: number }>
 > {
-  const { rows } = await query<{
-    slug: string;
-    publish_date: Date;
-    priority: number;
-  }>(
-    `SELECT slug, publish_date, priority
+  const oversample = Math.min(Math.max(limit * 2, limit + 200), 50_000);
+  const { rows } = await query<PseoRow & { priority: number }>(
+    `SELECT *
      FROM pseo_routes
      WHERE ${INDEXABLE_SQL.replace(/\n/g, ' ')}
      ORDER BY priority DESC, publish_date DESC
      LIMIT $1`,
-    [limit]
+    [oversample]
   );
-  return rows.map((r) => ({
-    slug: r.slug,
-    publish_date: new Date(r.publish_date).toISOString(),
-    priority: r.priority,
-  }));
+
+  const out: Array<{ slug: string; publish_date: string; priority: number }> = [];
+  for (const row of rows) {
+    if (out.length >= limit) break;
+    const route = mapRow(row);
+    const gate = evaluatePseoIndexability(routeToGateInput(route));
+    if (!gate.ok) continue;
+    out.push({
+      slug: route.slug,
+      publish_date: route.publish_date
+        ? new Date(route.publish_date).toISOString()
+        : new Date().toISOString(),
+      priority: Number(row.priority) || 0,
+    });
+  }
+  return out;
 }
 
 export async function listPublishedByStructure(
