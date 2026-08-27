@@ -1,6 +1,31 @@
 {
   "redirects": [
     {
+      "source": "/kalkulyator/smeta-monolitnoj-plity-10x8-armatura-12",
+      "destination": "/kalkulyator/plitnyy-fundament",
+      "permanent": true
+    },
+    {
+      "source": "/kalkulyator/raschet-lentochnogo-fundamenta-15x10-m300",
+      "destination": "/kalkulyator/lentochnyy-fundament",
+      "permanent": true
+    },
+    {
+      "source": "/kalkulyator/online-raschet-lenty-12x9-m200-moskva",
+      "destination": "/kalkulyator/lentochnyy-fundament",
+      "permanent": true
+    },
+    {
+      "source": "/kalkulyator/online-kalkulyator-svajnogo-fundamenta-10x8",
+      "destination": "/kalkulyator/svaynyy-fundament",
+      "permanent": true
+    },
+    {
+      "source": "/kalkulyator/raschet-balki-6m-armatura-16-m350",
+      "destination": "/kalkulyator/monolitnaya-balka",
+      "permanent": true
+    },
+    {
       "source": "/:path*",
       "has": [{ "type": "host", "value": "www.smetoplan.ru" }],
       "destination": "https://smetoplan.ru/:path*",
