@@ -5,7 +5,7 @@ import type {
   StructureType,
 } from '@/lib/types';
 
-/** Clean product URL — not PSEO dimension slugs. */
+/** Generic calculator entry point; it remains functional but is not in the sitemap. */
 export const CALCULATOR_PATH = '/kalkulyator';
 
 const STRUCTURE_TYPES: StructureType[] = [
@@ -20,10 +20,23 @@ export function isStructureType(value: string | undefined | null): value is Stru
   return !!value && (STRUCTURE_TYPES as string[]).includes(value);
 }
 
-/** `/kalkulyator` or `/kalkulyator?type=strip` */
+/** One SEO landing URL for each calculator construction. */
+export const CANONICAL_CALCULATOR_PATH: Record<StructureType, string> = {
+  slab: '/kalkulyator/plitnyy-fundament',
+  strip: '/kalkulyator/lentochnyy-fundament',
+  pier: '/kalkulyator/svaynyy-fundament',
+  beam: '/kalkulyator/monolitnaya-balka',
+  wall: '/kalkulyator/podpornaya-stena',
+};
+
+/** Unknown and missing types use the slab landing page. */
+export function canonicalCalculatorHref(type?: string | null): string {
+  return CANONICAL_CALCULATOR_PATH[isStructureType(type) ? type : 'slab'];
+}
+
+/** Construction-specific navigation uses clean landing pages; generic entry stays legacy. */
 export function calculatorHref(type?: StructureType): string {
-  if (!type) return CALCULATOR_PATH;
-  return `${CALCULATOR_PATH}?type=${type}`;
+  return type ? canonicalCalculatorHref(type) : CALCULATOR_PATH;
 }
 
 export interface StructurePreset {

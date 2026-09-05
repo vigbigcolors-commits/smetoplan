@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 /**
- * Sitemap: static + hubs + published pseo_routes only.
+ * Sitemap: static canonical URLs + hubs + published pseo_routes only.
  * Cron drip-feed flips is_published → URLs appear here within the same day.
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -20,12 +20,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: new Date(),
       changeFrequency: 'daily',
       priority: 1,
-    },
-    {
-      url: `${site}/kalkulyator`,
-      lastModified: new Date(),
-      changeFrequency: 'daily',
-      priority: 0.95,
     },
     {
       url: `${site}/ceny`,

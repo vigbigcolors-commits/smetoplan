@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import type { PseoHub } from '@/lib/pseo-hubs';
 import { STRUCTURE_HUBS, REGION_HUBS } from '@/lib/pseo-hubs';
-import { calculatorHref } from '@/lib/calculator-routes';
+import { calculatorHref, getStructurePreset } from '@/lib/calculator-routes';
+import ConstructixApp from '@/components/calculator/ConstructixApp';
 import type { HubLink } from '@/lib/pseo-demo-hub';
 import { getStructureHubBenchmark } from '@/lib/hub-benchmarks';
 import { FreshnessMeta } from '@/components/seo/FreshnessMeta';
@@ -34,8 +35,11 @@ export function PseoHubView({
 
   const primaryCalcHref =
     hub.kind === 'structure'
-      ? benchmark?.calcHref || calculatorHref(hub.structureType)
+      ? '#calculator'
       : calculatorHref();
+
+  const preset =
+    hub.kind === 'structure' ? getStructurePreset(hub.structureType) : null;
 
   const siblingHubs = STRUCTURE_HUBS.filter(
     (h) => !(hub.kind === 'structure' && h.slug === hub.slug)
@@ -59,13 +63,14 @@ export function PseoHubView({
   const shortHubLabel = hub.h1.replace(/^Калькулятор\s+/i, '').split(':')[0].trim();
 
   return (
-    <article className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
-      />
+    <>
+      <article className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+        />
 
-      <div className="mb-5">
+        <div className="mb-5">
         <Breadcrumbs items={crumbs} />
       </div>
 
@@ -134,7 +139,7 @@ export function PseoHubView({
             </div>
             <div className="flex flex-wrap gap-2">
               <Link
-                href={benchmark.calcHref}
+                href="#calculator"
                 className="inline-flex rounded-xl bg-sky-500 px-5 py-3 text-sm font-extrabold text-[#0B132B] hover:bg-sky-400"
               >
                 {benchmark.calcCta}
@@ -257,7 +262,7 @@ export function PseoHubView({
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
             <Link
-              href={benchmark.calcHref}
+              href="#calculator"
               className="inline-flex rounded-xl bg-[#0F172A] px-5 py-3 text-sm font-bold text-white hover:bg-[#1F5A8E]"
             >
               {benchmark.calcCta}
@@ -386,6 +391,20 @@ export function PseoHubView({
         Страница «{shortHubLabel}» — сметный ориентир Smetoplan, не проект КЖ и не заключение
         конструктора.
       </p>
-    </article>
+      </article>
+      {preset ? (
+        <section id="calculator" className="scroll-mt-4" aria-label={preset.h1}>
+          <ConstructixApp
+            initial={{
+              structureType: preset.structureType,
+              dimensions: preset.dimensions,
+              concreteSpec: preset.concreteSpec,
+              rebarSpec: preset.rebarSpec,
+              deferHeavyUi: true,
+            }}
+          />
+        </section>
+      ) : null}
+    </>
   );
 }

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import ConstructixApp from '@/components/calculator/ConstructixApp';
 import {
+  canonicalCalculatorHref,
   getStructurePreset,
   isStructureType,
 } from '@/lib/calculator-routes';
@@ -23,14 +24,13 @@ export async function generateMetadata({
   return {
     title: `${preset.h1} — смета онлайн | Smetoplan`,
     description: preset.description,
-    // Always clean canonical — ?type= is UI state, not a separate document.
     alternates: {
-      canonical: `${site}/kalkulyator`,
+      canonical: `${site}${canonicalCalculatorHref(structureType)}`,
     },
     openGraph: {
       title: preset.h1,
       description: preset.description,
-      url: `${site}/kalkulyator`,
+      url: `${site}${canonicalCalculatorHref(structureType)}`,
       type: 'website',
       locale: 'ru_RU',
     },
