@@ -26,7 +26,7 @@ describe('money hubs slab + strip', () => {
     assert.ok(b);
     assert.match(b.answerLine, /41[,.]4|41\.4/);
     assert.equal(b.kpis[0]?.value, '41.4');
-    assert.match(b.calcHref, /type=slab/);
+    assert.equal(b.calcHref, '/kalkulyator/plitnyy-fundament');
   });
 
   it('strip benchmark matches engine volumes', () => {
@@ -34,7 +34,7 @@ describe('money hubs slab + strip', () => {
     assert.ok(b);
     assert.match(b.answerLine, /19[,.]5|19\.5/);
     assert.equal(b.kpis[0]?.value, '19.5');
-    assert.match(b.calcHref, /type=strip/);
+    assert.equal(b.calcHref, '/kalkulyator/lentochnyy-fundament');
   });
 
   it('other structures have no money benchmark yet', () => {
