@@ -25,7 +25,7 @@ async function main() {
   const min = Number(process.env.DRIP_MIN || 40);
   const max = Number(process.env.DRIP_MAX || 80);
 
-  let before = await publishedCount();
+  const before = await publishedCount();
   console.log(
     JSON.stringify({
       before,
