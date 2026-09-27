@@ -3,7 +3,7 @@ import { describe, it } from 'node:test';
 import {
   evaluatePseoIndexability,
   isSafePseoSnapshot,
-  paramsFingerprint,
+  searchIntentFingerprint,
 } from '@/lib/pseo-quality';
 import { getDemoRouteBySlug } from '@/lib/demo-routes';
 import { routeToGateInput } from '@/lib/pseo-quality';
@@ -69,8 +69,43 @@ describe('pseo quality gate — always', () => {
     );
     assert.ok(route);
     const input = routeToGateInput(route);
-    const fp = paramsFingerprint(input);
+    const fp = searchIntentFingerprint(input);
     const gate = evaluatePseoIndexability(input, new Set([fp]), new Set());
+    assert.equal(gate.ok, false);
+    if (!gate.ok) assert.equal(gate.reason, 'duplicate_fingerprint');
+  });
+
+  it('treats material variants as one search intent', () => {
+    const route = getDemoRouteBySlug(
+      'kalkulyator-plitnogo-fundamenta-12x8-m300'
+    );
+    assert.ok(route);
+    const first = routeToGateInput(route);
+    const variant = structuredClone(first);
+    variant.params.grade = 'M350';
+    variant.params.rebar_d = 16;
+    variant.params.rebar_step = 150;
+
+    const firstFingerprint = searchIntentFingerprint(first);
+    assert.equal(firstFingerprint, searchIntentFingerprint(variant));
+
+    const differentDepth = structuredClone(first);
+    differentDepth.params.depth = Number(differentDepth.params.depth) + 0.1;
+    assert.notEqual(firstFingerprint, searchIntentFingerprint(differentDepth));
+
+    const differentRegion = structuredClone(first);
+    differentRegion.region_slug = 'spb';
+    assert.notEqual(firstFingerprint, searchIntentFingerprint(differentRegion));
+
+    const differentStructure = structuredClone(first);
+    differentStructure.structure_type = 'strip';
+    assert.notEqual(firstFingerprint, searchIntentFingerprint(differentStructure));
+
+    const gate = evaluatePseoIndexability(
+      variant,
+      new Set([firstFingerprint]),
+      new Set()
+    );
     assert.equal(gate.ok, false);
     if (!gate.ok) assert.equal(gate.reason, 'duplicate_fingerprint');
   });

@@ -1,0 +1,7 @@
+{
+  "slab": { "grade": "M300", "rebar_d": 12, "rebar_step": 200, "layers": 2 },
+  "strip": { "grade": "M300", "rebar_d": 12, "rebar_step": 200, "layers": 2 },
+  "pier": { "grade": "M300", "rebar_d": 12, "rebar_step": 200, "layers": 2 },
+  "beam": { "grade": "M350", "rebar_d": 16, "rebar_step": 150, "layers": 2 },
+  "wall": { "grade": "M250", "rebar_d": 12, "rebar_step": 200, "layers": 2 }
+}

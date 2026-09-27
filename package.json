@@ -14,6 +14,7 @@
     "db:generate-pseo": "node --env-file=.env.local scripts/generate-pseo-routes.mjs",
     "pseo:quality-sync": "node --env-file=.env.local scripts/pseo-quality-sync.mjs",
     "pseo:verify-corpus": "npx tsx scripts/pseo-verify-corpus.ts",
+    "pseo:semantic-audit": "npx tsx --env-file=.env.local scripts/pseo-semantic-audit.ts",
     "pseo:spotcheck": "npx tsx --env-file=.env.local scripts/pseo-spotcheck-published.ts",
     "pseo:remediate": "npx tsx --env-file=.env.local scripts/pseo-remediate-published.ts",
     "pseo:drip": "npx tsx --env-file=.env.local scripts/pseo-drip-once.ts",

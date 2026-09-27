@@ -10,6 +10,7 @@
  * - Curated size grid (not full cartesian explosion)
  */
 import pg from 'pg';
+import { readFileSync } from 'node:fs';
 
 const { Client } = pg;
 
@@ -74,12 +75,9 @@ const STRUCTURES = [
   },
 ];
 
-const GRADES = ['M250', 'M300', 'M350'];
-const REBARS = [
-  { d: 12, step: 200, layers: 2 },
-  { d: 14, step: 150, layers: 2 },
-  { d: 16, step: 150, layers: 2 },
-];
+const SEO_PROFILES = JSON.parse(
+  readFileSync(new URL('../src/lib/pseo-seo-profiles.json', import.meta.url), 'utf8')
+);
 
 /** Single intent — prevents 4× doorway duplicates for the same calc. */
 const INTENT = { cluster: 'kalkulyator', verb: 'Калькулятор' };
@@ -115,9 +113,14 @@ async function main() {
   for (const st of STRUCTURES) {
     for (const [L, W] of st.sizes) {
       for (const H of st.depths) {
-        for (const grade of GRADES) {
-          for (const rb of REBARS) {
-            for (const region of REGIONS) {
+        const profile = SEO_PROFILES[st.type];
+        for (const region of REGIONS) {
+              const grade = profile.grade;
+              const rb = {
+                d: profile.rebar_d,
+                step: profile.rebar_step,
+                layers: profile.layers,
+              };
               const dimSlug = `${L}x${W}x${String(H).replace('.', '-')}`;
               const rebarSlug = `armatura-${rb.d}-s${rb.step}-l${rb.layers}`;
               const slug =
@@ -182,8 +185,6 @@ async function main() {
               });
 
               layout = layout === 5 ? 1 : layout + 1;
-            }
-          }
         }
       }
     }
@@ -204,19 +205,6 @@ async function main() {
         OR intent_cluster IN ('raschet', 'smeta', 'online')
         OR slug LIKE '%bez-armatury%'
       )
-  `);
-
-  // Re-queue false-positive rejects after title/depth harden (keep true thin shells out).
-  await client.query(`
-    UPDATE pseo_routes
-    SET quality_status = 'pending',
-        updated_at = NOW()
-    WHERE quality_status = 'rejected'
-      AND is_published = FALSE
-      AND region_slug IS NOT NULL
-      AND region_slug <> 'kazan'
-      AND intent_cluster = 'kalkulyator'
-      AND slug NOT LIKE '%bez-armatury%'
   `);
 
   const batchSize = 400;

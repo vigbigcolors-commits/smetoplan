@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import ConstructixApp from '@/components/calculator/ConstructixApp';
 import { PseoSeoBlock } from '@/components/pseo/PseoSeoBlock';
 import { PseoHubView } from '@/components/pseo/PseoHubView';
@@ -7,6 +7,7 @@ import { getDemoRouteBySlug } from '@/lib/demo-routes';
 import { buildMetaFromRoute, paramsToCalculatorState } from '@/lib/meta';
 import {
   bumpViewCount,
+  getLegacyRedirectTargetBySlug,
   getPublishedRouteBySlug,
   listPublishedByRegion,
   listPublishedByStructure,
@@ -137,6 +138,15 @@ export default async function PseoCalculatorPage({ params }: PageProps) {
     }
     links = links.slice(0, 6);
     return <PseoHubView hub={hub} links={links} />;
+  }
+
+  const legacy = await getLegacyRedirectTargetBySlug(slug);
+  if (legacy.target) {
+    permanentRedirect(`/kalkulyator/${legacy.target}`);
+  }
+
+  if (legacy.found) {
+    notFound();
   }
 
   const route = await resolveRoute(slug);

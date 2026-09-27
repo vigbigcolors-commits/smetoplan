@@ -4,8 +4,8 @@ import { isReservedHubSlug } from './pseo-hubs';
 import {
   evaluatePseoIndexability,
   normalizeTitle,
-  paramsFingerprint,
   routeToGateInput,
+  searchIntentFingerprint,
   type PseoGateReason,
 } from './pseo-quality';
 
@@ -81,6 +81,45 @@ export async function getPublishedRouteBySlug(
     [slug]
   );
   return rows[0] ? mapRow(rows[0]) : null;
+}
+
+/**
+ * Rejected legacy leaves redirect directly to the published survivor of the
+ * same search intent. A rejected row is never allowed to fall through to demo
+ * content.
+ */
+export async function getLegacyRedirectTargetBySlug(
+  slug: string
+): Promise<{ found: boolean; target: string | null }> {
+  try {
+    const { rows: legacyRows } = await query<
+      Pick<PseoRow, 'structure_type' | 'params' | 'region_slug'>
+    >(
+      `SELECT structure_type, params, region_slug
+       FROM pseo_routes
+       WHERE slug = $1
+         AND is_published = FALSE
+         AND quality_status = 'rejected'
+       LIMIT 1`,
+      [slug]
+    );
+    const legacy = legacyRows[0];
+    if (!legacy) return { found: false, target: null };
+
+    const fingerprint = searchIntentFingerprint(legacy);
+    const { rows: survivorRows } = await query<{ slug: string }>(
+      `SELECT slug
+       FROM pseo_routes
+       WHERE is_published = TRUE
+         AND quality_status = 'ok'
+         AND content_fingerprint = $1
+       LIMIT 1`,
+      [fingerprint]
+    );
+    return { found: true, target: survivorRows[0]?.slug ?? null };
+  } catch {
+    return { found: false, target: null };
+  }
 }
 
 /**
@@ -213,7 +252,7 @@ export async function dripFeedPublish(
   );
 
   const publishedFingerprints = new Set(
-    publishedRows.map((r) => paramsFingerprint(r))
+    publishedRows.map((r) => searchIntentFingerprint(r))
   );
   const publishedTitles = new Set(
     publishedRows.map((r) => normalizeTitle(r.title_template || r.h1_template))

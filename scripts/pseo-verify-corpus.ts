@@ -6,8 +6,8 @@
  */
 import {
   evaluatePseoIndexability,
-  paramsFingerprint,
 } from '../src/lib/pseo-quality';
+import { SEO_MATERIAL_PROFILES } from '../src/lib/pseo-seo-profiles';
 import { calculateMaterials } from '../src/lib/calculator';
 import { getRegionalPrices } from '../src/domain/markets';
 import type { PseoRouteParams, StructureType } from '../src/lib/types';
@@ -107,13 +107,6 @@ const STRUCTURES: Array<{
   },
 ];
 
-const GRADES = ['M250', 'M300', 'M350'] as const;
-const REBARS = [
-  { d: 12, step: 200, layers: 2 },
-  { d: 14, step: 150, layers: 2 },
-  { d: 16, step: 150, layers: 2 },
-];
-
 type Row = {
   slug: string;
   structure_type: StructureType;
@@ -129,9 +122,14 @@ function buildCorpus(): Row[] {
   for (const st of STRUCTURES) {
     for (const [L, W] of st.sizes) {
       for (const H of st.depths) {
-        for (const grade of GRADES) {
-          for (const rb of REBARS) {
-            for (const region of REGIONS) {
+        const profile = SEO_MATERIAL_PROFILES[st.type];
+        for (const region of REGIONS) {
+              const grade = profile.grade as 'M250' | 'M300' | 'M350';
+              const rb = {
+                d: profile.rebar_d,
+                step: profile.rebar_step,
+                layers: profile.layers,
+              };
               const dimSlug = `${L}x${W}x${String(H).replace('.', '-')}`;
               const slug =
                 `kalkulyator-${st.slugPart}-${dimSlug}-${grade.toLowerCase()}-armatura-${rb.d}-s${rb.step}-l${rb.layers}-${region.slug}`
@@ -161,8 +159,6 @@ function buildCorpus(): Row[] {
                   pH: st.pH(st.type),
                 },
               });
-            }
-          }
         }
       }
     }

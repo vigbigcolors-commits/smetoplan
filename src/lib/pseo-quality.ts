@@ -6,7 +6,10 @@
 
 import { buildPseoSnapshot, type PseoSnapshot } from '@/lib/pseo-snapshot';
 import { isRichLongTail } from '@/lib/pseo-content';
-import { resolvePseoRegion } from '@/lib/pseo-region';
+import {
+  canonicalizePseoRegionSlug,
+  resolvePseoRegion,
+} from '@/lib/pseo-region';
 import { isReservedHubSlug } from '@/lib/pseo-hubs';
 import type { PseoRoute, PseoRouteParams, StructureType } from '@/lib/types';
 
@@ -51,7 +54,7 @@ export function paramsFingerprint(row: {
   region_slug: string | null;
 }): string {
   const p = row.params as PseoRouteParams;
-  const region = resolvePseoRegion(row.region_slug);
+  const region = canonicalizePseoRegionSlug(row.region_slug);
   return [
     row.structure_type,
     Number(p.length),
@@ -63,7 +66,26 @@ export function paramsFingerprint(row: {
     Number(p.layers ?? 0),
     Number(p.long_bars ?? 0),
     Number(p.stirrup_d ?? 0),
-    region?.slug || '',
+    region || '',
+  ].join('|');
+}
+
+/**
+ * Search identity for indexable PSEO leaves. Material settings remain calculator
+ * inputs, but cannot create a second URL for the same geometry and region.
+ */
+export function searchIntentFingerprint(row: {
+  structure_type: string;
+  params: PseoRouteParams | Record<string, unknown>;
+  region_slug: string | null;
+}): string {
+  const p = row.params as PseoRouteParams;
+  return [
+    row.structure_type,
+    Number(p.length),
+    Number(p.width),
+    Number(p.depth),
+    canonicalizePseoRegionSlug(row.region_slug) || '',
   ].join('|');
 }
 
@@ -189,7 +211,7 @@ export function evaluatePseoStructureGate(
     return { ok: false, reason: 'thin_description' };
   }
 
-  const fingerprint = paramsFingerprint({
+  const fingerprint = searchIntentFingerprint({
     structure_type: row.structure_type,
     params: p,
     region_slug: row.region_slug,
