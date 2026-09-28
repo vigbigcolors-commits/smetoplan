@@ -34,7 +34,7 @@ export async function generateMetadata({
       type: 'website',
       locale: 'ru_RU',
     },
-    robots: { index: true, follow: true },
+    robots: { index: false, follow: true },
   };
 }
 
