@@ -631,6 +631,7 @@ describe('golden: seismic column / pylon etalon', () => {
       depthM: 0.4,
       auxWidthM: 0,
       auxDepthM: 0,
+      stripLayout: 'perimeter',
     });
     assert.ok(Math.abs(geo.concreteVolumeRawM3 - 0.96) < 1e-9);
     assert.ok(Math.abs(geo.formworkAreaM2 - 9.6) < 1e-9);
@@ -651,6 +652,8 @@ describe('golden: seismic column / pylon etalon', () => {
         depthM: 0.4,
         auxWidthM: 0,
         auxDepthM: 0,
+        stripLengthM: 0,
+        pierCount: 0,
         coverMm: 40,
         stockLengthM: 11.7,
       }

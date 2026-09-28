@@ -81,6 +81,7 @@ describe('PSEO live calc bridge — always synced to kernel', () => {
       depthM: 0.4,
       auxWidthM: 0,
       auxDepthM: 0,
+      stripLayout: 'perimeter',
     });
     assert.ok(Math.abs(geo.concreteVolumeRawM3 - 0.96) < 1e-9);
     assert.ok(Math.abs(geo.formworkAreaM2 - 9.6) < 1e-9);
